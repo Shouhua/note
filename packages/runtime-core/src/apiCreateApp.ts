@@ -50,7 +50,7 @@ import { isFunction, NO, isObject } from '@vue/shared'
 import { warn } from './warning'
 import { createVNode, cloneVNode, VNode } from './vnode'
 import { RootHydrateFunction } from './hydration'
-import { initApp, appUnmounted } from './devtools'
+import { devtoolsInitApp, devtoolsUnmountApp } from './devtools'
 import { version } from '.'
 
 export interface App<HostElement = any> {
@@ -69,7 +69,7 @@ export interface App<HostElement = any> {
   unmount(rootContainer: HostElement | string): void
   provide<T>(key: InjectionKey<T> | string, value: T): this
 
-  // internal. We need to expose these for the server-renderer and devtools
+  // internal, but we need to expose these for the server-renderer and devtools
   _component: Component
   _props: Data | null
   _container: HostElement | null
@@ -87,7 +87,6 @@ export interface AppConfig {
   // @private
   readonly isNativeTag?: (tag: string) => boolean
 
-  devtools: boolean
   performance: boolean
   optionMergeStrategies: Record<string, OptionMergeFunction>
   globalProperties: Record<string, any> // 用于挂在用户自定义功能，比如$router
@@ -106,15 +105,13 @@ export interface AppConfig {
 
 // 这个AppContext表示createApp初始化的时候使用
 export interface AppContext {
+  app: App // for devtools
   config: AppConfig
   mixins: ComponentOptions[] // vue 2.x options里面的mixins放在这里面
   components: Record<string, PublicAPIComponent>
   directives: Record<string, Directive>
   provides: Record<string | symbol, any>
   reload?: () => void // HMR only
-
-  // internal for devtools
-  __app?: App
 }
 
 type PluginInstallFunction = (app: App, ...options: any[]) => any
@@ -127,9 +124,9 @@ export type Plugin =
 
 export function createAppContext(): AppContext {
   return {
+    app: null as any,
     config: {
       isNativeTag: NO,
-      devtools: true,
       performance: false,
       globalProperties: {},
       optionMergeStrategies: {},
@@ -164,8 +161,8 @@ export function createAppAPI<HostElement>(
 
     let isMounted = false
 
-    const app: App = {
-      // 为了server render
+    // 为了server render
+    const app: App = (context.app = {
       _component: rootComponent as Component,
       _props: rootProps,
       _container: null,
@@ -204,7 +201,7 @@ export function createAppAPI<HostElement>(
       },
 
       mixin(mixin: ComponentOptions) {
-        if (__FEATURE_OPTIONS__) {
+        if (__FEATURE_OPTIONS_API__) {
           if (!context.mixins.includes(mixin)) {
             context.mixins.push(mixin)
           } else if (__DEV__) {
@@ -271,8 +268,12 @@ export function createAppAPI<HostElement>(
           }
           isMounted = true
           app._container = rootContainer
+          // for devtools and telemetry
+          ;(rootContainer as any).__vue_app__ = app
 
-          __DEV__ && initApp(app, version)
+          if (__DEV__ || __FEATURE_PROD_DEVTOOLS__) {
+            devtoolsInitApp(app, version)
+          }
 
           return vnode.component!.proxy
         } else if (__DEV__) {
@@ -288,8 +289,7 @@ export function createAppAPI<HostElement>(
       unmount() {
         if (isMounted) {
           render(null, app._container)
-
-          __DEV__ && appUnmounted(app)
+          devtoolsUnmountApp(app)
         } else if (__DEV__) {
           warn(`Cannot unmount an app that is not mounted.`)
         }
@@ -308,9 +308,7 @@ export function createAppAPI<HostElement>(
 
         return app
       }
-    }
-
-    context.__app = app
+    })
 
     return app
   }

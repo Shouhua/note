@@ -19,7 +19,7 @@ import {
   isVNode
 } from './vnode'
 import { handleError, ErrorCodes } from './errorHandling'
-import { PatchFlags, ShapeFlags, isOn } from '@vue/shared'
+import { PatchFlags, ShapeFlags, isOn, isModelListener } from '@vue/shared'
 import { warn } from './warning'
 import { isHmrUpdating } from './hmr'
 
@@ -118,7 +118,9 @@ export function renderComponentRoot(
 
       // 判断是不是使用了optional props declaration，如果使用了，在直接等于attrs
       // 如果没有，则只是提取其中的class，style，v-on listeners, RFC里面有原因
-      fallthroughAttrs = Component.props ? attrs : getFallthroughAttrs(attrs)
+      fallthroughAttrs = Component.props
+        ? attrs
+        : getFunctionalFallthrough(attrs)
     }
 
     // attr merging
@@ -131,50 +133,56 @@ export function renderComponentRoot(
       ;[root, setRoot] = getChildRoot(result)
     }
 
-    if (
-      Component.inheritAttrs !== false &&
-      fallthroughAttrs &&
-      Object.keys(fallthroughAttrs).length
-    ) {
-      if (
-        root.shapeFlag & ShapeFlags.ELEMENT ||
-        root.shapeFlag & ShapeFlags.COMPONENT
-      ) {
-        root = cloneVNode(root, fallthroughAttrs) // fallthrough传递
-      } else if (__DEV__ && !accessedAttrs && root.type !== Comment) {
-        const allAttrs = Object.keys(attrs)
-        const eventAttrs: string[] = []
-        const extraAttrs: string[] = []
-        for (let i = 0, l = allAttrs.length; i < l; i++) {
-          const key = allAttrs[i]
-          if (isOn(key)) {
-            // ignore v-model handlers when they fail to fallthrough
-            if (!key.startsWith('onUpdate:')) {
-              // remove `on`, lowercase first letter to reflect event casing
-              // accurately
-              eventAttrs.push(key[2].toLowerCase() + key.slice(3))
-            }
-          } else {
-            extraAttrs.push(key)
+    if (Component.inheritAttrs !== false && fallthroughAttrs) {
+      const keys = Object.keys(fallthroughAttrs)
+      const { shapeFlag } = root
+      if (keys.length) {
+        if (
+          shapeFlag & ShapeFlags.ELEMENT ||
+          shapeFlag & ShapeFlags.COMPONENT
+        ) {
+          if (shapeFlag & ShapeFlags.ELEMENT && keys.some(isModelListener)) {
+            // #1643, #1543
+            // component v-model listeners should only fallthrough for component
+            // HOCs
+            fallthroughAttrs = filterModelListeners(fallthroughAttrs)
           }
-        }
-        if (extraAttrs.length) {
-          warn(
-            `Extraneous non-props attributes (` +
-              `${extraAttrs.join(', ')}) ` +
-              `were passed to component but could not be automatically inherited ` +
-              `because component renders fragment or text root nodes.`
-          )
-        }
-        if (eventAttrs.length) {
-          warn(
-            `Extraneous non-emits event listeners (` +
-              `${eventAttrs.join(', ')}) ` +
-              `were passed to component but could not be automatically inherited ` +
-              `because component renders fragment or text root nodes. ` +
-              `If the listener is intended to be a component custom event listener only, ` +
-              `declare it using the "emits" option.`
-          )
+          root = cloneVNode(root, fallthroughAttrs)
+        } else if (__DEV__ && !accessedAttrs && root.type !== Comment) {
+          const allAttrs = Object.keys(attrs)
+          const eventAttrs: string[] = []
+          const extraAttrs: string[] = []
+          for (let i = 0, l = allAttrs.length; i < l; i++) {
+            const key = allAttrs[i]
+            if (isOn(key)) {
+              // ignore v-model handlers when they fail to fallthrough
+              if (!isModelListener(key)) {
+                // remove `on`, lowercase first letter to reflect event casing
+                // accurately
+                eventAttrs.push(key[2].toLowerCase() + key.slice(3))
+              }
+            } else {
+              extraAttrs.push(key)
+            }
+          }
+          if (extraAttrs.length) {
+            warn(
+              `Extraneous non-props attributes (` +
+                `${extraAttrs.join(', ')}) ` +
+                `were passed to component but could not be automatically inherited ` +
+                `because component renders fragment or text root nodes.`
+            )
+          }
+          if (eventAttrs.length) {
+            warn(
+              `Extraneous non-emits event listeners (` +
+                `${eventAttrs.join(', ')}) ` +
+                `were passed to component but could not be automatically inherited ` +
+                `because component renders fragment or text root nodes. ` +
+                `If the listener is intended to be a component custom event listener only, ` +
+                `declare it using the "emits" option.`
+            )
+          }
         }
       }
     }
@@ -230,6 +238,9 @@ export function renderComponentRoot(
   return result
 }
 
+/**
+ * dev only
+ */
 const getChildRoot = (
   vnode: VNode
 ): [VNode, ((root: VNode) => void) | undefined] => {
@@ -247,22 +258,34 @@ const getChildRoot = (
   }
   const childRoot = children[0]
   const index = rawChildren.indexOf(childRoot)
-  const dynamicIndex = dynamicChildren
-    ? dynamicChildren.indexOf(childRoot)
-    : null
+  const dynamicIndex = dynamicChildren ? dynamicChildren.indexOf(childRoot) : -1
   const setRoot = (updatedRoot: VNode) => {
     rawChildren[index] = updatedRoot
-    if (dynamicIndex !== null) dynamicChildren[dynamicIndex] = updatedRoot
+    if (dynamicIndex > -1) {
+      dynamicChildren[dynamicIndex] = updatedRoot
+    } else if (dynamicChildren && updatedRoot.patchFlag > 0) {
+      dynamicChildren.push(updatedRoot)
+    }
   }
   return [normalizeVNode(childRoot), setRoot]
 }
 
 // 是不是因为这个是用于functional component，为什么只是将class，style和event加入到FallthroughAttrs
-const getFallthroughAttrs = (attrs: Data): Data | undefined => {
+const getFunctionalFallthrough = (attrs: Data): Data | undefined => {
   let res: Data | undefined
   for (const key in attrs) {
     if (key === 'class' || key === 'style' || isOn(key)) {
       ;(res || (res = {}))[key] = attrs[key]
+    }
+  }
+  return res
+}
+
+const filterModelListeners = (attrs: Data): Data => {
+  const res: Data = {}
+  for (const key in attrs) {
+    if (!isModelListener(key)) {
+      res[key] = attrs[key]
     }
   }
   return res
@@ -296,7 +319,7 @@ export function shouldUpdateComponent(
     return true
   }
 
-  if (patchFlag > 0) {
+  if (optimized && patchFlag > 0) {
     if (patchFlag & PatchFlags.DYNAMIC_SLOTS) {
       // slot content that references values that might have changed,
       // e.g. in a v-for
@@ -317,7 +340,7 @@ export function shouldUpdateComponent(
         }
       }
     }
-  } else if (!optimized) {
+  } else {
     // this path is only taken by manually written render functions
     // so presence of any children leads to a forced update
     if (prevChildren || nextChildren) {

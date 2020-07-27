@@ -24,7 +24,7 @@ import { Slots, initSlots, InternalSlots } from './componentSlots'
 import { warn } from './warning'
 import { ErrorCodes, callWithErrorHandling } from './errorHandling'
 import { AppContext, createAppContext, AppConfig } from './apiCreateApp'
-import { Directive, validateDirectiveName } from './directives'
+import { validateDirectiveName } from './directives'
 import { applyOptions, ComponentOptions } from './componentOptions'
 import {
   EmitsOptions,
@@ -49,7 +49,7 @@ import {
   markAttrsAccessed
 } from './componentRenderUtils'
 import { startMeasure, endMeasure } from './profiling'
-import { componentAdded } from './devtools'
+import { devtoolsComponentAdded } from './devtools'
 
 export type Data = Record<string, unknown>
 
@@ -231,17 +231,6 @@ export interface ComponentInternalInstance {
    */
   renderCache: (Function | VNode)[]
 
-  /**
-   * Asset hashes that prototypally inherits app-level asset hashes for fast
-   * resolution
-   * @internal
-   */
-  components: Record<string, Component>
-  /**
-   * @internal
-   */
-  directives: Record<string, Directive>
-
   // the rest are only for stateful components ---------------------------------
 
   // main proxy that serves as the public instance (`this`)
@@ -366,15 +355,17 @@ export function createComponentInstance(
   parent: ComponentInternalInstance | null,
   suspense: SuspenseBoundary | null
 ) {
+  const type = vnode.type as Component
   // inherit parent app context - or - if root, adopt from root vnode
   const appContext =
     (parent ? parent.appContext : vnode.appContext) || emptyAppContext
+
   const instance: ComponentInternalInstance = {
     uid: uid++,
     vnode,
+    type,
     parent,
     appContext,
-    type: vnode.type as Component,
     root: null!, // to be immediately set
     next: null,
     subTree: null!, // will be set synchronously right after creation
@@ -396,10 +387,6 @@ export function createComponentInstance(
     refs: EMPTY_OBJ,
     setupState: EMPTY_OBJ,
     setupContext: null,
-
-    // per-instance asset storage (mutable during options resolution)
-    components: Object.create(appContext.components),
-    directives: Object.create(appContext.directives),
 
     // suspense related
     suspense,
@@ -437,7 +424,9 @@ export function createComponentInstance(
   instance.root = parent ? parent.root : instance
   instance.emit = emit.bind(null, instance)
 
-  __DEV__ && componentAdded(instance)
+  if (__DEV__ || __FEATURE_PROD_DEVTOOLS__) {
+    devtoolsComponentAdded(instance)
+  }
 
   return instance
 }
@@ -623,7 +612,8 @@ function finishComponentSetup(
       }
       // render是一个函数，通过template生成一个返回VNode函数，初始化时候函数返回一个数组，形成Fragment
       Component.render = compile(Component.template, {
-        isCustomElement: instance.appContext.config.isCustomElement || NO
+        isCustomElement: instance.appContext.config.isCustomElement,
+        delimiters: Component.delimiters
       })
       if (__DEV__) {
         endMeasure(instance, `compile`)
@@ -666,7 +656,7 @@ function finishComponentSetup(
   }
 
   // support for 2.x options
-  if (__FEATURE_OPTIONS__) {
+  if (__FEATURE_OPTIONS_API__) {
     currentInstance = instance
     applyOptions(instance, Component)
     currentInstance = null
@@ -743,14 +733,18 @@ export function formatComponentName(
   }
 
   if (!name && instance && instance.parent) {
-    // try to infer the name based on local resolution
-    const registry = instance.parent.components
-    for (const key in registry) {
-      if (registry[key] === Component) {
-        name = key
-        break
+    // try to infer the name based on reverse resolution
+    const inferFromRegistry = (registry: Record<string, any> | undefined) => {
+      for (const key in registry) {
+        if (registry[key] === Component) {
+          return key
+        }
       }
     }
+    name =
+      inferFromRegistry(
+        (instance.parent.type as ComponentOptions).components
+      ) || inferFromRegistry(instance.appContext.components)
   }
 
   return name ? classify(name) : isRoot ? `App` : `Anonymous`
