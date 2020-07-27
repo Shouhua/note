@@ -11,6 +11,7 @@ import { PatchFlags, SlotFlags } from '@vue/shared'
 import { warn } from '../warning'
 
 /**
+ * <slot>fallback content</slot>
  * Compiler runtime helper for rendering `<slot/>`
  * @private
  */

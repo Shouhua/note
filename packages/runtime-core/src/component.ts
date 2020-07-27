@@ -564,7 +564,7 @@ export function handleSetupResult(
     }
     // setup returned bindings.
     // assuming a render function compiled from template is present.
-    instance.setupState = reactive(setupResult) // 使用reactive后在使用时即使时ref的也可以不用使用.value获取值
+    instance.setupState = reactive(setupResult) // 使用reactive后在使用时内部会转化ref的value, ref的可以不用使用.value获取值
     if (__DEV__) {
       exposeSetupStateOnRenderContext(instance)
     }
@@ -619,6 +619,7 @@ function finishComponentSetup(
         endMeasure(instance, `compile`)
       }
       // mark the function as runtime compiled
+      // vue compiler编译出来的render，后面会使用特殊的withProxy
       ;(Component.render as InternalRenderFunction)._rc = true
     }
 

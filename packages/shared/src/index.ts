@@ -154,13 +154,13 @@ export const getGlobalThis = (): any => {
   return (
     _globalThis ||
     (_globalThis =
-      typeof globalThis !== 'undefined'
+      typeof globalThis !== 'undefined' // Ecmascript 2020 new feature
         ? globalThis
-        : typeof self !== 'undefined'
+        : typeof self !== 'undefined' // web worker
           ? self
-          : typeof window !== 'undefined'
+          : typeof window !== 'undefined' // browser environment
             ? window
-            : typeof global !== 'undefined'
+            : typeof global !== 'undefined' // nodejs environment
               ? global
               : {})
   )

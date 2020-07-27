@@ -554,6 +554,7 @@ function baseCreateRenderer(
     }
 
     // set ref
+    // render完之后设置ref
     if (ref != null && parentComponent) {
       setRef(ref, n1 && n1.ref, parentComponent, parentSuspense, n2)
     }
@@ -1356,7 +1357,7 @@ function baseCreateRenderer(
             startMeasure(instance, `patch`)
           }
           patch(
-            // 再次patch，判断逻辑在patch里面, 这个时候subTree.type=Symbol(Fragment)
+            // 里面会再次patch，判断逻辑在patch里面, 这个时候subTree.type=Symbol(Fragment)
             null,
             subTree,
             container,

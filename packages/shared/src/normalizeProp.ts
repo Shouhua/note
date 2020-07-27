@@ -23,6 +23,7 @@ export function normalizeStyle(value: unknown): NormalizedStyle | undefined {
   }
 }
 
+// foo: bar; foobar: fooBar) 这种情况的；是匹配不出的
 const listDelimiterRE = /;(?![^(]*\))/g
 const propertyDelimiterRE = /:(.+)/
 

@@ -36,6 +36,7 @@ export function setCurrentRenderingInstance(
 // dev only flag to track whether $attrs was used during render.
 // If $attrs was used during render then the warning for failed attrs
 // fallthrough can be suppressed.
+// 用于判断用户代码中是否使用$attrs
 let accessedAttrs: boolean = false
 
 export function markAttrsAccessed() {
@@ -90,6 +91,7 @@ export function renderComponentRoot(
       // functional
       const render = Component as FunctionalComponent
       // in dev, mark attrs accessed if optional props (attrs === props)
+      // 如果定义了FunctionalComponent.props
       if (__DEV__ && attrs === props) {
         markAttrsAccessed()
       }
@@ -116,7 +118,7 @@ export function renderComponentRoot(
        *  https://github.com/vuejs/rfcs/blob/master/active-rfcs/0031-attr-fallthrough.md
        */
 
-      // 判断是不是使用了optional props declaration，如果使用了，在直接等于attrs
+      // 判断是不是使用了optional props declaration，如果使用了，则直接等于attrs
       // 如果没有，则只是提取其中的class，style，v-on listeners, RFC里面有原因
       fallthroughAttrs = Component.props
         ? attrs
@@ -141,10 +143,12 @@ export function renderComponentRoot(
           shapeFlag & ShapeFlags.ELEMENT ||
           shapeFlag & ShapeFlags.COMPONENT
         ) {
+          // 如果是单节点的UI
           if (shapeFlag & ShapeFlags.ELEMENT && keys.some(isModelListener)) {
             // #1643, #1543
             // component v-model listeners should only fallthrough for component
             // HOCs
+            // TODO: 不懂，涉及到fallthrough到多个children的情况
             fallthroughAttrs = filterModelListeners(fallthroughAttrs)
           }
           root = cloneVNode(root, fallthroughAttrs)
@@ -157,6 +161,7 @@ export function renderComponentRoot(
             if (isOn(key)) {
               // ignore v-model handlers when they fail to fallthrough
               if (!isModelListener(key)) {
+                // v-model handler默认要传递
                 // remove `on`, lowercase first letter to reflect event casing
                 // accurately
                 eventAttrs.push(key[2].toLowerCase() + key.slice(3))
@@ -166,6 +171,7 @@ export function renderComponentRoot(
             }
           }
           if (extraAttrs.length) {
+            // 传递
             warn(
               `Extraneous non-props attributes (` +
                 `${extraAttrs.join(', ')}) ` +
@@ -270,7 +276,6 @@ const getChildRoot = (
   return [normalizeVNode(childRoot), setRoot]
 }
 
-// 是不是因为这个是用于functional component，为什么只是将class，style和event加入到FallthroughAttrs
 const getFunctionalFallthrough = (attrs: Data): Data | undefined => {
   let res: Data | undefined
   for (const key in attrs) {
