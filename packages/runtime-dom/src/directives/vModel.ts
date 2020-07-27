@@ -16,6 +16,23 @@ import {
 
 type AssignerFn = (value: any) => void
 
+/**
+ * <Comp v-model="foo" />
+ * h(Comp, {
+ *  modelValue: foo,
+ * 'onUpdate:modelValue': value => (foo = value)
+ * })
+ * <Comp v-model:foo.trim="text" v-model:bar.number="number" />
+ * h(Comp, {
+ *  foo: text,
+ *  'onUpdate:foo': value => (foo=value),
+ *  fooModifier: {trim: true},
+ *  bar: number,
+ *  'onUpdate:bar': value => (number=value),
+ *  barModifier: {number: true}
+ * })
+ * modifier: number, trim, lazy 官方支持的3个modifier
+ */
 const getModelAssigner = (vnode: VNode): AssignerFn => {
   const fn = vnode.props!['onUpdate:modelValue']
   return isArray(fn) ? value => invokeArrayFns(fn, value) : fn
@@ -26,7 +43,7 @@ function onCompositionStart(e: Event) {
 }
 
 function onCompositionEnd(e: Event) {
-  const target = e.target as any
+  const target = e.target as any // event.target表示事件触发DOM
   if (target.composing) {
     target.composing = false
     trigger(target, 'input')

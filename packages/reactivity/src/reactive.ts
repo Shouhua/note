@@ -164,6 +164,7 @@ function createReactiveObject(
   return observed
 }
 
+// 如果先使用reactive定义，然后在使用markRaw，再使用isReactive判断还是为true的
 export function isReactive(value: unknown): boolean {
   if (isReadonly(value)) {
     return isReactive((value as Target)[ReactiveFlags.RAW])

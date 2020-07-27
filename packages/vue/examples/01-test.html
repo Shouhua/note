@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Document</title>
+</head>
+<body>
+  <div id="app"></div>  
+  <script src="../dist/vue.global.js"></script>
+  <script type="text/x-template" id="child-template">
+    <div>
+      <span>hello</span>
+      <span>{{ helloMsg }}</span>
+    </div>
+  </script>
+  <script type="text/x-template" id="main-template">
+    <h2>{{ message }}</h2>
+    <button @click="handleClick">Click Me</button>
+    <hello name="hahhha"></hello>
+      <span>{{count++}}</span>
+  </script>
+  <script>
+    const { reactive, ref, createApp, computed, watch, watchEffect } = Vue;
+    const Hello = {
+      name: 'Hello',
+      // template: '#child-template',
+      // render: () => Vue.h('div', [Vue.h('span', 'hello'), Vue.h('span', this.helloMsg)]),
+      props: {
+        name: String
+      },
+      // setup可以传递props, 可以返回函数表述render数据，里面避免了使用this数据
+      // 也可以返回对象表示所有变量，函数等资源
+      setup(props) {
+        const state = Vue.reactive({
+          helloMsg: Vue.computed(() => {
+            return 'hello, ' + props.name;
+          })
+        });
+        return () => Vue.h('div', [Vue.h('span', 'hello'), Vue.h('span', state.helloMsg)]);
+        // return {
+        //   ...Vue.toRefs(state)
+        // }
+      }
+    };
+    let message = Vue.ref('Hello, world!');
+    const count = Vue.ref(1);
+    const App = {
+      components: {
+        Hello
+      },
+      template: '#main-template',
+      // render: Vue.compile('#main-template'),
+      // render: () => Vue.h('div', message.value),
+      // 
+      setup() {
+        Vue.onMounted(() => {
+          console.log('render: ', Vue.h('div', message.value));
+          console.log('onMounted');
+          console.log(Vue.compile('#main-template'));
+        });
+        // 只有在dev模式下才能使用
+        Vue.onRenderTracked((obj) => {
+          console.log('onRenderTracked: ', obj);
+        });
+        // 只有在dev模式下才能使用
+        Vue.onRenderTriggered((obj) => {
+          console.log('onRenderTriggered: ', obj);
+        });
+        // 这个handleClick可以是另外的文件里面的，可以复用，而且正常是需要引用的，有迹可循，不用使用this或者以前的mixin
+        // 引起的无法追踪的问题
+        function handleClick() {
+          console.log('click handled...');
+        };
+        let w;
+        watchEffect(()=>message);
+        watch(() => message, (oldValue, newValue) => {
+          console.log('old, new: ', oldValue, newValue);
+        },{
+          // deep: true,
+          immediate: false,
+          flush: 'pre',
+          onTrack: (debugEvent) => {
+          console.log('watch effect onTrack: ', debugEvent);
+        },
+        onTrigger: (debugEvent) => {
+          console.log('watch effect onTrigger: ', debugEvent);
+        }
+      });
+        
+        return {
+          message,
+          count,
+          handleClick
+        }
+      }
+    };
+    const proxy = Vue.createApp(App).mount('#app');
+    console.log('proxy', proxy);
+    // proxy.$forceUpdate();
+    // proxy.$.update();
+    // proxy.message = 'updated message';
+    // proxy.update();
+    setTimeout(() => {
+      console.log('render: ', Vue.compile('#app'));
+      // proxy会检查proxy.data和proxy.renderContext
+      // HOC 高阶组件（high order component）
+      // proxy.message = 'after 1s';
+      message = 'after 1s message';
+      console.log('timeout message: ', message);
+    }, 1000);
+  </script>
+</body>
+</html>

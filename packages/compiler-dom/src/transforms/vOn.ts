@@ -13,6 +13,9 @@ import {
 import { V_ON_WITH_MODIFIERS, V_ON_WITH_KEYS } from '../runtimeHelpers'
 import { makeMap, capitalize } from '@vue/shared'
 
+// addEventListener(type, listener, options) options: {passive, once, capture}
+// 其中passive表示event永远不会有target.preventDetault的行为发生，即使手动设置了，也会忽略
+// addEventListener(type, listener, useCapture)
 const isEventOptionModifier = /*#__PURE__*/ makeMap(`passive,once,capture`)
 const isNonKeyModifier = /*#__PURE__*/ makeMap(
   // event propagation management
@@ -108,6 +111,7 @@ export const transformOn: DirectiveTransform = (dir, node, context) => {
     }
 
     if (nonKeyModifiers.length) {
+      // _withModifiers($event => (_ctx.showHello = true), ["stop"])
       handlerExp = createCallExpression(context.helper(V_ON_WITH_MODIFIERS), [
         handlerExp,
         JSON.stringify(nonKeyModifiers)
@@ -119,6 +123,7 @@ export const transformOn: DirectiveTransform = (dir, node, context) => {
       // if event name is dynamic, always wrap with keys guard
       (!isStaticExp(key) || isKeyboardEvent(key.content))
     ) {
+      // [("on" + _capitalize(_ctx.hello)) + "Passive"]: _cache[1] || _cache[1] = _withModifiers($event => (_ctx.showHello = true), ["stop"])
       handlerExp = createCallExpression(context.helper(V_ON_WITH_KEYS), [
         handlerExp,
         JSON.stringify(keyModifiers)

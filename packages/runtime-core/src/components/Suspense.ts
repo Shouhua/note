@@ -1,3 +1,56 @@
+// 可在嵌套层级中等待嵌套的异步依赖项
+// 支持async setup()
+// 支持异步组件
+//
+// 虽然React 16引入了Suspense，但直至现在都不太能用。如何将其与异步数据结合，还没完整设计出来。
+// Vue 3 的<Suspense>更加轻量：
+// 仅5%应用能感知运行时的调度差异，综合考虑下，Vue3 的<Suspense> 没和React一样做运行调度处理
+// 可以参考 https://vueschool.io/articles/vuejs-tutorials/exciting-new-features-in-vue-3/
+// 中文版：https://my.oschina.net/u/4408404/blog/3220245
+/**
+ * Vue2.x 中你应该会经常遇到这种场景：
+
+<template>
+    <div>
+        <div v-if="!loading">
+            ...
+        </div>
+        <div v-if="loading">Loading...</div>
+    </div>
+</template>
+复制代码
+或者安装这个插件：vue-async-manager
+
+然后，就变成了：
+
+<template>
+    <div>
+        <Suspense>
+            <div>
+                ...
+            </div>
+            <div slot="fallback">Loading...</div>
+        </Suspense>
+    </div>
+</template>
+复制代码
+Vue3.x 感觉就是参考了上面这个组件的做法，现在可以这么写：
+
+<Suspense>
+  <template #default>
+    ...
+  </template>
+  <template #fallback>
+    Loading...
+  </template>
+</Suspense>
+复制代码
+#fallback 其实在 Vue3.x 中就是 slot 的简写。所以，#default 可以省略。
+
+当然 React 也有 Suspense 组件解决类似的问题。
+
+其实，这个全局组件可能更多的会配合异步组件使用。顺便说下，在 Vue3.x 中，定义一个异步组件使用：defineAsyncComponent。
+ */
 import { VNode, normalizeVNode, VNodeChild, VNodeProps } from '../vnode'
 import { isFunction, isArray, ShapeFlags } from '@vue/shared'
 import { ComponentInternalInstance, handleSetupResult } from '../component'

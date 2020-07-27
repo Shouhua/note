@@ -95,9 +95,14 @@ export interface ComponentInternalOptions {
   __file?: string
 }
 
+/**
+ * function componnet不像2.x时代的优化性能的作用，新版更多的是简洁component的作用
+ * 详情见RFC文档：https://github.com/vuejs/rfcs/blob/master/active-rfcs/0007-functional-async-api-change.md
+ */
 export interface FunctionalComponent<P = {}, E extends EmitsOptions = {}>
   extends ComponentInternalOptions {
   // use of any here is intentional so it can be a valid JSX Element constructor
+  // 定义函数, 注意区分setupContext和setupState, 前者是{slots, emits, attrs}, 后者是reactive(setup())如果setup返回对象
   (props: P, ctx: SetupContext<E>): any
   props?: ComponentPropsOptions<P>
   emits?: E | (keyof E)[]
@@ -106,6 +111,7 @@ export interface FunctionalComponent<P = {}, E extends EmitsOptions = {}>
 }
 
 export interface ClassComponent {
+  // https://www.typescriptlang.org/docs/handbook/interfaces.html 代表类型可以被实例化，不能直接implements
   new (...args: any[]): ComponentPublicInstance<any, any, any, any, any>
   __vccOpts: ComponentOptions
 }
@@ -199,7 +205,7 @@ export interface ComponentInternalInstance {
    * The render function that returns vdom tree.
    * @internal
    */
-  render: InternalRenderFunction | null
+  render: InternalRenderFunction | null // 这个函数要跟全局的render函数区别，后者是渲染函数, 这个函数是template编译后产生的render函数
   /**
    * Object containing values this component provides for its descendents
    * @internal
@@ -210,9 +216,11 @@ export interface ComponentInternalInstance {
    * so that they can be automatically stopped on component unmount
    * @internal
    */
-  effects: ReactiveEffect[] | null
+  effects: ReactiveEffect[] | null // update也是这个ReactiveEffect类型的，前者适用于更新自己的, 注释说的很清楚，主要用于unmount的时候卸载
   /**
    * cache for proxy access type to avoid hasOwnProperty calls
+   * 优化项，添加PublicInstanceProxyHandlers使用到, instance.proxy = new Proxy(instance.ctx, PublicInstanceProxyHandlers)(本文档487行)
+   * 这个主要在这个在存储key->AccessTypes.SETUP等
    * @internal
    */
   accessCache: Data | null
@@ -249,6 +257,10 @@ export interface ComponentInternalInstance {
    * This is the target for the public instance proxy. It also holds properties
    * injected by user options (computed, methods etc.) and user-attached
    * custom properties (via `this.x = ...`)
+   * 自定义的参数是挂在ctx下面的，详情见componnetProxy.spec.ts文件,比如
+    const obj = (instanceProxy.$store = {})
+    expect(instanceProxy.$store).toBe(obj)
+    expect(instance!.ctx.$store).toBe(obj)
    * @internal
    */
   ctx: Data
@@ -416,7 +428,9 @@ export function createComponentInstance(
     emitted: null
   }
   if (__DEV__) {
-    instance.ctx = createRenderContext(instance)
+    // 将appContext的信息放在instance.ctx下面
+    // renderContext就是render中使用this的上下文，直接将instance的大部分东西一股脑全部双向绑定给ctx, 后面instance.proxy=proxy(instance.ctx)
+    instance.ctx = createRenderContext(instance) // instance.ctx = {_: instance, $开头的信息，$nextTick,$forceUpdate等, 还有最初appConfig的信息}
   } else {
     instance.ctx = { _: instance }
   }
@@ -460,8 +474,8 @@ export function setupComponent(
 
   const { props, children, shapeFlag } = instance.vnode
   const isStateful = shapeFlag & ShapeFlags.STATEFUL_COMPONENT
-  initProps(instance, props, isStateful, isSSR)
-  initSlots(instance, children)
+  initProps(instance, props, isStateful, isSSR) // 设置instance.props
+  initSlots(instance, children) // 设置instance.slots
 
   const setupResult = isStateful
     ? setupStatefulComponent(instance, isSSR)
@@ -504,6 +518,7 @@ function setupStatefulComponent(
   // 2. call setup()
   const { setup } = Component
   if (setup) {
+    // dev环境设置accessedAttrs = true
     const setupContext = (instance.setupContext =
       setup.length > 1 ? createSetupContext(instance) : null)
 
@@ -513,6 +528,7 @@ function setupStatefulComponent(
       setup,
       instance,
       ErrorCodes.SETUP_FUNCTION,
+      // shallowReadonly保证props不会增加或者被删除属性
       [__DEV__ ? shallowReadonly(instance.props) : instance.props, setupContext]
     )
     resetTracking()
@@ -559,7 +575,7 @@ export function handleSetupResult(
     }
     // setup returned bindings.
     // assuming a render function compiled from template is present.
-    instance.setupState = reactive(setupResult)
+    instance.setupState = reactive(setupResult) // 使用reactive后在使用时即使时ref的也可以不用使用.value获取值
     if (__DEV__) {
       exposeSetupStateOnRenderContext(instance)
     }
@@ -588,6 +604,7 @@ export function registerRuntimeCompiler(_compile: any) {
   compile = _compile
 }
 
+// 生成instance.render函数
 function finishComponentSetup(
   instance: ComponentInternalInstance,
   isSSR: boolean
@@ -604,6 +621,7 @@ function finishComponentSetup(
       if (__DEV__) {
         startMeasure(instance, `compile`)
       }
+      // render是一个函数，通过template生成一个返回VNode函数，初始化时候函数返回一个数组，形成Fragment
       Component.render = compile(Component.template, {
         isCustomElement: instance.appContext.config.isCustomElement || NO
       })
@@ -638,6 +656,7 @@ function finishComponentSetup(
     // for runtime-compiled render functions using `with` blocks, the render
     // proxy used needs a different `has` handler which is more performant and
     // also only allows a whitelist of globals to fallthrough.
+    // 设立一些名单，不允许获取一些with里面貌似不能引用一些全局函数比如Map, Set等
     if (instance.render._rc) {
       instance.withProxy = new Proxy(
         instance.ctx,

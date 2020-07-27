@@ -1,3 +1,8 @@
+/**
+ * attr fallthrough behavior就是平时使用的$attrs, 这个经过了很多轮的讨论，最终确认平滑过渡，不走大的变更
+ * https://github.com/vuejs/rfcs/blob/master/active-rfcs/0031-attr-fallthrough.md
+ * 可以用于合并fallthrough attrs(class, style, listeners, 各种属性，以前的native modifier废弃)
+ */
 import {
   ComponentInternalInstance,
   FunctionalComponent,
@@ -62,6 +67,7 @@ export function renderComponentRoot(
   if (__DEV__) {
     accessedAttrs = false
   }
+  // 主要处理FallthroughAttrs
   try {
     let fallthroughAttrs
     if (vnode.shapeFlag & ShapeFlags.STATEFUL_COMPONENT) {
@@ -88,7 +94,7 @@ export function renderComponentRoot(
         markAttrsAccessed()
       }
       result = normalizeVNode(
-        render.length > 1
+        render.length > 1 // TODO: 不懂场景?
           ? render(
               props,
               __DEV__
@@ -104,12 +110,21 @@ export function renderComponentRoot(
             )
           : render(props, null as any /* we know it doesn't need it */)
       )
+      /**
+       *  When a functional component is leveraging optional props declaration, there is only implicit fallthrough for class,
+       *  style, and v-on listeners.
+       *  https://github.com/vuejs/rfcs/blob/master/active-rfcs/0031-attr-fallthrough.md
+       */
+
+      // 判断是不是使用了optional props declaration，如果使用了，在直接等于attrs
+      // 如果没有，则只是提取其中的class，style，v-on listeners, RFC里面有原因
       fallthroughAttrs = Component.props ? attrs : getFallthroughAttrs(attrs)
     }
 
     // attr merging
     // in dev mode, comments are preserved, and it's possible for a template
     // to have comments along side the root element which makes it a fragment
+    // dev模式下，comments是会保存的，这有可能把root搞成fragment的形式
     let root = result
     let setRoot: ((root: VNode) => void) | undefined = undefined
     if (__DEV__) {
@@ -125,7 +140,7 @@ export function renderComponentRoot(
         root.shapeFlag & ShapeFlags.ELEMENT ||
         root.shapeFlag & ShapeFlags.COMPONENT
       ) {
-        root = cloneVNode(root, fallthroughAttrs)
+        root = cloneVNode(root, fallthroughAttrs) // fallthrough传递
       } else if (__DEV__ && !accessedAttrs && root.type !== Comment) {
         const allAttrs = Object.keys(attrs)
         const eventAttrs: string[] = []
@@ -224,6 +239,7 @@ const getChildRoot = (
   const rawChildren = vnode.children as VNodeArrayChildren
   const dynamicChildren = vnode.dynamicChildren as VNodeArrayChildren
   const children = rawChildren.filter(child => {
+    // 过滤出不是comment类型的VNode
     return !(isVNode(child) && child.type === Comment)
   })
   if (children.length !== 1) {
@@ -241,6 +257,7 @@ const getChildRoot = (
   return [normalizeVNode(childRoot), setRoot]
 }
 
+// 是不是因为这个是用于functional component，为什么只是将class，style和event加入到FallthroughAttrs
 const getFallthroughAttrs = (attrs: Data): Data | undefined => {
   let res: Data | undefined
   for (const key in attrs) {
@@ -337,7 +354,7 @@ function hasPropsChanged(prevProps: Data, nextProps: Data): boolean {
   return false
 }
 
-export function updateHOCHostEl(
+export function updateHOCHostEl( // HOC high-order-component
   { vnode, parent }: ComponentInternalInstance,
   el: typeof vnode.el // HostNode
 ) {

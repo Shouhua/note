@@ -77,7 +77,7 @@ describe('compiler: transform text', () => {
               { type: NodeTypes.INTERPOLATION, content: { content: `baz` } }
             ]
           },
-          genFlagText(PatchFlags.TEXT)
+          genFlagText(PatchFlags.TEXT) // 1 /* TEXT */
         ]
       }
     })

@@ -99,6 +99,18 @@ describe('compiler: v-if', () => {
       ).toBe(false)
     })
 
+    /**
+     * export interface IfNode extends Node {
+          type: NodeTypes.IF
+          branches: IfBranchNode[]
+          codegenNode?: IfConditionalExpression
+        }
+        export interface IfBranchNode extends Node {
+          type: NodeTypes.IF_BRANCH
+          condition: ExpressionNode | undefined // else
+          children: TemplateChildNode[]
+        }
+     */
     test('v-if + v-else', () => {
       const { node } = parseWithIfTransform(`<div v-if="ok"/><p v-else/>`)
       expect(node.type).toBe(NodeTypes.IF)
@@ -371,6 +383,7 @@ describe('compiler: v-if', () => {
       expect(generate(root).code).toMatchSnapshot()
     })
 
+    // NOTICE: w/ means with, w/o means without
     test('template v-if w/ single <slot/> child', () => {
       const {
         root,

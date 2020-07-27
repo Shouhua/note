@@ -1,3 +1,40 @@
+/**
+ * Vue2.x 中的代码片段：
+
+import Vue from 'vue'
+import App from './App.vue'
+
+Vue.config.ignoredElements = [/^app-/]
+Vue.use()
+Vue.mixin()
+Vue.component()
+Vue.directive()
+
+new Vue({
+  render: h => h(App)
+}).$mount('#app')
+复制代码
+Vue3.x 中取消了全局变量 Vue，改为实例函数 createApp() 创建实例对象。
+
+import { createApp } from 'vue'
+import App from './App.vue'
+
+const app = createApp(App)
+
+app.config.ignoredElements = [/^app-/]
+app.use()
+app.mixin()
+app.component()
+app.directive()
+
+app.mount('#app')
+复制代码
+RFC查看网友讨论：github.com/vuejs/rfcs/…
+
+这个变化很大，将会给我们从 Vue2.x 升级到 Vue3.x 带来不小的工作量。
+
+为什么这么改变？其实也好理解，Vue3.x 基于函数式编程，所以：一切皆函数。 为了保证每个函数都有自己的小 圈子 能独立运行，所以从源头上就开始 开刀。
+ */
 import {
   Component,
   Data,
@@ -53,7 +90,7 @@ export interface AppConfig {
   devtools: boolean
   performance: boolean
   optionMergeStrategies: Record<string, OptionMergeFunction>
-  globalProperties: Record<string, any>
+  globalProperties: Record<string, any> // 用于挂在用户自定义功能，比如$router
   isCustomElement: (tag: string) => boolean
   errorHandler?: (
     err: unknown,
@@ -67,9 +104,10 @@ export interface AppConfig {
   ) => void
 }
 
+// 这个AppContext表示createApp初始化的时候使用
 export interface AppContext {
   config: AppConfig
-  mixins: ComponentOptions[]
+  mixins: ComponentOptions[] // vue 2.x options里面的mixins放在这里面
   components: Record<string, PublicAPIComponent>
   directives: Record<string, Directive>
   provides: Record<string | symbol, any>
@@ -127,6 +165,7 @@ export function createAppAPI<HostElement>(
     let isMounted = false
 
     const app: App = {
+      // 为了server render
       _component: rootComponent as Component,
       _props: rootProps,
       _container: null,
@@ -214,9 +253,11 @@ export function createAppAPI<HostElement>(
           const vnode = createVNode(rootComponent as Component, rootProps)
           // store app context on the root VNode.
           // this will be set on the root instance on initial mount.
+          // appContext初始化时填充的，指的是默认的config和用户的provide，conponents，directives等
           vnode.appContext = context
 
           // HMR root reload
+          // 不错 HMR root reload
           if (__DEV__) {
             context.reload = () => {
               render(cloneVNode(vnode), rootContainer)

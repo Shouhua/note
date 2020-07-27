@@ -83,6 +83,8 @@ function createConfig(format, output, plugins = []) {
   output.sourcemap = !!process.env.SOURCE_MAP
   output.externalLiveBindings = false
 
+  output.sourcemap = true
+
   const isProductionBuild =
     process.env.__DEV__ === 'false' || /\.prod\.js$/.test(output.file)
   const isBundlerESMBuild = /esm-bundler/.test(format)

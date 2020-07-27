@@ -115,6 +115,7 @@ const buildClientSlotFn: SlotFnBuilder = (props, children, loc) =>
 
 // Instead of being a DirectiveTransform, v-slot processing is called during
 // transformElement to build the slots object for a component.
+// 类似于children的转化
 export function buildSlots(
   node: ElementNode,
   context: TransformContext,
@@ -123,7 +124,7 @@ export function buildSlots(
   slots: SlotsExpression
   hasDynamicSlots: boolean
 } {
-  context.helper(WITH_CTX)
+  context.helper(WITH_CTX) // withRenderContext.ts: withCtx
 
   const { children, loc } = node
   const slotsProperties: Property[] = []
@@ -136,6 +137,7 @@ export function buildSlots(
 
   // If the slot is inside a v-for or another v-slot, force it to be dynamic
   // since it likely uses a scope variable.
+  // hasDynamicSlots主要是为了判断scope variable，v-for和v-slot都有可能有局部变量
   let hasDynamicSlots = context.scopes.vSlot > 0 || context.scopes.vFor > 0
   // with `prefixIdentifiers: true`, this can be further optimized to make
   // it dynamic only when the slot actually uses the scope variables.
@@ -328,6 +330,7 @@ export function buildSlots(
       ? SlotFlags.FORWARDED
       : SlotFlags.STABLE
 
+  // NOTICE: compiler编译出来的_: 1
   let slots = createObjectExpression(
     slotsProperties.concat(
       createObjectProperty(

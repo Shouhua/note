@@ -18,6 +18,7 @@ export function patchAttr(
     // note we are only checking boolean attributes that don't have a
     // corresponding dom prop of the same name here.
     const isBoolean = isSpecialBooleanAttr(key)
+    // 当attribute的值为null，或者false的时候，直接删除attribute
     if (value == null || (isBoolean && value === false)) {
       el.removeAttribute(key)
     } else {

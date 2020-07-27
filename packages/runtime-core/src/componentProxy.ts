@@ -198,6 +198,7 @@ export interface ComponentRenderContext {
   _: ComponentInternalInstance
 }
 
+// 这里定义了proxyHandlers，也是为什么我们可以直接使用拿key，因为会搜索instance里面几乎所有的对象属性
 export const PublicInstanceProxyHandlers: ProxyHandler<any> = {
   get({ _: instance }: ComponentRenderContext, key: string) {
     const {
@@ -237,6 +238,7 @@ export const PublicInstanceProxyHandlers: ProxyHandler<any> = {
           // default: just fallthrough
         }
       } else if (setupState !== EMPTY_OBJ && hasOwn(setupState, key)) {
+        // 当setup()返回对象时，设置setupState = reactive(setup())
         accessCache![key] = AccessTypes.SETUP
         return setupState[key]
       } else if (data !== EMPTY_OBJ && hasOwn(data, key)) {
@@ -333,6 +335,11 @@ export const PublicInstanceProxyHandlers: ProxyHandler<any> = {
         )
       return false
     } else {
+      /**
+       * 这里定义了，instance.abc会将值挂到ctx下面
+       * 详情可以查看componentProxy.spec.ts下面的"user attached properties"的test case
+       */
+
       if (__DEV__ && key in instance.appContext.config.globalProperties) {
         Object.defineProperty(ctx, key, {
           enumerable: true,
@@ -381,6 +388,21 @@ export const RuntimeCompiledPublicInstanceProxyHandlers = extend(
   PublicInstanceProxyHandlers,
   {
     get(target: ComponentRenderContext, key: string) {
+      /**
+       * https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Global_Objects/Symbol/unscopables
+       * const object1 = {
+          property1: 42
+        };
+
+        object1[Symbol.unscopables] = {
+          property1: true
+        };
+
+        with (object1) {
+          console.log(property1);
+          // expected output: Error: property1 is not defined
+        }
+       */
       // fast path for unscopables when using `with` block
       if ((key as any) === Symbol.unscopables) {
         return
@@ -426,6 +448,7 @@ export function createRenderContext(instance: ComponentInternalInstance) {
     })
   })
 
+  // 将config注入到全局中，可以是$router
   // expose global properties
   const { globalProperties } = instance.appContext.config
   Object.keys(globalProperties).forEach(key => {

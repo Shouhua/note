@@ -17,6 +17,10 @@ export const isSpecialBooleanAttr = /*#__PURE__*/ makeMap(specialBooleanAttrs)
 /**
  * The full list is needed during SSR to produce the correct initial markup.
  */
+// /\[A-Z]|^(?:value|checked|selected|muted)$/
+//attribute表示html中标签的属性，dom props表示dom中的属性
+// 通过setAttribute可以设置dom props，但是有个缺点就是如上regex所示，这个方法会把value转化成
+// 字符串后再赋值，这样就会导致不生效, 那就只能使用el[attr]=value进行处理
 export const isBooleanAttr = /*#__PURE__*/ makeMap(
   specialBooleanAttrs +
     `,async,autofocus,autoplay,controls,default,defer,disabled,hidden,` +

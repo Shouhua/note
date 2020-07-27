@@ -118,6 +118,7 @@ export function initProps(
   const props: Data = {}
   const attrs: Data = {}
   def(attrs, InternalObjectKey, 1)
+  // 将rawProps里面的prop和不是prop和event的属性放在attrs里面
   setFullProps(instance, rawProps, props, attrs)
   // validation
   if (__DEV__) {
@@ -126,6 +127,7 @@ export function initProps(
 
   if (isStateful) {
     // stateful
+    // 注意: prop类型是shallowReactive, props对象的增删改操作会影响，但是属性value的值不是ractive
     instance.props = isSSR ? props : shallowReactive(props)
   } else {
     if (!instance.type.props) {

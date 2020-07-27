@@ -23,14 +23,14 @@ export function createObjectMatcher(obj: Record<string, any>) {
       type: NodeTypes.JS_PROPERTY,
       key: {
         type: NodeTypes.SIMPLE_EXPRESSION,
-        content: key.replace(bracketsRE, ''),
-        isStatic: !leadingBracketRE.test(key)
+        content: key.replace(bracketsRE, ''), // 去掉其中的'['和‘]‘
+        isStatic: !leadingBracketRE.test(key) // 判断是否有'['决定isStatic
       },
       value: isString(obj[key])
         ? {
             type: NodeTypes.SIMPLE_EXPRESSION,
-            content: obj[key].replace(bracketsRE, ''),
-            isStatic: !leadingBracketRE.test(obj[key])
+            content: obj[key].replace(bracketsRE, ''), // 去掉其中的'['和‘]‘
+            isStatic: !leadingBracketRE.test(obj[key]) // 判断是否有'['决定isStatic
           }
         : obj[key]
     }))

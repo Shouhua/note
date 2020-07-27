@@ -72,6 +72,7 @@ export interface WatchOptions<Immediate = boolean> extends WatchOptionsBase {
 export type WatchStopHandle = () => void
 
 // Simple effect.
+// watchEffect没有callback设置，callback=null
 export function watchEffect(
   effect: WatchEffect,
   options?: WatchOptionsBase
@@ -128,6 +129,7 @@ export function watch<T = any>(
   return doWatch(source, cb, options)
 }
 
+// immediate和deep只有在watch中使用了callback的情况下才能使用，watchEffect不能使用，没有callback
 function doWatch(
   source: WatchSource | WatchSource[] | WatchEffect,
   cb: WatchCallback | null,
@@ -179,6 +181,7 @@ function doWatch(
     deep = true
   } else if (isFunction(source)) {
     if (cb) {
+      // 使用watch情况下
       // getter with cb
       getter = () =>
         callWithErrorHandling(source, instance, ErrorCodes.WATCH_GETTER)
@@ -205,6 +208,7 @@ function doWatch(
   }
 
   if (cb && deep) {
+    // 如果有callback和deep
     const baseGetter = getter
     getter = () => traverse(baseGetter())
   }
@@ -260,6 +264,7 @@ function doWatch(
 
   let scheduler: (job: () => any) => void
   if (flush === 'sync') {
+    // 同步立即执行
     scheduler = job
   } else if (flush === 'pre') {
     // ensure it's queued before component updates (which have positive ids)
@@ -274,9 +279,12 @@ function doWatch(
       }
     }
   } else {
+    // flust = post时执行
     scheduler = () => queuePostRenderEffect(job, instance && instance.suspense)
   }
-
+  // callback函数只有在source变化的时候才调用
+  // so it runs before component update effects in pre flush mode
+  // computed=true可以在其他effect前面运行，这个可以给后面的patch提供准确的数据
   const runner = effect(getter, {
     lazy: true,
     onTrack,
@@ -289,9 +297,9 @@ function doWatch(
   // initial run
   if (cb) {
     if (immediate) {
-      job()
+      job() // 先执行runner获取newValue，再将oldValue和newValue传递给callback
     } else {
-      oldValue = runner()
+      oldValue = runner() // 只是执行了runner里面的effect(), 在reactive或ref变量上注册
     }
   } else {
     runner()

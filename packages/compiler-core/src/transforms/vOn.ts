@@ -16,8 +16,12 @@ import { validateBrowserExpression } from '../validateExpression'
 import { isMemberExpression, hasScopeRef } from '../utils'
 import { CAPITALIZE } from '../runtimeHelpers'
 
+// 匹配箭头函数和传统函数
 const fnExpRE = /^\s*([\w$_]+|\([^)]*?\))\s*=>|^\s*function(?:\s+[\w$]+)?\s*\(/
 
+/**
+ * 支持动态args，比如v-on:[eventArgs]="eventExpression"
+ */
 export interface VOnDirectiveNode extends DirectiveNode {
   // v-on without arg is handled directly in ./transformElements.ts due to it affecting
   // codegen for the entire props object. This transform here is only for v-on
@@ -28,8 +32,25 @@ export interface VOnDirectiveNode extends DirectiveNode {
   exp: SimpleExpressionNode | undefined
 }
 
+/**
+ * 
+export type DirectiveTransform = (
+  dir: DirectiveNode,
+  node: ElementNode,
+  context: TransformContext,
+  // a platform specific compiler can import the base transform and augment
+  // it by passing in this optional argument.
+  augmentor?: (ret: DirectiveTransformResult) => DirectiveTransformResult
+) => DirectiveTransformResult
+
+DirectiveTransformResult {
+  props: Property[]
+  needRuntime?: boolean | symbol
+  ssrTagParts?: TemplateLiteral['elements']
+}
+ */
 export const transformOn: DirectiveTransform = (
-  dir,
+  dir, // VOnDirectiveNode
   node,
   context,
   augmentor
@@ -43,6 +64,9 @@ export const transformOn: DirectiveTransform = (
     if (arg.isStatic) {
       const rawName = arg.content
       // for @vnode-xxx event listeners, auto convert it to camelCase
+      // @vnodeBeforeMount, @vnodeMounted,(@vnode-before-mount)
+      // @vnodeBeforeUpdate, @vnodeUpdated,
+      // @vnodeBeforeUnmount, @vnodeUnmounted
       const normalizedName = rawName.startsWith(`vnode`)
         ? capitalize(camelize(rawName))
         : capitalize(rawName)
@@ -144,6 +168,7 @@ export const transformOn: DirectiveTransform = (
     // cache handlers so that it's always the same handler being passed down.
     // this avoids unnecessary re-renders when users use inline handlers on
     // components.
+    // 终端使用的时候，可以把handler函数单独的提取出来
     ret.props[0].value = context.cache(ret.props[0].value)
   }
 

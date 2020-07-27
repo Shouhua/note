@@ -11,10 +11,12 @@ const modifierGuards: Record<
   stop: e => e.stopPropagation(),
   prevent: e => e.preventDefault(),
   self: e => e.target !== e.currentTarget,
+  // https://developer.mozilla.org/zh-CN/docs/Web/API/KeyboardEvent/KeyboardEvent
   ctrl: e => !(e as KeyedEvent).ctrlKey,
   shift: e => !(e as KeyedEvent).shiftKey,
   alt: e => !(e as KeyedEvent).altKey,
   meta: e => !(e as KeyedEvent).metaKey,
+  // https://developer.mozilla.org/zh-CN/docs/Web/API/MouseEvent/MouseEvent
   left: e => 'button' in e && (e as MouseEvent).button !== 0,
   middle: e => 'button' in e && (e as MouseEvent).button !== 1,
   right: e => 'button' in e && (e as MouseEvent).button !== 2,

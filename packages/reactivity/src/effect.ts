@@ -1,6 +1,10 @@
 import { TrackOpTypes, TriggerOpTypes } from './operations'
 import { EMPTY_OBJ, isArray } from '@vue/shared'
 
+// 1. WeakMap不同与Map的地方，前者没有将keys和values放在2个数组中，因为这样会一直引用着keys，values，导致
+// GC不能正常回收。
+// 2. WeakMap不能iterate keys or values，并且key必须是对象，不能是原始类型，包括（Symbol）
+// 3. WeakMap只提供了4个API，has/delete/get/set
 // The main WeakMap that stores {target -> key -> dep} connections.
 // Conceptually, it's easier to think of a dependency as a Dep class
 // which maintains a Set of subscribers, but we simply store them as
@@ -89,7 +93,9 @@ function createReactiveEffect<T = any>(
       try {
         enableTracking()
         effectStack.push(effect)
+        // 将activeEffect设置为当前的更新函数，后面有更新时调用这个effect
         activeEffect = effect
+        // 然后再去运行里面的update函数，将更新函数与对应的ref，reactive变量的deps对应建立
         return fn()
       } finally {
         effectStack.pop()
@@ -113,7 +119,7 @@ function cleanup(effect: ReactiveEffect) {
     for (let i = 0; i < deps.length; i++) {
       deps[i].delete(effect)
     }
-    deps.length = 0
+    deps.length = 0 // 清空deps数组
   }
 }
 
@@ -135,6 +141,7 @@ export function resetTracking() {
   shouldTrack = last === undefined ? true : last
 }
 
+// targetMap: target(WeakMap)->key(Any)->effects(Set)
 export function track(target: object, type: TrackOpTypes, key: unknown) {
   if (!shouldTrack || activeEffect === undefined) {
     return
@@ -176,6 +183,7 @@ export function trigger(
   }
 
   const effects = new Set<ReactiveEffect>()
+  // 当需要触发其他类型的effect时候使用，比如add或者delete需要触发length收集到的effect
   const add = (effectsToAdd: Set<ReactiveEffect> | undefined) => {
     if (effectsToAdd) {
       effectsToAdd.forEach(effect => {
@@ -195,6 +203,7 @@ export function trigger(
     // trigger all effects for target
     depsMap.forEach(add)
   } else if (key === 'length' && isArray(target)) {
+    // 当数组push/shift等的时候会触发也会触发length的effect，map里面也有类似的操作，见下
     depsMap.forEach((dep, key) => {
       if (key === 'length' || key >= (newValue as number)) {
         add(dep)
@@ -203,9 +212,11 @@ export function trigger(
   } else {
     // schedule runs for SET | ADD | DELETE
     if (key !== void 0) {
+      // void 0 === undefined undefined在一些环境下可以被重写
       add(depsMap.get(key))
     }
     // also run for iteration key on ADD | DELETE | Map.SET
+    // 以下都会触发length，所以额外需要添加lenght的依赖effects
     const isAddOrDelete =
       type === TriggerOpTypes.ADD ||
       (type === TriggerOpTypes.DELETE && !isArray(target))
@@ -239,5 +250,6 @@ export function trigger(
     }
   }
 
+  // 正常的effect里面有可能有依赖computed的getter的内容
   effects.forEach(run)
 }

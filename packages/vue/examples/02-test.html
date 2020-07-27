@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Document</title>
+</head>
+<body>
+  <div id="app">
+    <h2>{{ message }}</h2>
+    <button @click="handleClick">Click Me</button>
+  </div>  
+  <script src="../dist/vue.global.js"></script>
+  <script>
+    const message = Vue.ref('Hello, world!');
+    const App = {
+      // template: '',
+      // render: () => Vue.h('div', message.value),
+      setup() {
+        Vue.onMounted(() => {
+          console.log('onMounted');
+        });
+        Vue.onRenderTracked((obj) => {
+          console.log('onRenderTracked: ', obj);
+        });
+        function handleClick() {
+          console.log('click handled...');
+        };
+        return {
+          message,
+          handleClick
+        }
+      }
+    };
+    // const proxy = Vue.createApp().mount(App, '#app');
+    const proxy = Vue.createApp(App).mount('#app');
+    setTimeout(() => {
+      // proxy会检查proxy.data和proxy.renderContext
+      // HOC 高阶组件（high order component）
+      proxy.message = 'after 1s';
+    }, 1000);
+  </script>
+</body>
+</html>

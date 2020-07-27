@@ -56,6 +56,7 @@ function createGetter(isReadonly = false, shallow = false) {
       return target
     }
 
+    // array的includes，indexOf, lastIndexOf特殊的对待（注意命名instrumentations）
     const targetIsArray = isArray(target)
     if (targetIsArray && hasOwn(arrayInstrumentations, key)) {
       return Reflect.get(arrayInstrumentations, key, receiver)
@@ -63,6 +64,7 @@ function createGetter(isReadonly = false, shallow = false) {
 
     const res = Reflect.get(target, key, receiver)
 
+    // 判断是否是内建属性，如果是就跳过track
     if (
       isSymbol(key)
         ? builtInSymbols.has(key)

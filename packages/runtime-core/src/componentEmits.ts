@@ -35,6 +35,14 @@ export type EmitFn<
         }[Event]
       >
 
+/**
+ * https://github.com/vuejs/rfcs/blob/master/active-rfcs/0030-emits-option.md
+ * 1. Event listeners declared by emits are also excluded from this.$attrs of the component.
+ * 2. Runtime validations should only be performed in dev mode but can potentially bloat production bundle size.
+ * Props validators have the same issue.
+ * Both can be solved with a Babel plugin that transforms props and emits options to the Array format in production builds.
+ * This way the dev only code is stripped but the runtime behavior will stay consistent.
+ */
 export function emit(
   instance: ComponentInternalInstance,
   event: string,

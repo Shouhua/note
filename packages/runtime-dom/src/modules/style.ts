@@ -3,6 +3,9 @@ import { camelize } from '@vue/runtime-core'
 
 type Style = string | Partial<CSSStyleDeclaration> | null
 
+/**
+ * 设置新的style，提出新的里面没有旧的
+ */
 export function patchStyle(el: Element, prev: Style, next: Style) {
   const style = (el as HTMLElement).style
   if (!next) {

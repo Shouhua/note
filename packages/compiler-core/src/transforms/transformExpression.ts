@@ -63,6 +63,7 @@ export const transformExpression: NodeTransform = (node, context) => {
           )
         }
         if (arg && arg.type === NodeTypes.SIMPLE_EXPRESSION && !arg.isStatic) {
+          // v-bind:[hello]="world"
           dir.arg = processExpression(arg, context)
         }
       }

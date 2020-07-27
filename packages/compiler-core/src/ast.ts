@@ -16,6 +16,7 @@ import { ImportItem, TransformContext } from './transform'
 // Vue template is a platform-agnostic superset of HTML (syntax only).
 // More namespaces like SVG and MathML are declared by platform specific
 // compilers.
+// SVG and MathML在html中属于外部元素
 export type Namespace = number
 
 export const enum Namespaces {
@@ -23,24 +24,24 @@ export const enum Namespaces {
 }
 
 export const enum NodeTypes {
-  ROOT,
-  ELEMENT,
-  TEXT,
-  COMMENT,
-  SIMPLE_EXPRESSION,
-  INTERPOLATION,
-  ATTRIBUTE,
-  DIRECTIVE,
+  ROOT, // 0
+  ELEMENT, // 1
+  TEXT, // 2
+  COMMENT, // 3
+  SIMPLE_EXPRESSION, // 4
+  INTERPOLATION, // 5
+  ATTRIBUTE, // 6
+  DIRECTIVE, // 7
   // containers
-  COMPOUND_EXPRESSION,
-  IF,
-  IF_BRANCH,
-  FOR,
-  TEXT_CALL,
+  COMPOUND_EXPRESSION, // 8
+  IF, // 9
+  IF_BRANCH, // 10
+  FOR, // 11
+  TEXT_CALL, // 12
   // codegen
-  VNODE_CALL,
-  JS_CALL_EXPRESSION,
-  JS_OBJECT_EXPRESSION,
+  VNODE_CALL, // 13
+  JS_CALL_EXPRESSION, // 14
+  JS_OBJECT_EXPRESSION, // 15:w
   JS_PROPERTY,
   JS_ARRAY_EXPRESSION,
   JS_FUNCTION_EXPRESSION,
@@ -56,11 +57,13 @@ export const enum NodeTypes {
   JS_RETURN_STATEMENT
 }
 
+// node的element type有4中, 在parseTag中设置
+// 对应node的tagType
 export const enum ElementTypes {
-  ELEMENT,
-  COMPONENT,
-  SLOT,
-  TEMPLATE
+  ELEMENT, // 0
+  COMPONENT, // 1
+  SLOT, // 2
+  TEMPLATE // 3
 }
 
 export interface Node {
@@ -584,7 +587,7 @@ export function createArrayExpression(
 }
 
 export function createObjectExpression(
-  properties: ObjectExpression['properties'],
+  properties: ObjectExpression['properties'], // array<JSObject>
   loc: SourceLocation = locStub
 ): ObjectExpression {
   return {

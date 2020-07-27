@@ -32,6 +32,9 @@ type MergedParserOptions = Omit<Required<ParserOptions>, OptionalOptions> &
 // The default decoder only provides escapes for characters reserved as part of
 // the template syntax, and is only used if the custom renderer did not provide
 // a platform-specific decoder.
+// https://developer.mozilla.org/zh-CN/docs/Glossary/Entity
+// HTML entity 一些保留字符，有特殊意义，因此需要使用实体来表示他们，比如&使用'&amp;'来表示
+// parse基本上就是html的解析过程
 const decodeRE = /&(gt|lt|amp|apos|quot);/g
 const decodeMap: Record<string, string> = {
   gt: '>',
@@ -53,12 +56,17 @@ export const defaultParserOptions: MergedParserOptions = {
   onError: defaultOnError
 }
 
+// https://www.hackersb.cn/hacker/85.html
+// http://bobao.360.cn/learning/detail/292.html
+// https://xz.aliyun.com/t/5863
+// 这里有三种情况可以容纳字符实体，“数据状态中的字符引用”，“RCDATA状态中的字符引用”和“属性值状态中的字符引用”
 export const enum TextModes {
   //          | Elements | Entities | End sign              | Inside of
   DATA, //    | ✔        | ✔        | End tags of ancestors |
-  RCDATA, //  | ✘        | ✔        | End tag of the parent | <textarea>
+  RCDATA, //  | ✘        | ✔        | End tag of the parent | <textarea> <title>
   RAWTEXT, // | ✘        | ✘        | End tag of the parent | <style>,<script>
-  CDATA,
+  // 在 XML 中， CDATA 可以直接包含未经转义的文本。比如 < 和 &，只要位于 CDATA 片段中，它们就不需要被转义，保持原样就可以了。
+  CDATA, // https://developer.mozilla.org/zh-CN/docs/Web/API/CDATASection, CDAT只在XML中有效
   ATTRIBUTE_VALUE
 }
 
@@ -106,7 +114,7 @@ function parseChildren(
   mode: TextModes,
   ancestors: ElementNode[]
 ): TemplateChildNode[] {
-  const parent = last(ancestors)
+  const parent = last(ancestors) // ancestors = [], parent=undefined
   const ns = parent ? parent.ns : Namespaces.HTML
   const nodes: TemplateChildNode[] = []
 
@@ -116,8 +124,23 @@ function parseChildren(
     let node: TemplateChildNode | TemplateChildNode[] | undefined = undefined
 
     if (mode === TextModes.DATA || mode === TextModes.RCDATA) {
+      // 正常的标签div，textarea，title等
       if (!context.inVPre && startsWith(s, context.options.delimiters[0])) {
         // '{{'
+        /**
+         * {
+            type: NodeTypes.INTERPOLATION,
+            content: {
+              type: NodeTypes.SIMPLE_EXPRESSION,
+              isStatic: false,
+              // Set `isConstant` to false by default and will decide in transformExpression
+              isConstant: false,
+              content,
+              loc: getSelection(context, innerStart, innerEnd)
+            },
+            loc: getSelection(context, start)
+          }
+         */
         node = parseInterpolation(context, mode)
       } else if (mode === TextModes.DATA && s[0] === '<') {
         // https://html.spec.whatwg.org/multipage/parsing.html#tag-open-state
@@ -126,11 +149,19 @@ function parseChildren(
         } else if (s[1] === '!') {
           // https://html.spec.whatwg.org/multipage/parsing.html#markup-declaration-open-state
           if (startsWith(s, '<!--')) {
+            /**
+             * {
+                type: NodeTypes.COMMENT,
+                content,
+                loc: getSelection(context, start)
+              }
+             */
             node = parseComment(context)
           } else if (startsWith(s, '<!DOCTYPE')) {
             // Ignore DOCTYPE by a limitation.
-            node = parseBogusComment(context)
+            node = parseBogusComment(context) // bogus: 假的，伪造的
           } else if (startsWith(s, '<![CDATA[')) {
+            // <![CDATA[只能在XML环境中使用
             if (ns !== Namespaces.HTML) {
               node = parseCDATA(context, ancestors)
             } else {
@@ -150,6 +181,8 @@ function parseChildren(
             advanceBy(context, 3)
             continue
           } else if (/[a-z]/i.test(s[2])) {
+            // 应该在parseElement里面使用</才是正确的
+            // 没有开始就有了结束tag了
             emitError(context, ErrorCodes.X_INVALID_END_TAG)
             parseTag(context, TagType.End, parent)
             continue
@@ -176,6 +209,14 @@ function parseChildren(
       }
     }
     if (!node) {
+      // 如果都不是，那就是到了普通文本数据，比如<div>hello&amp;world</div>里面的"hello&amp;world"
+      /**
+       * {
+            type: NodeTypes.TEXT,
+            content,
+            loc: getSelection(context, start)
+          }
+       */
       node = parseText(context, mode)
     }
 
@@ -184,7 +225,7 @@ function parseChildren(
         pushNode(nodes, node[i])
       }
     } else {
-      pushNode(nodes, node)
+      pushNode(nodes, node) // a > b，合并类似的TEXT对象
     }
   }
 
@@ -192,6 +233,7 @@ function parseChildren(
   // (same as v2 whitespace: 'condense')
   let removedWhitespace = false
   if (mode !== TextModes.RAWTEXT) {
+    // 如果不是style和script
     if (!context.inPre) {
       for (let i = 0; i < nodes.length; i++) {
         const node = nodes[i]
@@ -199,6 +241,7 @@ function parseChildren(
           if (!/[^\t\r\n\f ]/.test(node.content)) {
             const prev = nodes[i - 1]
             const next = nodes[i + 1]
+            // 详细场景参考 parse.spec.ts (row 1665)
             // If:
             // - the whitespace is the first or last node, or:
             // - the whitespace is adjacent to a comment, or:
@@ -347,6 +390,7 @@ function parseBogusComment(context: ParserContext): CommentNode | undefined {
   }
 }
 
+// parese tag, attribute, children
 function parseElement(
   context: ParserContext,
   ancestors: ElementNode[]
@@ -357,19 +401,20 @@ function parseElement(
   const wasInPre = context.inPre
   const wasInVPre = context.inVPre
   const parent = last(ancestors)
-  const element = parseTag(context, TagType.Start, parent)
-  const isPreBoundary = context.inPre && !wasInPre
-  const isVPreBoundary = context.inVPre && !wasInVPre
+  const element = parseTag(context, TagType.Start, parent) // parse tag, attribute
+  const isPreBoundary = context.inPre && !wasInPre // 从这开开始pre就是preBoundary
+  const isVPreBoundary = context.inVPre && !wasInVPre // 从这里开始就是vpreBoundary
 
+  // 如果是self closing，就没有必要去parse children和end tag了
   if (element.isSelfClosing || context.options.isVoidTag(element.tag)) {
     return element
   }
 
   // Children.
-  ancestors.push(element)
+  ancestors.push(element) // 让此时的element成为其后代的父级
   const mode = context.options.getTextMode(element, parent)
   const children = parseChildren(context, mode, ancestors)
-  ancestors.pop()
+  ancestors.pop() // 成为父级的任务完成，弹出
 
   element.children = children
 
@@ -408,6 +453,7 @@ const isSpecialTemplateDirective = /*#__PURE__*/ makeMap(
 
 /**
  * Parse a tag (E.g. `<div id=a>`) with that type (start tag or end tag).
+ * 设置了tagType：Element, Component, Template, Slot
  */
 function parseTag(
   context: ParserContext,
@@ -422,8 +468,9 @@ function parseTag(
 
   // Tag open.
   const start = getCursor(context)
+  // <div id="area"></div>匹配出来: match[0] = <div , match[1] = div
   const match = /^<\/?([a-z][^\t\r\n\f />]*)/i.exec(context.source)!
-  const tag = match[1]
+  const tag = match[1] // div
   const ns = context.options.getNamespace(tag, parent)
 
   advanceBy(context, match[0].length)
@@ -469,16 +516,19 @@ function parseTag(
   let tagType = ElementTypes.ELEMENT
   const options = context.options
   if (!context.inVPre && !options.isCustomElement(tag)) {
+    // 判断v-bind:is
+    // 比如<component v-bind:is="currentView"></component>
+    // 或者<component :is="componentId"></component>
     const hasVIs = props.some(
       p => p.type === NodeTypes.DIRECTIVE && p.name === 'is'
     )
     if (options.isNativeTag && !hasVIs) {
       if (!options.isNativeTag(tag)) tagType = ElementTypes.COMPONENT
     } else if (
-      hasVIs ||
+      hasVIs || // 有:is或者v-is='comp'不管tag是什么，tag type直接就是Component
       isCoreComponent(tag) ||
       (options.isBuiltInComponent && options.isBuiltInComponent(tag)) ||
-      /^[A-Z]/.test(tag) ||
+      /^[A-Z]/.test(tag) || // 或者tag以大写开头，tag type也是Componenet
       tag === 'component'
     ) {
       tagType = ElementTypes.COMPONENT
@@ -494,6 +544,8 @@ function parseTag(
         )
       })
     ) {
+      // 注意：只有当template有special template directive（if,else,else-if,for,slot)时，tagType才能为Template
+      // 测试用例里面有
       tagType = ElementTypes.TEMPLATE
     }
   }
@@ -553,6 +605,7 @@ function parseAttribute(
 
   // Name.
   const start = getCursor(context)
+  // 这句拿到attribute的key部分
   const match = /^[^\t\r\n\f />][^\t\r\n\f />=]*/.exec(context.source)!
   const name = match[0]
 
@@ -586,7 +639,7 @@ function parseAttribute(
         loc: SourceLocation
       }
     | undefined = undefined
-
+  // 把等于号之前的内容全匹配
   if (/^[\t\r\n\f ]*=/.test(context.source)) {
     advanceSpaces(context)
     advanceBy(context, 1)
@@ -598,11 +651,22 @@ function parseAttribute(
   }
   const loc = getSelection(context, start)
 
+  /**
+   * 不是在v-pre中并且属性以v-或者:或者@或者#开头, 以#开头的是slot
+   * @click #slotName :name这些统统type为NodeTpye.Directive
+   * match[1] = bind    (v-bind)
+   * match[2] = click或者slot name  (@click, #slotName, :name)
+   * match[3] = 其他普通的属性key, 比如modifier(.passive)
+   * 还有一种情况v-on:click 这个时候match[1]=on match[2]=click
+   * v-on:[event] 动态事件名
+   * <Comp v-slot:named="{ foo }">{{ foo }}{{ bar }}</Comp>
+   */
   if (!context.inVPre && /^(v-|:|@|#)/.test(name)) {
     const match = /(?:^v-([a-z0-9-]+))?(?:(?::|^@|^#)(\[[^\]]+\]|[^\.]+))?(.+)?$/i.exec(
       name
     )!
 
+    // 解析命令
     const dirName =
       match[1] ||
       (startsWith(name, ':') ? 'bind' : startsWith(name, '@') ? 'on' : 'slot')
@@ -610,6 +674,7 @@ function parseAttribute(
     let arg: ExpressionNode | undefined
 
     if (match[2]) {
+      // 如果是以:/@/#开头的命令 match[2]=click等
       const isSlot = dirName === 'slot'
       const startOffset = name.indexOf(match[2])
       const loc = getSelection(
@@ -624,6 +689,8 @@ function parseAttribute(
       let content = match[2]
       let isStatic = true
 
+      // v-on:[event] 动态事件名称
+      // v-on:[a.b].enter
       if (content.startsWith('[')) {
         isStatic = false
 
@@ -639,6 +706,7 @@ function parseAttribute(
         // #1241 special case for v-slot: vuetify relies extensively on slot
         // names containing dots. v-slot doesn't have any modifiers and Vue 2.x
         // supports such usage so we are keeping it consistent with 2.x.
+        // NOTICE: <Comp v-slot:foo.bar="{ a }" />这个arg.content="foo.bar",这个没有modifier
         content += match[3] || ''
       }
 
@@ -672,7 +740,7 @@ function parseAttribute(
         loc: value.loc
       },
       arg,
-      modifiers: match[3] ? match[3].substr(1).split('.') : [],
+      modifiers: match[3] ? match[3].substr(1).split('.') : [], //modifiers比如事件的一些.stop, .native等
       loc
     }
   }
@@ -720,11 +788,11 @@ function parseAttributeValue(
     }
   } else {
     // Unquoted
-    const match = /^[^\t\r\n\f >]+/.exec(context.source)
+    const match = /^[^\t\r\n\f >]+/.exec(context.source) // 遇到'\t\r\n\f >'截取value
     if (!match) {
       return undefined
     }
-    const unexpectedChars = /["'<=`]/g
+    const unexpectedChars = /["'<=`]/g // 不寻常的字符 “, ‘, <, =, `
     let m: RegExpExecArray | null
     while ((m = unexpectedChars.exec(match[0]))) {
       emitError(
@@ -786,6 +854,7 @@ function parseInterpolation(
 function parseText(context: ParserContext, mode: TextModes): TextNode {
   __TEST__ && assert(context.source.length > 0)
 
+  // 寻找text截止的字符'<', '{{'
   const endTokens = ['<', context.options.delimiters[0]]
   if (mode === TextModes.CDATA) {
     endTokens.push(']]>')
@@ -802,7 +871,7 @@ function parseText(context: ParserContext, mode: TextModes): TextNode {
   __TEST__ && assert(endIndex > 0)
 
   const start = getCursor(context)
-  const content = parseTextData(context, endIndex, mode)
+  const content = parseTextData(context, endIndex, mode) // html entity transform: &amp; -> &
 
   return {
     type: NodeTypes.TEXT,
@@ -927,8 +996,9 @@ function isEnd(
       }
       break
 
-    case TextModes.RCDATA:
+    case TextModes.RCDATA: // textarea, title
     case TextModes.RAWTEXT: {
+      // script, style
       const parent = last(ancestors)
       if (parent && startsWithEndTagOpen(s, parent.tag)) {
         return true

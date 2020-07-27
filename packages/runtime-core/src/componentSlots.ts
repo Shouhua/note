@@ -37,6 +37,9 @@ export type RawSlots = {
    * normalizeChildren when the component vnode is created.
    * @internal
    */
+  // internal, for tracking slot owner instance. This is attached during
+  // normalizeChildren when the component vnode is created.
+  // vnode.ts -> 546行
   _ctx?: ComponentInternalInstance | null
   /**
    * indicates compiler generated slots
@@ -78,7 +81,7 @@ const normalizeObjectSlots = (rawSlots: RawSlots, slots: InternalSlots) => {
     if (isInternalKey(key)) continue
     const value = rawSlots[key]
     if (isFunction(value)) {
-      slots[key] = normalizeSlot(key, value, ctx)
+      slots[key] = normalizeSlot(key, value, ctx) // 生成类似于render渲染函数的函数
     } else if (value != null) {
       if (__DEV__) {
         warn(
@@ -106,6 +109,7 @@ const normalizeVNodeSlots = (
   instance.slots.default = () => normalized
 }
 
+// children包含所有的，slot分为default和其他的命名slot
 export const initSlots = (
   instance: ComponentInternalInstance,
   children: VNodeNormalizedChildren
@@ -122,10 +126,10 @@ export const initSlots = (
   } else {
     instance.slots = {}
     if (children) {
-      normalizeVNodeSlots(instance, children)
+      normalizeVNodeSlots(instance, children) // 将children生成VNode，instance.slot.default = () => createVNode(childrent)
     }
   }
-  def(instance.slots, InternalObjectKey, 1)
+  def(instance.slots, InternalObjectKey, 1) // InternalObjectKey = __vInternal
 }
 
 export const updateSlots = (

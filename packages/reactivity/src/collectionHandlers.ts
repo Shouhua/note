@@ -35,10 +35,12 @@ function get(
   target = toRaw(target)
   const rawKey = toRaw(key)
   if (key !== rawKey) {
+    // collection的key是ractive，track
     track(target, TrackOpTypes.GET, key)
   }
   track(target, TrackOpTypes.GET, rawKey)
   const { has, get } = getProto(target)
+  // 判断是不是get的原生属性, 比如map的get，has等属性
   if (has.call(target, key)) {
     return wrap(get.call(target, key))
   } else if (has.call(target, rawKey)) {
@@ -77,7 +79,7 @@ function add(this: SetTypes, value: unknown) {
 
 function set(this: MapTypes, key: unknown, value: unknown) {
   value = toRaw(value)
-  const target = toRaw(this)
+  const target = toRaw(this) // 这一步很关键，这一步是将receiver（proxy对象）转化为target（原始对象）
   const { has, get, set } = getProto(target)
 
   let hadKey = has.call(target, key)
@@ -267,6 +269,7 @@ const readonlyInstrumentations: Record<string, Function> = {
   forEach: createForEach(true, false)
 }
 
+// 迭代器属性处理
 const iteratorMethods = ['keys', 'values', 'entries', Symbol.iterator]
 iteratorMethods.forEach(method => {
   mutableInstrumentations[method as string] = createIterableMethod(

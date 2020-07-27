@@ -232,6 +232,8 @@ export function isTemplateNode(
   )
 }
 
+// slotOutlet
+// <slot> </slot>
 export function isSlotOutlet(
   node: RootNode | TemplateChildNode
 ): node is SlotOutletNode {

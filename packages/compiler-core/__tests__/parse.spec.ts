@@ -484,6 +484,7 @@ describe('compiler: parse', () => {
       })
     })
 
+    // NOTICE: template element without directive, tagType = ElementTypes.ELEMENT
     test('template element without directives', () => {
       const ast = baseParse('<template></template>')
       const element = ast.children[0]
@@ -535,7 +536,7 @@ describe('compiler: parse', () => {
       expect(ast.children[2]).toMatchObject({
         type: NodeTypes.ELEMENT,
         tag: 'Comp',
-        tagType: ElementTypes.COMPONENT
+        tagType: ElementTypes.COMPONENT // 大写开头也是COMPONENT
       })
     })
 
@@ -737,6 +738,7 @@ describe('compiler: parse', () => {
             type: NodeTypes.ATTRIBUTE,
             name: 'id',
             value: {
+              // TextNode
               type: NodeTypes.TEXT,
               content: ">'",
               loc: {
@@ -903,7 +905,7 @@ describe('compiler: parse', () => {
             }
           },
           {
-            type: NodeTypes.ATTRIBUTE,
+            type: NodeTypes.ATTRIBUTE, // TODO: 不懂
             name: 'style',
             value: {
               type: NodeTypes.TEXT,
@@ -937,6 +939,7 @@ describe('compiler: parse', () => {
       const directive = (ast.children[0] as ElementNode).props[0]
 
       expect(directive).toStrictEqual({
+        // DirectiveNode
         type: NodeTypes.DIRECTIVE,
         name: 'if',
         arg: undefined,
@@ -960,6 +963,7 @@ describe('compiler: parse', () => {
         arg: undefined,
         modifiers: [],
         exp: {
+          // simple expression or compound expression
           type: NodeTypes.SIMPLE_EXPRESSION,
           content: 'a',
           isStatic: false,
@@ -988,7 +992,7 @@ describe('compiler: parse', () => {
         arg: {
           type: NodeTypes.SIMPLE_EXPRESSION,
           content: 'click',
-          isStatic: true,
+          isStatic: true, // 只有出现[]才是false
           isConstant: true,
 
           loc: {
@@ -1402,6 +1406,7 @@ describe('compiler: parse', () => {
     })
 
     // #1241 special case for 2.x compat
+    // NOTICE: 特殊情况
     test('v-slot arg containing dots', () => {
       const ast = baseParse('<Comp v-slot:foo.bar="{ a }" />')
       const directive = (ast.children[0] as ElementNode).props[0]
@@ -1440,9 +1445,11 @@ describe('compiler: parse', () => {
       const divWithPre = ast.children[0] as ElementNode
       expect(divWithPre.props).toMatchObject([
         {
+          // AttributeNode
           type: NodeTypes.ATTRIBUTE,
           name: `:id`,
           value: {
+            // TextNode
             type: NodeTypes.TEXT,
             content: `foo`
           },

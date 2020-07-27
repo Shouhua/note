@@ -10,6 +10,8 @@ __DEV__ && initDev()
 
 const compileCache: Record<string, RenderFunction> = Object.create(null)
 
+// 为了可以复用，runtime-only
+// hydrate服务端使用
 function compileToFunction(
   template: string | HTMLElement,
   options?: CompilerOptions
@@ -71,6 +73,7 @@ function compileToFunction(
   // with keys that cannot be mangled, and can be quite heavy size-wise.
   // In the global build we know `Vue` is available globally so we can avoid
   // the wildcard object.
+  // 使用new Function是因为函数体是不确定的，所有使用这种方式
   const render = (__GLOBAL__
     ? new Function(code)()
     : new Function('Vue', code)(runtimeDom)) as RenderFunction

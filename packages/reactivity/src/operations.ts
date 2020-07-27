@@ -8,8 +8,8 @@ export const enum TrackOpTypes {
 }
 
 export const enum TriggerOpTypes {
-  SET = 'set',
-  ADD = 'add',
+  SET = 'set', // Map, WeakMap
+  ADD = 'add', // Set, WeakSet
   DELETE = 'delete',
   CLEAR = 'clear'
 }

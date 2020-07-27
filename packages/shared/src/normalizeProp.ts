@@ -26,6 +26,10 @@ export function normalizeStyle(value: unknown): NormalizedStyle | undefined {
 const listDelimiterRE = /;(?![^(]*\))/g
 const propertyDelimiterRE = /:(.+)/
 
+/**
+ * 主要是将style string转化成对象
+ * 比如，"foo: bar; fooBar: fooBar" -> {foo: bar, fooBar: fooBar}
+ */
 export function parseStringStyle(cssText: string): NormalizedStyle {
   const ret: NormalizedStyle = {}
   cssText.split(listDelimiterRE).forEach(item => {
@@ -37,6 +41,12 @@ export function parseStringStyle(cssText: string): NormalizedStyle {
   return ret
 }
 
+/**
+ * 主要是将style对象转化成字符串'foo: bar; foo-bar: foobar'
+ * key:
+ * 1. 以--开头的key不管
+ * 2. 驼峰key转化成kebab
+ */
 export function stringifyStyle(styles: NormalizedStyle | undefined): string {
   let ret = ''
   if (!styles) {

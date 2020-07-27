@@ -27,6 +27,7 @@ const SVG_TAGS =
   'polygon,polyline,radialGradient,rect,set,solidcolor,stop,switch,symbol,' +
   'text,textPath,title,tspan,unknown,use,view'
 
+// native elements that can self-close, e.g. `<img>`, `<br>`, `<hr>`
 const VOID_TAGS =
   'area,base,br,col,embed,hr,img,input,link,meta,param,source,track,wbr'
 

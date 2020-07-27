@@ -194,10 +194,11 @@ export function generate(
     ssr
   } = context
   const hasHelpers = ast.helpers.length > 0
+  // module情况或者prefixIdentifiers=true不能使用withBlock
   const useWithBlock = !prefixIdentifiers && mode !== 'module'
   const genScopeId = !__BROWSER__ && scopeId != null && mode === 'module'
 
-  // preambles
+  // preambles 序言，开场白
   if (!__BROWSER__ && mode === 'module') {
     genModulePreamble(ast, context, genScopeId)
   } else {
@@ -299,7 +300,7 @@ function genFunctionPreamble(ast: RootNode, context: CodegenContext) {
     push,
     newline,
     runtimeModuleName,
-    runtimeGlobalName
+    runtimeGlobalName // Vue
   } = context
   const VueBinding =
     !__BROWSER__ && ssr

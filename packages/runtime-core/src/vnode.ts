@@ -192,7 +192,7 @@ let shouldTrack = 1
  *   _cache[1]
  * )
  * ```
- *
+ * 这个主要是v-once使用的情况，在compiler-core里面的vOnce.ts就是添加了setBlockTracking(-1)
  * @private
  */
 export function setBlockTracking(value: number) {
@@ -244,9 +244,11 @@ export function isSameVNodeType(n1: VNode, n2: VNode): boolean {
     n2.shapeFlag & ShapeFlags.COMPONENT &&
     hmrDirtyComponents.has(n2.type as Component)
   ) {
+    // 如果刚刚经过hmr，肯定就不是相同的
     // HMR only: if the component has been hot-updated, force a reload.
     return false
   }
+  // VNode的类型肯定要一直，比如是不是component等
   return n1.type === n2.type && n1.key === n2.key
 }
 
@@ -294,6 +296,12 @@ export const createVNode = (__DEV__
   ? createVNodeWithArgsTransform
   : _createVNode) as typeof _createVNode
 
+// 这里的type就是用户放进来的App
+// 新建VNode做了：
+// 1. 确定type，如果是stateful component，如果传进来的是一个对象，比如初始化传进来的App对象就是这样
+// 2. 确定shapeFlag, VNode是什么类型的，stateful component = 4
+// 3. 确定patchFlag，这个用于告诉未来setRenderEffect的时候，哪些是变化的部分
+// 4. 挂在children到children和dynamicChildren
 function _createVNode(
   type: VNodeTypes | ClassComponent | typeof NULL_DYNAMIC_COMPONENT,
   props: (Data & VNodeProps) | null = null,
@@ -315,6 +323,7 @@ function _createVNode(
 
   // class component normalization.
   if (isFunction(type) && '__vccOpts' in type) {
+    // class component options {...}
     type = type.__vccOpts
   }
 
@@ -326,7 +335,7 @@ function _createVNode(
     }
     let { class: klass, style } = props
     if (klass && !isString(klass)) {
-      props.class = normalizeClass(klass)
+      props.class = normalizeClass(klass) // 将class拍扁，比如[foo, bar]转化为"foo bar"
     }
     if (isObject(style)) {
       // reactive state objects need to be cloned since they are likely to be
@@ -334,7 +343,7 @@ function _createVNode(
       if (isProxy(style) && !isArray(style)) {
         style = extend({}, style)
       }
-      props.style = normalizeStyle(style)
+      props.style = normalizeStyle(style) // 总体来说，将各种形式的style对象转化为{foo: bar}
     }
   }
 
@@ -363,9 +372,12 @@ function _createVNode(
     )
   }
 
+  // VNode的type对象可以是component对象
+  // props跟应用中的props不是一个概念，这里的props包括key，ref，Vnode的lifetime，还有其他一些键值对，比如style，class
+  // scropeId主要是后面在解析过程中会注入进来
   const vnode: VNode = {
     __v_isVNode: true,
-    __v_skip: true,
+    __v_skip: true, // 不让VNode对象成为一个ractive，减少performance overhead
     type,
     props,
     key: props && normalizeKey(props),
@@ -405,6 +417,19 @@ function _createVNode(
     currentBlock &&
     // the EVENTS flag is only for hydration and if it is the only flag, the
     // vnode should not be considered dynamic due to handler caching.
+    /** transformElement.ts
+     * if (
+        !isComponent &&
+        isOn(name) &&
+        // omit the flag for click handlers because hydration gives click
+        // dedicated fast path.
+        name.toLowerCase() !== 'onclick' &&
+        // omit v-model handlers
+        name !== 'onUpdate:modelValue'
+      ) {
+        hasHydrationEventBinding = true
+      }
+     */
     patchFlag !== PatchFlags.HYDRATE_EVENTS &&
     (patchFlag > 0 ||
       shapeFlag & ShapeFlags.SUSPENSE ||
@@ -530,6 +555,7 @@ export function cloneIfMounted(child: VNode): VNode {
   return child.el === null ? child : cloneVNode(child)
 }
 
+// 主要是要处理children和slots
 export function normalizeChildren(vnode: VNode, children: unknown) {
   let type = 0
   const { shapeFlag } = vnode
@@ -548,6 +574,7 @@ export function normalizeChildren(vnode: VNode, children: unknown) {
     } else {
       type = ShapeFlags.SLOTS_CHILDREN
       const slotFlag = (children as RawSlots)._
+      // 不是系统编译出来的slot, 系统编译出来的slot会设置_属性
       if (!slotFlag && !(InternalObjectKey in children!)) {
         // if slots are not normalized, attach context instance
         // (compiled / normalized slots already have context)
@@ -584,6 +611,19 @@ export function normalizeChildren(vnode: VNode, children: unknown) {
 
 const handlersRE = /^on|^vnode/
 
+/**
+ * 可以用于合并fallthrough attrs(class, style, listeners, 各种属性，以前的native modifier废弃)
+  import { mergeProps } from 'vue'
+
+  export default {
+    props: { },
+    inheritAttrs: false,
+    render() {
+      return h('div', mergeProps({ class: 'foo' }, this.$attrs))
+    }
+  } 
+  NOTICE: 这个在编译时会有这个函数出现在render函数中, 应该主要用于编译时的函数ß
+ */
 export function mergeProps(...args: (Data & VNodeProps)[]) {
   const ret = extend({}, args[0])
   for (let i = 1; i < args.length; i++) {

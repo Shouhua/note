@@ -1,3 +1,42 @@
+/**
+ 1. 然而，有心的朋友可能会从上面这些代码中观察到一个问题，我们还是在 render 方法中使用到了 this 对象，
+ 当然这在实现功能上面并不存在什么问题，但是，这跟Composition API提倡的函数式做法的理念并不一致。
+
+其实，新的框架已经考虑到了这一点，并给出了方案：在 setup 方法中返回这个 render 方法。
+我们的 Counter 组件如果按照上面的方案改写一下，就会是这样：
+
+const Counter = {
+    setup() {
+        const { count, increase, reset } = useCount()
+
+        return () => [
+            h('div', { class: 'counter-display' }, [
+                h('span', { class: 'counter-label' }, '恭喜你，你已经写了'),
+                h('span', { class: 'counter-text' }, count.value),
+                h('span', { class: 'counter-label' }, '斤代码！'),
+            ]),
+            h('div', { class: 'counter-btns' }, [
+                h('button', { class: 'btn', onClick: increase }, '写一斤'),
+                h('button', { class: 'btn', onClick: reset }, '删库啦'),
+            ])
+        ]
+    }
+}
+如此一来，我们就完全摆脱对 this 的使用啦。
+
+2. // code returned from the main loader for 'source.vue'
+
+// import the <template> block
+import render from 'source.vue?vue&type=template'
+// import the <script> block
+import script from 'source.vue?vue&type=script'
+export * from 'source.vue?vue&type=script'
+// import <style> blocks
+import 'source.vue?vue&type=style&index=1'
+
+script.render = render
+export default script
+ */
 import {
   Text,
   Fragment,
@@ -383,6 +422,7 @@ function baseCreateRenderer(
   options: RendererOptions,
   createHydrationFns?: typeof createHydrationFunctions
 ): any {
+  // 里面有所有处理各种类型的patch函数，得到render返回后方便调用
   const {
     insert: hostInsert,
     remove: hostRemove,
@@ -402,6 +442,7 @@ function baseCreateRenderer(
 
   // Note: functions inside this closure should use `const xxx = () => {}`
   // style in order to prevent being inlined by minifiers.
+  // patch(oldVnode, newVnode, container)
   const patch: PatchFn = (
     n1,
     n2,
@@ -413,13 +454,15 @@ function baseCreateRenderer(
     optimized = false
   ) => {
     // patching & not same type, unmount old tree
+    // 不是相同的，直接先干掉old tree
     if (n1 && !isSameVNodeType(n1, n2)) {
       anchor = getNextHostNode(n1)
       unmount(n1, parentComponent, parentSuspense, true)
       n1 = null
     }
-
+    // bail out of optimization mode for non-compiled slots
     if (n2.patchFlag === PatchFlags.BAIL) {
+      // TODO: BAIL不懂
       optimized = false
       n2.dynamicChildren = null
     }
@@ -464,6 +507,7 @@ function baseCreateRenderer(
             optimized
           )
         } else if (shapeFlag & ShapeFlags.COMPONENT) {
+          // Stateful component or functional component
           processComponent(
             n1,
             n2,
@@ -1133,6 +1177,12 @@ function baseCreateRenderer(
     }
   }
 
+  /* 1. 创建组件实例
+  2. 获取组件的render()，获取vnode
+  3. mount和patch
+  4. 更新组件的el和$el值
+  注意：framgement和portal等都会设置el值，就算占位符也会设置，因为patch的时候不全是appendChild
+  */
   const mountComponent: MountComponentFn = (
     initialVNode,
     container,
@@ -1142,12 +1192,14 @@ function baseCreateRenderer(
     isSVG,
     optimized
   ) => {
+    // instance, 主要是从VNode里面拿信息
     const instance: ComponentInternalInstance = (initialVNode.component = createComponentInstance(
       initialVNode,
       parentComponent,
       parentSuspense
     ))
 
+    // __hmrId在vue-loader中注入
     if (__DEV__ && instance.type.__hmrId) {
       registerHMR(instance)
     }
@@ -1166,6 +1218,10 @@ function baseCreateRenderer(
     if (__DEV__) {
       startMeasure(instance, `init`)
     }
+    // 1. initProps, initSlots
+    // 2. 主要是运行setup（），注册ref，reactive，vue的lifecycle，为view的上下文作准备
+    // 3. 根据template准备render函数
+    // 4. instance.setupState = setup()
     setupComponent(instance)
     if (__DEV__) {
       endMeasure(instance, `init`)
@@ -1189,6 +1245,7 @@ function baseCreateRenderer(
       return
     }
 
+    // 主要是注册instance.update，在这个里面运行instance里面的render，让函数注册在reactive中，再次更新时唤醒运行
     setupRenderEffect(
       instance,
       initialVNode,
@@ -1250,14 +1307,18 @@ function baseCreateRenderer(
     optimized
   ) => {
     // create reactive effect for rendering
+    // effect函数里面会去将目前的函数注册到对应的ref，reactive的get handler中的deps
     instance.update = effect(function componentEffect() {
       if (!instance.isMounted) {
         let vnodeHook: VNodeHook | null | undefined
         const { el, props } = initialVNode
-        const { bm, m, a, parent } = instance
+        const { bm, m, a, parent } = instance // beforeMount, mounted, activated
         if (__DEV__) {
           startMeasure(instance, `render`)
         }
+        // NOTICE: subTree要作为patch函数里面后面n1=null时候获取anchor
+        // 但是这里面最主要的功能还是运行instance.render获取到VNode结果
+        // 这里面关键的就是这步，DOM和VNode挂钩了
         const subTree = (instance.subTree = renderComponentRoot(instance))
         if (__DEV__) {
           endMeasure(instance, `render`)
@@ -1289,6 +1350,7 @@ function baseCreateRenderer(
             startMeasure(instance, `patch`)
           }
           patch(
+            // 再次patch，判断逻辑在patch里面, 这个时候subTree.type=Symbol(Fragment)
             null,
             subTree,
             container,

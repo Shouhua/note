@@ -4,6 +4,7 @@ import { warn } from '../warning'
 /**
  * For prefixing keys in v-on="obj" with "on"
  * @private
+ * v-on={click: handleClick} => onClick = handleClick // 运行时解析
  */
 export function toHandlers(obj: Record<string, any>): Record<string, any> {
   const ret: Record<string, any> = {}

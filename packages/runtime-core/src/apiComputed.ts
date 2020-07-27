@@ -7,6 +7,7 @@ import {
 } from '@vue/reactivity'
 import { recordInstanceBoundEffect } from './component'
 
+// setup阶段将effect记录到instance.effect, 在unmounted时清除
 export function computed<T>(getter: ComputedGetter<T>): ComputedRef<T>
 export function computed<T>(
   options: WritableComputedOptions<T>

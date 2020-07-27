@@ -12,6 +12,7 @@ import { PatchFlags, PatchFlagNames } from '@vue/shared'
 
 // Merge adjacent text nodes and expressions into a single expression
 // e.g. <div>abc {{ d }} {{ e }}</div> should have a single expression node as child.
+// 目的一目了然
 export const transformText: NodeTransform = (node, context) => {
   if (
     node.type === NodeTypes.ROOT ||
@@ -42,7 +43,7 @@ export const transformText: NodeTransform = (node, context) => {
               }
               // merge adjacent text node into current
               currentContainer.children.push(` + `, next)
-              children.splice(j, 1)
+              children.splice(j, 1) // 删除当前的节点
               j--
             } else {
               currentContainer = undefined
@@ -79,6 +80,7 @@ export const transformText: NodeTransform = (node, context) => {
           }
           // mark dynamic text with flag so it gets patched inside a block
           if (!context.ssr && child.type !== NodeTypes.TEXT) {
+            // NodeTypes.INTERPOLLATION
             callArgs.push(
               `${PatchFlags.TEXT} /* ${PatchFlagNames[PatchFlags.TEXT]} */`
             )

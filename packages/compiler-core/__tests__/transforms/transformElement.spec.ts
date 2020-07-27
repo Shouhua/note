@@ -74,6 +74,15 @@ describe('compiler: element transform', () => {
     const { node } = parseWithElementTransform(`<div id="foo" class="bar" />`)
     expect(node).toMatchObject({
       tag: `"div"`,
+      /**
+       * {
+       * type: 16(NodeTypes.JS_OBJECT_EXPRESSION),
+       * properties: [
+       * {type: NodeTypes.SIMPLE_EXPRESSION, key: 'foo', value: 'foo'},
+       * {type: NodeTypes.SIMPLE_EXPRESSION, key: 'class', value: 'bar'}
+       * ]
+       * }
+       */
       props: createObjectMatcher({
         id: 'foo',
         class: 'bar'

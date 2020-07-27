@@ -57,7 +57,10 @@ export const createApp = ((...args) => {
     injectNativeTagCheck(app)
   }
 
-  const { mount } = app
+  // 为了复用，为了被runtime版本的vue直接使用
+  // app这里面有所有的信息，包括use,plugin,directive等方法
+  // 和刚刚填充的config:appConfig里面的mixin，provide，plugin，directive等
+  const { mount } = app // 这个mount里面有render，render里面有很多patch各种类型的方法
   app.mount = (containerOrSelector: Element | string): any => {
     const container = normalizeContainer(containerOrSelector)
     if (!container) return
@@ -138,3 +141,4 @@ export { vShow } from './directives/vShow'
 // re-export everything from core
 // h, Component, reactivity API, nextTick, flags & types
 export * from '@vue/runtime-core'
+export { nodeOps, patchProp }

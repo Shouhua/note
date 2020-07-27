@@ -22,7 +22,7 @@ export function renderSlot(
   // the compiler and guaranteed to be a function returning an array
   fallback?: () => VNodeArrayChildren
 ): VNode {
-  let slot = slots[name]
+  let slot = slots[name] // NOTICE: slot总是返回一个函数, (props) => []
 
   if (__DEV__ && slot && slot.length > 1) {
     warn(

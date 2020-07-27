@@ -26,6 +26,7 @@ import { VNodeProps } from './vnode'
 // when declaring components. Type inference is provided in the component
 // options (provided as the argument). The returned value has artificial types
 // for TSX / manual render function / IDE support.
+// defineComponent啥也没干，就是用于typescript的类型安全和类型推理
 
 // overload 1: direct setup function
 // (uses user defined props interface)

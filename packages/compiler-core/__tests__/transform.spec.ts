@@ -188,6 +188,7 @@ describe('compiler: transform', () => {
     const hoisted: ExpressionNode[] = []
     const mock: NodeTransform = (node, context) => {
       if (node.type === NodeTypes.ELEMENT) {
+        // NOTICE: node.props instanceof Array<AttributeNode | DirectiveNode>
         const dir = node.props[0] as DirectiveNode
         hoisted.push(dir.exp!)
         dir.exp = context.hoist(dir.exp!)

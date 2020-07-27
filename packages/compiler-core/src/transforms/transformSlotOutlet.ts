@@ -12,6 +12,7 @@ import { buildProps, PropsExpression } from './transformElement'
 import { createCompilerError, ErrorCodes } from '../errors'
 import { RENDER_SLOT } from '../runtimeHelpers'
 
+// <slot></slot>
 export const transformSlotOutlet: NodeTransform = (node, context) => {
   if (isSlotOutlet(node)) {
     const { children, loc } = node
@@ -33,6 +34,7 @@ export const transformSlotOutlet: NodeTransform = (node, context) => {
       slotArgs.push(createFunctionExpression([], children, false, false, loc))
     }
 
+    // renderSlot($slots, slotName, slotProps || {}, () => return children)
     node.codegenNode = createCallExpression(
       context.helper(RENDER_SLOT),
       slotArgs,

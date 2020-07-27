@@ -22,6 +22,11 @@ export type TransformPreset = [
   Record<string, DirectiveTransform>
 ]
 
+/**
+ NOTICE: prefixIndentifiers，如果为true，则会将{{ foo }}转化为_ctx.foo,
+ * 如果为false，则使用with(this) {}
+ * 在module环境中解析时，因为默认是strict模式，所以prefixIndentifiers默认为true, 不使用with(this){}的形式
+ */
 export function getBaseTransformPreset(
   prefixIdentifiers?: boolean
 ): TransformPreset {
@@ -78,6 +83,7 @@ export function baseCompile(
     onError(createCompilerError(ErrorCodes.X_SCOPE_ID_NOT_SUPPORTED))
   }
 
+  // 处理template，html->ast（tag，tagType，interpolation，directive等）
   const ast = isString(template) ? baseParse(template, options) : template
   const [nodeTransforms, directiveTransforms] = getBaseTransformPreset(
     prefixIdentifiers
@@ -98,6 +104,7 @@ export function baseCompile(
     })
   )
 
+  // 生成render函数
   return generate(
     ast,
     extend({}, options, {
