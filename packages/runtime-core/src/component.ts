@@ -1,20 +1,20 @@
 import { VNode, VNodeChild, isVNode } from './vnode'
 import {
-  reactive,
   ReactiveEffect,
   pauseTracking,
   resetTracking,
-  shallowReadonly
+  shallowReadonly,
+  proxyRefs
 } from '@vue/reactivity'
 import {
-  CreateComponentPublicInstance,
   ComponentPublicInstance,
   PublicInstanceProxyHandlers,
   RuntimeCompiledPublicInstanceProxyHandlers,
   createRenderContext,
   exposePropsOnRenderContext,
-  exposeSetupStateOnRenderContext
-} from './componentProxy'
+  exposeSetupStateOnRenderContext,
+  ComponentPublicInstanceConstructor
+} from './componentPublicInstance'
 import {
   ComponentPropsOptions,
   NormalizedPropsOptions,
@@ -116,21 +116,19 @@ export interface ClassComponent {
   __vccOpts: ComponentOptions
 }
 
-export type Component = ComponentOptions | FunctionalComponent<any>
+/**
+ * Concrete component type matches its actual value: it's either an options
+ * object, or a function. Use this where the code expects to work with actual
+ * values, e.g. checking if its a function or not. This is mostly for internal
+ * implementation code.
+ */
+export type ConcreteComponent = ComponentOptions | FunctionalComponent<any, any>
 
-// A type used in public APIs where a component type is expected.
-// The constructor type is an artificial type returned by defineComponent().
-export type PublicAPIComponent =
-  | Component
-  | {
-      new (...args: any[]): CreateComponentPublicInstance<
-        any,
-        any,
-        any,
-        any,
-        any
-      >
-    }
+/**
+ * A type used in public APIs where a component type is expected.
+ * The constructor type is an artificial type returned by defineComponent().
+ */
+export type Component = ConcreteComponent | ComponentPublicInstanceConstructor
 
 export { ComponentOptions }
 
@@ -180,7 +178,7 @@ export type InternalRenderFunction = {
  */
 export interface ComponentInternalInstance {
   uid: number
-  type: Component
+  type: ConcreteComponent
   parent: ComponentInternalInstance | null
   root: ComponentInternalInstance
   appContext: AppContext
@@ -233,7 +231,10 @@ export interface ComponentInternalInstance {
 
   // the rest are only for stateful components ---------------------------------
 
-  // main proxy that serves as the public instance (`this`)
+  /**
+   * main proxy that serves as the public instance (`this`)
+   * @internal
+   */
   proxy: ComponentPublicInstance | null
 
   /**
@@ -269,6 +270,11 @@ export interface ComponentInternalInstance {
    * @internal
    */
   setupState: Data
+  /**
+   * devtools access to additional info
+   * @internal
+   */
+  devtoolsRawSetupState?: any
   /**
    * @internal
    */
@@ -355,7 +361,7 @@ export function createComponentInstance(
   parent: ComponentInternalInstance | null,
   suspense: SuspenseBoundary | null
 ) {
-  const type = vnode.type as Component
+  const type = vnode.type as ConcreteComponent
   // inherit parent app context - or - if root, adopt from root vnode
   const appContext =
     (parent ? parent.appContext : vnode.appContext) || emptyAppContext
@@ -564,7 +570,10 @@ export function handleSetupResult(
     }
     // setup returned bindings.
     // assuming a render function compiled from template is present.
-    instance.setupState = reactive(setupResult) // 使用reactive后在使用时内部会转化ref的value, ref的可以不用使用.value获取值
+    if (__DEV__ || __FEATURE_PROD_DEVTOOLS__) {
+      instance.devtoolsRawSetupState = setupResult
+    }
+    instance.setupState = proxyRefs(setupResult)
     if (__DEV__) {
       exposeSetupStateOnRenderContext(instance)
     }
@@ -606,6 +615,7 @@ function finishComponentSetup(
       instance.render = Component.render as InternalRenderFunction
     }
   } else if (!instance.render) {
+    // could be set from setup()
     if (compile && Component.template && !Component.render) {
       if (__DEV__) {
         startMeasure(instance, `compile`)
@@ -618,30 +628,9 @@ function finishComponentSetup(
       if (__DEV__) {
         endMeasure(instance, `compile`)
       }
-      // mark the function as runtime compiled
-      // vue compiler编译出来的render，后面会使用特殊的withProxy
-      ;(Component.render as InternalRenderFunction)._rc = true
     }
-
-    if (__DEV__ && !Component.render) {
-      /* istanbul ignore if */
-      if (!compile && Component.template) {
-        warn(
-          `Component provided template option but ` +
-            `runtime compilation is not supported in this build of Vue.` +
-            (__ESM_BUNDLER__
-              ? ` Configure your bundler to alias "vue" to "vue/dist/vue.esm-bundler.js".`
-              : __ESM_BROWSER__
-                ? ` Use "vue.esm-browser.js" instead.`
-                : __GLOBAL__
-                  ? ` Use "vue.global.js" instead.`
-                  : ``) /* should not happen */
-        )
-      } else {
-        warn(`Component is missing template or render function.`)
-      }
-    }
-
+    // mark the function as runtime compiled
+    // vue compiler编译出来的render，后面会使用特殊的withProxy
     instance.render = (Component.render || NOOP) as InternalRenderFunction
 
     // for runtime-compiled render functions using `with` blocks, the render
@@ -661,6 +650,26 @@ function finishComponentSetup(
     currentInstance = instance
     applyOptions(instance, Component)
     currentInstance = null
+  }
+
+  // warn missing template/render
+  if (__DEV__ && !Component.render && instance.render === NOOP) {
+    /* istanbul ignore if */
+    if (!compile && Component.template) {
+      warn(
+        `Component provided template option but ` +
+          `runtime compilation is not supported in this build of Vue.` +
+          (__ESM_BUNDLER__
+            ? ` Configure your bundler to alias "vue" to "vue/dist/vue.esm-bundler.js".`
+            : __ESM_BROWSER__
+              ? ` Use "vue.esm-browser.js" instead.`
+              : __GLOBAL__
+                ? ` Use "vue.global.js" instead.`
+                : ``) /* should not happen */
+      )
+    } else {
+      warn(`Component is missing template or render function.`)
+    }
   }
 }
 
@@ -720,7 +729,7 @@ const classify = (str: string): string =>
 /* istanbul ignore next */
 export function formatComponentName(
   instance: ComponentInternalInstance | null,
-  Component: Component,
+  Component: ConcreteComponent,
   isRoot = false
 ): string {
   let name = isFunction(Component)

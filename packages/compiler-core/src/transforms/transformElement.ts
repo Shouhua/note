@@ -25,7 +25,8 @@ import {
   PatchFlagNames,
   isSymbol,
   isOn,
-  isObject
+  isObject,
+  isReservedProp
 } from '@vue/shared'
 import { createCompilerError, ErrorCodes } from '../errors'
 import {
@@ -35,7 +36,8 @@ import {
   MERGE_PROPS,
   TO_HANDLERS,
   TELEPORT,
-  KEEP_ALIVE
+  KEEP_ALIVE,
+  SUSPENSE
 } from '../runtimeHelpers'
 import {
   getInnerRange,
@@ -91,6 +93,8 @@ export const transformElement: NodeTransform = (node, context) => {
     let shouldUseBlock =
       // dynamic component may resolve to plain elements <component is='' />
       isDynamicComponent ||
+      vnodeTag === TELEPORT ||
+      vnodeTag === SUSPENSE ||
       (!isComponent &&
         // <svg> and <foreignObject> must be forced into blocks so that block
         // updates inside get proper isSVG flag at runtime. (#639, #643)
@@ -245,7 +249,12 @@ export function resolveComponentType(
     return builtIn
   }
 
-  // 3. user component (resolve)
+  // 3. user component (from setup bindings)
+  if (context.bindingMetadata[tag] === 'setup') {
+    return `$setup[${JSON.stringify(tag)}]`
+  }
+
+  // 4. user component (resolve)
   context.helper(RESOLVE_COMPONENT)
   context.components.add(tag)
   /**
@@ -282,22 +291,31 @@ export function buildProps(
   let hasStyleBinding = false
   let hasHydrationEventBinding = false
   let hasDynamicKeys = false
+  let hasVnodeHook = false
   const dynamicPropNames: string[] = []
 
   const analyzePatchFlag = ({ key, value }: Property) => {
     if (isStaticExp(key)) {
       const name = key.content
+      const isEventHandler = isOn(name)
       if (
         !isComponent &&
-        isOn(name) &&
+        isEventHandler &&
         // omit the flag for click handlers because hydration gives click
         // dedicated fast path.
         name.toLowerCase() !== 'onclick' &&
         // omit v-model handlers
-        name !== 'onUpdate:modelValue'
+        name !== 'onUpdate:modelValue' &&
+        // omit onVnodeXXX hooks
+        !isReservedProp(name)
       ) {
         hasHydrationEventBinding = true
       }
+
+      if (isEventHandler && isReservedProp(name)) {
+        hasVnodeHook = true
+      }
+
       if (
         value.type === NodeTypes.JS_CACHE_EXPRESSION ||
         ((value.type === NodeTypes.SIMPLE_EXPRESSION ||
@@ -525,7 +543,7 @@ export function buildProps(
   }
   if (
     (patchFlag === 0 || patchFlag === PatchFlags.HYDRATE_EVENTS) &&
-    (hasRef || runtimeDirectives.length > 0)
+    (hasRef || hasVnodeHook || runtimeDirectives.length > 0)
   ) {
     patchFlag |= PatchFlags.NEED_PATCH
   }

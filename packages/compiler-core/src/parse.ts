@@ -53,7 +53,8 @@ export const defaultParserOptions: MergedParserOptions = {
   isCustomElement: NO,
   decodeEntities: (rawText: string): string =>
     rawText.replace(decodeRE, (_, p1) => decodeMap[p1]),
-  onError: defaultOnError
+  onError: defaultOnError,
+  comments: false
 }
 
 // https://www.hackersb.cn/hacker/85.html
@@ -271,8 +272,12 @@ function parseChildren(
           } else {
             node.content = node.content.replace(/[\t\r\n\f ]+/g, ' ')
           }
-        } else if (!__DEV__ && node.type === NodeTypes.COMMENT) {
-          // remove comment nodes in prod
+        } else if (
+          !__DEV__ &&
+          node.type === NodeTypes.COMMENT &&
+          !context.options.comments
+        ) {
+          // remove comment nodes in prod by default
           removedWhitespace = true
           nodes[i] = null as any
         }

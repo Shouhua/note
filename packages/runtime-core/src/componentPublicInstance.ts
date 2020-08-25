@@ -6,16 +6,17 @@ import {
   hasOwn,
   isGloballyWhitelisted,
   NOOP,
-  extend
+  extend,
+  isString
 } from '@vue/shared'
 import {
   ReactiveEffect,
-  UnwrapRef,
   toRaw,
   shallowReadonly,
   ReactiveFlags,
   track,
-  TrackOpTypes
+  TrackOpTypes,
+  ShallowUnwrapRef
 } from '@vue/reactivity'
 import {
   ExtractComputedReturns,
@@ -25,7 +26,8 @@ import {
   ComponentOptionsMixin,
   OptionTypesType,
   OptionTypesKeys,
-  resolveMergedOptions
+  resolveMergedOptions,
+  isInBeforeCreate
 } from './componentOptions'
 import { normalizePropsOptions } from './componentProps'
 import { EmitsOptions, EmitFn } from './componentEmits'
@@ -99,6 +101,15 @@ type UnwrapMixinsType<
 
 type EnsureNonVoid<T> = T extends void ? {} : T
 
+export type ComponentPublicInstanceConstructor<
+  T extends ComponentPublicInstance = ComponentPublicInstance<any>
+> = {
+  __isFragment?: never
+  __isTeleport?: never
+  __isSuspense?: never
+  new (...args: any[]): T
+}
+
 export type CreateComponentPublicInstance<
   P = {},
   B = {},
@@ -154,17 +165,11 @@ export type ComponentPublicInstance<
   $nextTick: typeof nextTick
   $watch: typeof instanceWatch
 } & P &
-  UnwrapRef<B> &
+  ShallowUnwrapRef<B> &
   D &
   ExtractComputedReturns<C> &
   M &
   ComponentCustomProperties
-
-export type ComponentPublicInstanceConstructor<
-  T extends ComponentPublicInstance
-> = {
-  new (): T
-}
 
 type PublicPropertiesMap = Record<string, (i: ComponentInternalInstance) => any>
 
@@ -255,7 +260,7 @@ export const PublicInstanceProxyHandlers: ProxyHandler<any> = {
       } else if (ctx !== EMPTY_OBJ && hasOwn(ctx, key)) {
         accessCache![key] = AccessTypes.CONTEXT
         return ctx[key]
-      } else {
+      } else if (!__FEATURE_OPTIONS_API__ || !isInBeforeCreate) {
         accessCache![key] = AccessTypes.OTHER
       }
     }
@@ -288,9 +293,10 @@ export const PublicInstanceProxyHandlers: ProxyHandler<any> = {
     } else if (
       __DEV__ &&
       currentRenderingInstance &&
-      // #1091 avoid internal isRef/isVNode checks on component instance leading
-      // to infinite warning loop
-      key.indexOf('__v') !== 0
+      (!isString(key) ||
+        // #1091 avoid internal isRef/isVNode checks on component instance leading
+        // to infinite warning loop
+        key.indexOf('__v') !== 0)
     ) {
       if (data !== EMPTY_OBJ && key[0] === '$' && hasOwn(data, key)) {
         warn(

@@ -6,7 +6,6 @@ export * from './shapeFlags'
 export * from './slotFlags'
 export * from './globalsWhitelist'
 export * from './codeframe'
-export * from './mockWarn'
 export * from './normalizeProp'
 export * from './domTagConfig'
 export * from './domAttrConfig'
@@ -20,7 +19,7 @@ export * from './toDisplayString'
  * for ES2020. This will need to be updated as the spec moves forward.
  * Full list at https://babeljs.io/docs/en/next/babel-parser#plugins
  */
-export const babelParserDefautPlugins = [
+export const babelParserDefaultPlugins = [
   'bigInt',
   'optionalChaining',
   'nullishCoalescingOperator'

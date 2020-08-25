@@ -257,7 +257,11 @@ const getChildRoot = (
   const dynamicChildren = vnode.dynamicChildren as VNodeArrayChildren
   const children = rawChildren.filter(child => {
     // 过滤出不是comment类型的VNode
-    return !(isVNode(child) && child.type === Comment)
+    return !(
+      isVNode(child) &&
+      child.type === Comment &&
+      child.children !== 'v-if'
+    )
   })
   if (children.length !== 1) {
     return [vnode, undefined]

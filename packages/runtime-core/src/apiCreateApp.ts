@@ -36,13 +36,13 @@ RFC查看网友讨论：github.com/vuejs/rfcs/…
 为什么这么改变？其实也好理解，Vue3.x 基于函数式编程，所以：一切皆函数。 为了保证每个函数都有自己的小 圈子 能独立运行，所以从源头上就开始 开刀。
  */
 import {
-  Component,
+  ConcreteComponent,
   Data,
   validateComponentName,
-  PublicAPIComponent
+  Component
 } from './component'
 import { ComponentOptions } from './componentOptions'
-import { ComponentPublicInstance } from './componentProxy'
+import { ComponentPublicInstance } from './componentPublicInstance'
 import { Directive, validateDirectiveName } from './directives'
 import { RootRenderFunction } from './renderer'
 import { InjectionKey } from './apiInject'
@@ -58,8 +58,8 @@ export interface App<HostElement = any> {
   config: AppConfig
   use(plugin: Plugin, ...options: any[]): this
   mixin(mixin: ComponentOptions): this
-  component(name: string): PublicAPIComponent | undefined
-  component(name: string, component: PublicAPIComponent): this
+  component(name: string): Component | undefined
+  component(name: string, component: Component): this
   directive(name: string): Directive | undefined
   directive(name: string, directive: Directive): this
   mount(
@@ -70,7 +70,7 @@ export interface App<HostElement = any> {
   provide<T>(key: InjectionKey<T> | string, value: T): this
 
   // internal, but we need to expose these for the server-renderer and devtools
-  _component: Component
+  _component: ConcreteComponent
   _props: Data | null
   _container: HostElement | null
   _context: AppContext
@@ -107,8 +107,8 @@ export interface AppConfig {
 export interface AppContext {
   app: App // for devtools
   config: AppConfig
-  mixins: ComponentOptions[] // vue 2.x options里面的mixins放在这里面
-  components: Record<string, PublicAPIComponent>
+  mixins: ComponentOptions[]
+  components: Record<string, Component>
   directives: Record<string, Directive>
   provides: Record<string | symbol, any>
   reload?: () => void // HMR only
@@ -142,7 +142,7 @@ export function createAppContext(): AppContext {
 }
 
 export type CreateAppFunction<HostElement> = (
-  rootComponent: PublicAPIComponent,
+  rootComponent: Component,
   rootProps?: Data | null
 ) => App<HostElement>
 
@@ -163,7 +163,7 @@ export function createAppAPI<HostElement>(
 
     // 为了server render
     const app: App = (context.app = {
-      _component: rootComponent as Component,
+      _component: rootComponent as ConcreteComponent,
       _props: rootProps,
       _container: null,
       _context: context,
@@ -216,7 +216,7 @@ export function createAppAPI<HostElement>(
         return app
       },
 
-      component(name: string, component?: PublicAPIComponent): any {
+      component(name: string, component?: Component): any {
         if (__DEV__) {
           validateComponentName(name, context.config)
         }
@@ -247,7 +247,10 @@ export function createAppAPI<HostElement>(
 
       mount(rootContainer: HostElement, isHydrate?: boolean): any {
         if (!isMounted) {
-          const vnode = createVNode(rootComponent as Component, rootProps)
+          const vnode = createVNode(
+            rootComponent as ConcreteComponent,
+            rootProps
+          )
           // store app context on the root VNode.
           // this will be set on the root instance on initial mount.
           // appContext初始化时填充的，指的是默认的config和用户的provide，conponents，directives等
@@ -289,14 +292,16 @@ export function createAppAPI<HostElement>(
       unmount() {
         if (isMounted) {
           render(null, app._container)
-          devtoolsUnmountApp(app)
+          if (__DEV__ || __FEATURE_PROD_DEVTOOLS__) {
+            devtoolsUnmountApp(app)
+          }
         } else if (__DEV__) {
           warn(`Cannot unmount an app that is not mounted.`)
         }
       },
 
       provide(key, value) {
-        if (__DEV__ && key in context.provides) {
+        if (__DEV__ && (key as string | symbol) in context.provides) {
           warn(
             `App already provides property with key "${String(key)}". ` +
               `It will be overwritten with the new value.`
