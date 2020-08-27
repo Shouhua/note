@@ -33,6 +33,9 @@
       // setup可以传递props, 可以返回函数表述render数据，里面避免了使用this数据
       // 也可以返回对象表示所有变量，函数等资源
       setup(props) {
+        // 在vue3.0中可以显式的去定义用户认为需要响应式的对象变量，
+        // 而在vue2.x时代，是在data中去定义数据对象，然后vue去黑盒处理
+        // 所以vue2.x时代，可以在created生命周期中定义非响应式的变量
         const state = Vue.reactive({
           helloMsg: Vue.computed(() => {
             return 'hello, ' + props.name;

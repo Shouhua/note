@@ -160,6 +160,7 @@ function doWatch(
     )
   }
 
+  // 标准化传递参数
   let getter: () => any
   const isRefSource = isRef(source)
   if (isRefSource) {

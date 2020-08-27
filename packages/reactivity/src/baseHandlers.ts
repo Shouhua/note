@@ -152,6 +152,7 @@ function deleteProperty(target: object, key: string | symbol): boolean {
   return result
 }
 
+// in操作符会触发has
 function has(target: object, key: string | symbol): boolean {
   const result = Reflect.has(target, key)
   if (!isSymbol(key) || !builtInSymbols.has(key)) {
@@ -160,6 +161,7 @@ function has(target: object, key: string | symbol): boolean {
   return result
 }
 
+// Object.getOwnPropertyNames时触发ownKeys
 function ownKeys(target: object): (string | number | symbol)[] {
   track(target, TrackOpTypes.ITERATE, ITERATE_KEY)
   return Reflect.ownKeys(target)

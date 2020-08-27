@@ -227,6 +227,8 @@ export const PublicInstanceProxyHandlers: ProxyHandler<any> = {
     // is the multiple hasOwn() calls. It's much faster to do a simple property
     // access on a plain object, so we use an accessCache object (with null
     // prototype) to memoize what access type a key corresponds to.
+    // 需要注意的是顺序（优先级）依次是：setupState, data, context, props
+    // accessCache，每次判断值在哪儿使用has属性效率低，使用accessCache
     let normalizedProps
     if (key[0] !== '$') {
       const n = accessCache![key]

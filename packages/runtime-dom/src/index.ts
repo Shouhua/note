@@ -29,6 +29,7 @@ let renderer: Renderer<Element> | HydrationRenderer
 
 let enabledHydration = false
 
+// 延时创建渲染器，当用户只依赖响应式包的时候，可以通过tree-shaking移除核心渲染逻辑相关的代码
 function ensureRenderer() {
   return renderer || (renderer = createRenderer<Node, Element>(rendererOptions))
 }
@@ -57,7 +58,8 @@ export const createApp = ((...args) => {
     injectNativeTagCheck(app)
   }
 
-  // 为了复用，为了被runtime版本的vue直接使用
+  // runtime-core的mount是平台无关的，在为了复用，这里需要重写mount加入dom的相关内容
+  // 为了被runtime版本的vue直接使用
   // app这里面有所有的信息，包括use,plugin,directive等方法
   // 和刚刚填充的config:appConfig里面的mixin，provide，plugin，directive等
   const { mount } = app // 这个mount里面有render，render里面有很多patch各种类型的方法

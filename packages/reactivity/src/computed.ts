@@ -61,6 +61,16 @@ class ComputedRefImpl<T> {
   }
 }
 
+/**
+ * computed有以下几个优势：
+ * 1. 只有当我们访问计算属性的时候，才会计算
+ * 2. 缓存当前的计算结果，只有当dirty为false的时候才再一次计算
+ *
+ * computed有2种参数：
+ * 1. 函数() => {}
+ * 2. 对象{getter: () => {}, setter: val => {}}: 当改变computed.value=1的时候会触发setter
+ **/
+
 export function computed<T>(getter: ComputedGetter<T>): ComputedRef<T>
 export function computed<T>(
   options: WritableComputedOptions<T>
@@ -71,6 +81,7 @@ export function computed<T>(
   let getter: ComputedGetter<T>
   let setter: ComputedSetter<T>
 
+  // 标准化参数
   if (isFunction(getterOrOptions)) {
     getter = getterOrOptions
     setter = __DEV__

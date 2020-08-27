@@ -1523,6 +1523,7 @@ function baseCreateRenderer(
     flushPreFlushCbs(undefined, instance.update)
   }
 
+  // vnode子节点是vnode的情况下，变为新的vnode
   const patchChildren: PatchChildrenFn = (
     n1,
     n2,
