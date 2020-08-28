@@ -22,7 +22,7 @@
       <span>{{count++}}</span>
   </script>
   <script>
-    const { reactive, ref, createApp, computed, watch, watchEffect } = Vue;
+    const { reactive, ref, createApp, computed, watch, watchEffect, onErrorCaptured } = Vue;
     const Hello = {
       name: 'Hello',
       // template: '#child-template',
@@ -41,6 +41,7 @@
             return 'hello, ' + props.name;
           })
         });
+        onErrorCaptured(() => {console.log('track component and child error')})
         return () => Vue.h('div', [Vue.h('span', 'hello'), Vue.h('span', state.helloMsg)]);
         // return {
         //   ...Vue.toRefs(state)
