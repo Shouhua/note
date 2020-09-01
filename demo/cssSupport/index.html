@@ -1,0 +1,35 @@
+<script>
+  /**
+   css support判断
+  在css中可以使用:
+  @supports (display: flex) {
+    div {
+      display: flex;
+    }
+  }
+  在js中可以使用以下2中方式：
+  1. if(window.CSS && window.CSS.supports('display', 'flex')) {
+    // felxbox is supported
+  } else {
+    // flexbox can't be used
+  }
+  2. 直接新建一个元素，css赋值给DOM元素，然后再取出来，check是否一致
+*/
+if(window.CSS && window.CSS.supports('display', 'flex')) {
+  // felxbox is supported
+} else {
+  // flexbox can't be used
+}
+function cssPropertyValueSupported(prop, value) {
+  var domDiv = document.createElement('div')
+  domDiv.style[prop] = value
+  return domDiv.style[prop] === value
+}
+</script>
+<style>
+@supports (display: flex) {
+  div {
+    display: flex;
+  }
+}
+</style>

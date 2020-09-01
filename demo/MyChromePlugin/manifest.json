@@ -1,0 +1,49 @@
+{
+  "name": "Just for fun",
+  "version": "0.1",
+  "description": "just for fun",
+  "manifest_version": 2,
+  "icons": {
+    "16": "demo.png",
+    "32": "demo.png",
+    "48": "demo.png",
+    "128": "demo.png"
+  },
+  "page_action": {
+    "default_popup": "popup.html",
+    "default_title": "Google Mail",
+    "default_icon": {
+      "16": "demo.png",
+      "32": "demo.png",
+      "48": "demo.png",
+      "128": "demo.png"
+    }
+  },
+  "options_page": "options.html",
+  "commands": {
+    "toggle-tags": {
+      "suggested_key": {
+        "default": "Alt+S",
+        "mac": "MacCtrl+S"
+      },
+      "description": "Toggle Tags"
+    }
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["cs.js"],
+      "css": ["script.css"],
+      "run_at": "document_start"
+    }
+  ],
+  "background": {
+    "scripts": [
+      "background.js"
+    ],
+    "persistent": false
+  },
+  "permissions": ["declarativeContent", "tabs", "storage", "activeTab", "contextMenus"],
+  "devtools_page": "devtools.html",
+  "web_accessible_resources": ["script.js", "script.css"]
+}

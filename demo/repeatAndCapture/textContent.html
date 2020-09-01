@@ -1,0 +1,12 @@
+<script>
+  /**
+   * https://developer.mozilla.org/zh-CN/docs/Web/API/Node/textContent
+   * textContent和innerText都是获取元素及其自元素的文本，区别：
+   * 1. textContent会获取所有元素的内容，比如script和style元素的内容，innerText只返回展示给人看的
+   * 2. textContent会返回节点中的每一个元素，innerText会受到css样式的影响
+   * 3. innerText会触发回流（reflow），保证最新的计算样式（设置的时候）
+   * 4. textContent在IE8中不可用，需要polyfill
+   * 
+   * 与innerHTML相比，可以防止XSS攻击
+   * /
+</script>

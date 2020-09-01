@@ -1,0 +1,21 @@
+<script>
+  function fn1() {
+    console.log('fn1')
+    return 'fn1'
+  }
+  function fn2(tag, a) {
+    console.log('fn2: ', tag, a) 
+    return 'fn2'
+  }
+  function fn3(tag) {
+    console.log('fn3: ', tag)
+    return 'fn3'
+  }
+  // 逗号分割的表达式，返回最后一个表达式的值
+  function render() {
+    return (fn1(), fn2('hello', [
+      fn3('div')
+    ]))
+  }
+  console.log(render())
+</script>

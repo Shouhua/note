@@ -1,0 +1,35 @@
+<div id="app"></div>
+
+<script src="https://unpkg.com/vue@next"></script>
+<script>
+/**
+ * this.$slots.default总是放回一个函数，可以传递scoped参数
+ * this.$slots.default({foo, ...bar}), 返回undefined或者数组
+ */
+const { createApp, h } = Vue
+const App = {
+  render() {
+    // 1. v-if例子
+    // return this.ok
+    //   ? h('div', { id: 'hello' }, [h('span', 'world')])
+    //   : this.otherCondition 
+    //     ? h('p', 'other branch')
+    //     : h('span')
+    
+    // 2. v-for="item in list"
+    // return list.map(item => {
+    //   return h('div', { key: item.key }, item.text)
+    // })
+
+    // 3. 在大型的功能性或者feather component中一般使用slot的render函数
+    // const slot = this.$slots.default && this.$slots.default()
+    const slot = this.$slots.default // guarantee always return children vnode array
+      ? this.$slots.default()
+      : []
+    // return slot.map()....
+    // return h('div', ['hello', ...slot])
+    
+  }
+}
+createApp(App).mount('#app')
+</script>

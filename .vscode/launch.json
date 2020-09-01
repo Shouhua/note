@@ -1,0 +1,122 @@
+{
+  // 使用 IntelliSense 了解相关属性。 
+  // 悬停以查看现有属性的描述。
+  // 欲了解更多信息，请访问: https://go.microsoft.com/fwlink/?linkid=830387
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "reactive",
+      "program": "${workspaceFolder}/demo/vue3Demo/dist/reactive.js",
+      "skipFiles": [
+        "<node_internals>/**"
+      ]
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "fetch",
+      "program": "${workspaceFolder}/demo/fetch/index.js",
+      "skipFiles": [
+        "<node_internals>/**"
+      ]
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "csrf & xss & csp",
+      "program": "${workspaceFolder}/demo/csxfAndXss/index.js",
+      "skipFiles": [
+        "<node_internals>/**"
+      ]
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "regex",
+      "program": "${workspaceFolder}/demo/regex.js",
+      "skipFiles": [
+        "<node_internals>/**"
+      ]
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "baseParse",
+      "program": "${workspaceFolder}/dist/baseParse.js",
+      "skipFiles": [
+        "<node_internals>/**"
+      ],
+      "preLaunchTask": "tsc: watch - tsconfig.json"
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "http-cookie",
+      "program": "${workspaceFolder}/demo/httpCookie/server.js",
+      "skipFiles": [
+        "<node_internals>/**"
+      ]
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "http-cache",
+      "program": "${workspaceFolder}/demo/httpCache/server.js",
+      "skipFiles": [
+        "<node_internals>/**"
+      ]
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "koa",
+      "program": "${workspaceFolder}/demo/koaDemo.js",
+      "skipFiles": [
+        "<node_internals>/**"
+      ]
+    },
+    {
+      "type": "node",
+      "name": "vscode-jest-tests",
+      "request": "launch",
+      "args": [
+        "--runInBand"
+      ],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen",
+      "disableOptimisticBPs": true,
+      "program": "${workspaceFolder}/node_modules/jest/bin/jest"
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "proxyMap",
+      "skipFiles": [
+        "<node_internals>/**"
+      ],
+      "program": "${workspaceFolder}/demo/proxyMap.js"
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "this",
+      "skipFiles": [
+        "<node_internals>/**"
+      ],
+      "program": "${workspaceFolder}/demo/this.js"
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "customEffect",
+      "skipFiles": [
+        "<node_internals>/**"
+      ],
+      "runtimeArgs": ["-r", "esm"],
+      "program": "${workspaceFolder}/demo/customEffect.js"
+    }
+  ]
+}

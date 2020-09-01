@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Debounce & Throttle</title>
+</head>
+<body>
+  <label for="count">Count: </label> 
+  <span id="count">0</span>
+  <script type="module">
+    import {debounce, throttle } from './debounce.js'
+    let count = 0
+    const callback = () => {
+      count++
+      document.getElementById('count').textContent = count
+    }
+    const d = debounce(callback)
+    const t = throttle(callback)
+    window.addEventListener('resize', d)
+  </script>
+</body>
+</html>

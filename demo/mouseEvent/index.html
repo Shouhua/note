@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <style>
+    /* .hello {
+      background: lightblue;
+    }
+  
+    .world {
+      color: red;
+    } */
+
+    .wrap{
+      width: 50%;
+      box-sizing: border-box;
+      float: left;
+    }
+
+    .wrap, .list{
+      border: solid 1px green;
+      padding: 30px;
+      margin: 30px 0;
+    }
+
+    .list{
+      border: solid 1px red;
+    }
+
+    .list li{
+      border: solid 1px blue;
+      padding: 10px;
+      margin: 10px;
+    }
+
+    .count{
+      color: red;
+    }
+  </style>
+  <script type="text/javascript">
+    document.addEventListener('DOMContentLoaded', () => {
+      const app = document.createElement('div')
+      app.className = 'hello world'
+      app.textContent = 'helo, world!'
+      // 后面必须使用分号，不然会认为'helo, world!'是一个函数，报错!!!
+      ;(document.body || document.head || document.documentElement).appendChild(app)
+    })
+  </script>
+</head>
+<body>
+  <div class="wrap">
+    wrap, mouseover
+    <ul class="mouseover list">
+      count: <span class="count"></span>
+      <li>1</li>
+      <li>2</li>
+      <li>3</li>
+    </ul>
+  </div>
+  <div class="wrap">
+    wrap, mouseenter
+    <ul class="mouseenter list">
+      count: <span class="count"></span>
+      <li>1</li>
+      <li>2</li>
+      <li>3</li>
+    </ul>
+  </div> 
+  <script>
+    /*
+    mouseenter(mouseleave) vs mouseover(mouseout)
+    1. mouseenter事件不会bubble，所以mouseenter例子, 当hover在li上面时，ul的mouseenter事件是不会触发的
+    2. Event.relatedTarget
+    */
+    const $mouseOver = document.querySelector('.mouseover')
+    const $mouseEnter = document.querySelector('.mouseenter')
+    const $overCount = document.querySelector('.mouseover .count')
+    const $enterCount = document.querySelector('.mouseenter .count')
+
+    // 注意里面start变量的使用技巧, 需要一个全局变量的时候，可以形成一个闭包
+    function addCount(el, start) {
+      return function(event) {
+        console.log(event.target) // 触发DOM
+        console.log(event.currentTarget) // 监听DOM
+        // relatedTarget属于mouseEvent, mouse前一个状态的对象, 比如，mouseenter对象，表示enter前的DOM
+        console.log(event.relatedTarget) 
+        el.textContent = ++start
+      }
+    }
+
+    $mouseOver.addEventListener('mouseover', addCount($overCount, 0), false)
+    $mouseEnter.addEventListener('mouseenter', addCount($enterCount, 0), false)
+    
+    //自定义和触发event
+    const overEvent = new CustomEvent('mouseover', {
+      detail: {
+        name: 'mouseover'
+      }
+    })
+    $mouseOver.dispatchEvent(overEvent)
+
+    // 过时的方式
+    const enterEvent = document.createEvent('Event')
+    enterEvent.initEvent('mouseenter', false, true)
+    $mouseEnter.dispatchEvent(enterEvent)
+
+    // 判断是否包含子, 原生的Node.contains判断自身会返回true，所有需要去除，另外contains有浏览器的限制
+    const html = document.documentElement
+    const contains = html.contains 
+      ? function(parent, node) {
+        return parent !== node && parent.contains(node)
+      }
+      : function(parent, node) {
+        let result = parent !== node
+        if(!result) {
+          return result
+        }
+        if(result) {
+          while(node && (node = node.parentNode)) {
+            if(parent === node) {
+              return true
+            }
+          }
+        }
+        return false
+      }
+  </script>
+</body>
+</html>

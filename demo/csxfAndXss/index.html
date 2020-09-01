@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CSP</title>
+</head>
+<body>
+  <!-- <h3>hello, world</h3> -->
+  <!-- <script nonce="123">
+    console.log('execute ajax request')
+    const request = new XMLHttpRequest()
+    request.open('GET', 'http://localhost:3001/greet.js')
+    request.send()
+    if(request.readyState === 4) {
+      if(request.status === 2000) {
+        console.log('ajax for greet.js is success')
+      }
+    }
+  </script> -->
+  <!-- <script src="http://localhost:3001/hello.js"></script>  -->
+ <script>
+   function showJson(msg) {
+    alert(msg)
+   }
+ </script>
+ <script src="http://localhost:3000/script.js?callback=showJson"></script>
+</body>
+</html>

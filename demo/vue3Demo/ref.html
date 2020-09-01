@@ -1,0 +1,34 @@
+<div id="app"></div>
+
+<script src="https://unpkg.com/vue@next"></script>
+<script>
+const { createApp, h, onMounted } = Vue
+
+const items = [
+  { id: 1, name: 'Forever Kobe', rank: 1 },
+  { id: 2, name: 'Lebron James', rank: 2 }
+]
+
+const Player = {
+  name: 'Player',
+  render() {
+    return items.map(item => {
+      return h('div', item.name)
+    })
+  } 
+}
+
+const App = {
+  name: 'App',
+  setup(props, {attrs, slots, emit}) {
+    const handleClick = () => {
+      console.log(this.$refs)
+    }
+    return () => h('div', {ref: 'players'}, [h(Player), h('button', {
+      onClick: handleClick
+    }, '查看ref')])
+  }
+}
+
+createApp(App).mount('#app')
+</script>

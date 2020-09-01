@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Z index</title>
+  <style type="text/css">
+    /* div:first-child {
+      opacity: 0.99;
+    } */
+    .red, .green, .blue {
+      position: absolute;
+      width: 100px;
+      color: white;
+      line-height: 100px;
+      text-align: center;
+    }
+    .red {
+      z-index: 1;
+      top: 20px;
+      left: 20px;
+      background: red;
+    }
+
+    .green {
+      top: 60px;
+      left: 60px;
+      background: green;
+    }
+
+    .blue {
+      top: 100px;
+      left: 100px;
+      background: blue;
+    }
+  </style>
+</head>
+<body>
+ <!-- z-index问题 -->
+ <div><span class="red">Red</span></div>
+ <div><span class="green">Green</span></div>
+ <div><span class="blue">Blue</span></div>
+</body>
+<script>
+  /**
+   * z-index问题
+   * https://developer.mozilla.org/zh-CN/docs/Web/Guide/CSS/Understanding_z_index/The_stacking_context
+   * stacking context, 如何建立一个层叠上下文, z-index是在一个封闭的层叠上下文在比较
+   */ 
+</script>
+</html>
