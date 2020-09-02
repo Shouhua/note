@@ -13,6 +13,7 @@ const reactive = (o) => new Proxy(o, {
 
 createInstrumentations = function(instrumentations) {
   return function(target, key, receiver) {
+    console.log(`getter: get, key: ${key}`)
     Object.defineProperty(target, '__raw', {
       configurable: true,
       value: target
@@ -35,6 +36,7 @@ const instrumentations = {
 }
 
 function get(target, key) {
+  console.log(`get, key: ${key}`)
   target = target.__raw
   const proto = Reflect.getPrototypeOf(target)
   const res = proto.get.call(target, key)
@@ -42,18 +44,21 @@ function get(target, key) {
 }
 
 function has(key) {
+  console.log(`has, key: ${key}`)
   const target = this.__raw
   const { has } = Reflect.getPrototypeOf(target)
   return has.call(target, key)
 }
 
 function set(key, val) {
+  console.log(`set, key: ${key}; value: ${val}`)
   const target = this.__raw
   const { set } = Reflect.getPrototypeOf(target)
   return set.call(target, key, val);
 }
 
 function add(key, val) {
+  console.log(`add, key: ${key}; value: ${val}`)
   const target = this.__raw
   const { add } = Reflect.getPrototypeOf(target)
   return add.call(target, key, val);
@@ -80,6 +85,6 @@ let m = new Map(
     ['count', 10]
   ]
 )
-m.forEach((item, ky) => {
-  console.log(item, key) // label hello; count 10
+m.forEach((value, key, source) => {
+  console.log(value, key) // label hello; count 10
 })

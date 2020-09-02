@@ -35,9 +35,8 @@ export interface ReactiveEffectOptions {
 // target -> (key -> fn)
 const targetMap = new WeakMap<object, Map<key, Dep>>()
 
-function track<T extends object>(target: T, key: any): void
-function track(target, key) {
-  if(!shouldTrack || !activeEffect) return
+function track<T extends object>(target: T, key: any): void {
+  if(!shouldTrack || !activeEffect) return // 表示目前在effect中
   let depsMap = targetMap.get(target)
   if(!depsMap) {
     targetMap.set(target, (depsMap = new Map()))
@@ -48,16 +47,16 @@ function track(target, key) {
   }
   if(!deps.has(activeEffect)) {
     deps.add(activeEffect)
-    activeEffect.deps.push(deps)
+    activeEffect.deps.push(deps) // effect.deps用于后面使用stop
   }
 }
 
-function trigger<T extends object>(target: T, key: any, newVal: any): void
-function trigger(target, key, newVal)  {
-  let depsMap = targetMap.get(target)
+function trigger<T extends object>(target: T, key: any, newVal: any): void {
+  let depsMap = targetMap.get(target) // 如果没有track过就跳过 
   if(!depsMap) return
   let deps = depsMap.get(key)
   const effects = new Set<ReactiveEffect>()
+  // 这一步是为了防止在watch中不断的删除自己然后添加到deps中造成的死循环
   deps.forEach(effect => {
     if(effect !== activeEffect) {
       effects.add(effect)
@@ -99,20 +98,137 @@ function baseGetter(target: object, key: any, receiver: object) {
     return target
   }
 
+  const result = Reflect.get(target, key, receiver)
+
   track(target, getSymbolByKey(target, key))
-  return Reflect.get(target, key, receiver)
+
+  if(isObject(result)) {
+    return reactive(result)
+  }
+
+  return result
 }
 
 function baseSetter(target: object, key:any, newVal: any, receiver: object) {
+  // 这个和下面trigger的先后顺序很重要，不然在trigger里面运行的effect得到的不是最新值
+  const hasKey = Object.prototype.hasOwnProperty.call(target, key)
+  const oldVal = target[key]
+  if(hasKey && !hasChanged(newVal, oldVal)) { // 不是新添加key，而且值没有变更，不用执行
+    return true
+  }
+  const result = Reflect.set(target, key, newVal, receiver) 
   trigger(target, getSymbolByKey(target, key), newVal)
-  return Reflect.set(target, key, newVal, receiver) 
+  return result
+}
+
+const baseHanlders = {
+  get: baseGetter,
+  set: baseSetter
+}
+
+function get(target: any, key: any) {
+  // target是proxy
+  // console.log(`get, key: ${key}`)
+  target = target[ReactiveFlags.RAW]
+  const { get } = Reflect.getPrototypeOf(target) as {get}
+  track(target, key)
+  return get.call(target, key)
+}
+
+function has(key) {
+  // console.log(`has, key: ${key}`)
+  const target = this[ReactiveFlags.RAW]
+  const { has } = Reflect.getPrototypeOf(target) as {has}
+  track(target, key)
+  return has.call(target, key)
+}
+
+function set(key, val) {
+  // console.log(`set, key: ${key}; value: ${val}`)
+  const target = this[ReactiveFlags.RAW]
+  const { set } = Reflect.getPrototypeOf(target) as {set}
+  const result = set.call(target, key, val);
+  trigger(target, key, val)
+  return result
+}
+
+function add(key, val) {
+  // console.log(`add, key: ${key}; value: ${val}`)
+  const target = this[ReactiveFlags.RAW]
+  const { add } = Reflect.getPrototypeOf(target) as {add}
+  const result = add.call(target, key, val)
+  trigger(target, key, val)
+  return result
+}
+
+function deleteEntry(key) {
+  const target = this[ReactiveFlags.RAW]
+  // const { delete } = Reflect.getPrototypeOf(target) as {delete}
+  // const result = delete.call(target, key)
+  const result = target.delete(key)
+  trigger(target, key, undefined)
+  return result
+}
+
+const instrumentations = {
+  get(key) {
+    return get(this, key)
+  },
+  set,
+  has,
+  add,
+  delete: deleteEntry
+}
+
+function createInstrumentationGetter(instrumentations: any) {
+  return function(target, key, receiver) {
+    Object.defineProperty(target, ReactiveFlags.RAW, {
+      configurable: true,
+      value: target
+    })
+    target =
+    instrumentations.hasOwnProperty(key) && key in target
+      ? instrumentations
+      : target
+    return Reflect.get(target, key, receiver);
+  }
+}
+
+const collectionHandlers = {
+  get: createInstrumentationGetter(instrumentations)
+}
+
+const enum TargetType {
+  INVALID = 0,
+  COMMON = 1,
+  COLLECTION = 2
+}
+
+function targetTypeMap(rawType: string) {
+  switch (rawType) {
+    case 'Object':
+    case 'Array':
+      return TargetType.COMMON
+    case 'Map':
+    case 'Set':
+    case 'WeakMap':
+    case 'WeakSet':
+      return TargetType.COLLECTION
+    default:
+      return TargetType.INVALID
+  }
+}
+
+function getTargetType(value: any) {
+  return targetTypeMap(getRawType(value))
 }
 
 const reactive = function<T extends object>(raw: T): any {
-  return new Proxy(raw, {
-    get: baseGetter,
-    set: baseSetter
-  })
+  const targetType = getTargetType(raw)
+  if (targetType === TargetType.INVALID) {
+    return raw
+  }
+  return new Proxy(raw, targetType === TargetType.COMMON ? baseHanlders : collectionHandlers)
 }
 
 const isRef = (source) => {
@@ -134,9 +250,6 @@ const ref = function(raw: any) {
     }
   }
   return r
-  // return reactive({
-  //   value: raw
-  // })
 }
 
 // mainly track and trigger
@@ -159,7 +272,6 @@ const effect: any = function(callback: fn, options: any={}) {
         effectStack.pop()
         shouldTrack = false
         activeEffect = effectStack[effectStack.length - 1]
-        // activeEffect = null
       }
     }
   }
@@ -213,12 +325,12 @@ const computed = function(callback: fn) {
 }
 
 const isArray = Array.isArray
-// const getType = (source) => String.prototype.slice.call(source, 8, -1)
-const isFunction = (source) => typeof source === 'function'
-const isObject = (val) => typeof val !== null && typeof val === 'object'
+const getRawType = (source: any) => String.prototype.slice.call(source, 8, -1)
+const isFunction = (source: any) => typeof source === 'function'
+const isObject = (val: any) => typeof val !== null && typeof val === 'object'
 
 // TODO
-const traverse = function(source) {
+const traverse = function(source: any) {
   if(!isObject(source)) return source
   if(isArray(source)) {
     source.forEach(item => {
@@ -302,16 +414,6 @@ const watch = (source, cb) => {
     stop(runner)
   }
 }
-
-let r = ref(1)
-
-let stopWatch = watch(r, (n, o) => {
-  console.log(n, o)
-})
-r.value++
-// stopWatch()
-r.value++
-console.log(`r.value: ${r.value}`)
 
 export {
   reactive,
