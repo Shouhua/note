@@ -1,3 +1,4 @@
+// 主要是闭包，保存局部变量用于计数
 'use strict'
 var root = { // return 5
   left: {

@@ -8,7 +8,7 @@
       "type": "node",
       "request": "launch",
       "name": "reactive",
-      "program": "${workspaceFolder}/demo/vue3Demo/trapHandler.js",
+      "program": "${workspaceFolder}/demo/vue3/dist/reactive.js",
       "skipFiles": [
         "<node_internals>/**"
       ]

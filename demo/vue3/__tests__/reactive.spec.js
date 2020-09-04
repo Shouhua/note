@@ -43,13 +43,12 @@ describe('reactive system', () => {
     const r = reactive({
       count: 0
     })
-    let counter = 0
+    let counter
     effect(() => {
-      console.log(r.count)
-      counter++
+      counter = r.count
     })
     r.count++
-    expect(counter).toEqual(2)
+    expect(counter).toEqual(1)
   })
 
   test('effect and reactive map', () => {
@@ -57,7 +56,7 @@ describe('reactive system', () => {
     let r = reactive(raw)
     let count = 0
     effect(() => {
-      console.log(r.get('count'))
+      r.get('count')
       count++
     })
     r.set('count', 1)
@@ -100,8 +99,8 @@ describe('reactive system', () => {
     })
     foo.value++
     foo.value++
-    // expect(spy).toHaveBeenCalledTimes(2)
+    expect(spy).toHaveBeenCalledTimes(2)
     expect(newVal).toEqual(3)
-    expect(oldVal).toEqual(2)
+    expect(oldVal).toBe(2)
   })
 })

@@ -7,7 +7,7 @@
     "target": "ESNext", // 设计语言层面的的，es6以前最好使用commonjs的module
     "sourceMap": true,
     // "noImplicitAny": true,
-    "outDir": "./demo/vue3Demo/dist"
+    "outDir": "./demo/vue3/dist"
   },
-  "include": ["./demo/vue3Demo/*"]
+  "include": ["./demo/vue3/*"]
 }

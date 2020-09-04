@@ -329,16 +329,16 @@ const getRawType = (source: any) => String.prototype.slice.call(source, 8, -1)
 const isFunction = (source: any) => typeof source === 'function'
 const isObject = (val: any) => typeof val !== null && typeof val === 'object'
 
-// TODO
-const traverse = function(source: any) {
-  if(!isObject(source)) return source
+const traverse = function(source: any, seen: Set<any> = new Set<any>()) {
+  if(!isObject(source) || seen.has(source)) return source
+  seen.add(source)
   if(isArray(source)) {
     source.forEach(item => {
-      traverse(item)
+      traverse(item, seen)
     })
   } else {
     for(let key in source) {
-      traverse(source[key])
+      traverse(source[key], seen)
     }
   }
   return source
@@ -368,37 +368,51 @@ const hasChanged = function(newVal: any, oldVal: any) {
   return newVal !== oldVal && (newVal === newVal || oldVal === oldVal)
 }
 
-// watch(ref, (oldVal, newVal) => {})
-const watch = (source, cb) => {
+interface WatchOptionsBase {
+  flush?: 'pre' | 'sync' | 'post',
+  onTrack?: Function,
+  onTrigger?: Function
+}
+interface WatchOptions extends WatchOptionsBase {
+  immediate?: boolean,
+  deep?: boolean
+}
+const EMPTY_OBJ : {readonly[key: string]: any} = {}
+const warnLabel = 'Only support ref, reactive, function type'
+const watch = (source, cb, { immediate, deep, flush, onTrack, onTrigger }: WatchOptions = EMPTY_OBJ) => {
   let getter = () => {}
-  if(isArray(source)) {
+  const isRefSource = isRef(source)
+  if(isRef(source)) {
+    getter = () => source.value
+  } else if(isReactive(source)) {
+    getter = () => traverse(source)
+    deep = true
+  } else if(isArray(source)) {
     getter = () => source.map(s => {
       if(isRef(s)) {
         return s.value
+      } else if(isReactive(s)){
+        return traverse(s)
+      } else if(isFunction(s)) {
+        return s()
       } else {
-        // TODO
-        s()
+        console.warn(warnLabel)
       }
     })
-  } else if(isRef(source)) {
-    getter = () => source.value
   } else if(isFunction(source)) {
     getter = () => source()
-  } else if(isReactive(source)) {
-    getter = () => traverse(source)
-  } else {
+  }  else {
     console.error('Only support ref, function, reactive')
     return 
   }
-  let oldVal = getter()
-  let newVal
+  let oldVal, newVal
   const scheduler = () => {
     if(!runner.active) {
       return
     }
     if(cb) {
       newVal = runner()
-      if(hasChanged(newVal, oldVal)) {
+      if(deep || isRefSource || hasChanged(newVal, oldVal)) {
         cb(newVal, oldVal)
         oldVal = newVal
       }
@@ -407,9 +421,18 @@ const watch = (source, cb) => {
     }
   }
   const runner = effect(getter, {
-    // lazy: true,
+    lazy: true,
     scheduler
   })
+
+  if(cb) {
+    if(immediate) {
+      scheduler()
+    } else {
+      oldVal = runner()
+    }
+  }
+
   return () => {
     stop(runner)
   }

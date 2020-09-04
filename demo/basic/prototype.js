@@ -48,3 +48,6 @@ Function.prototype.new = function() {
   Fake.prototype = constructor.prototype
   return new Fake // 返回新的实例的constructor
 }
+
+function foo() {}
+foo.new('a')

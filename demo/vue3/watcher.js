@@ -26,20 +26,25 @@ const state = reactive({count: 0})
 //   console.log(count)
 // })
 
-let foo = ref(1)
+// let foo = ref(1)
+let foo = reactive({
+  count: 0
+})
 // watch(foo, (newVal, oldVal) => {
 //   console.log(`newVal: ${newVal}, oldVal: ${oldVal}`)
 // })
 // foo.value++
 let stop = watch(foo, (n, o) => {
   // console.log(`newVal: ${n.count}, oldVal: ${o.count}`)
-  console.log(`newVal: ${n}, oldVal: ${o}`)
-}, 
-{
-  flush: 'sync'
+  // console.log(`newVal: ${n}, oldVal: ${o}`)
+  console.log(n, o)
 }
+// , {
+//   flush: 'pre'
+// }
 )
+foo.count++
 
-foo.value++
-stop() // 测试stop的时候，同步模式才能看到效果，否则需要在nextTick后才能有效果
-foo.value++
+// foo.value++
+// stop() // 测试stop的时候，同步模式才能看到效果，否则需要在nextTick后才能有效果
+// foo.value++
