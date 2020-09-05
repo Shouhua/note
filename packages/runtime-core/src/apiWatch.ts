@@ -59,7 +59,7 @@ type MapOldSources<T, Immediate> = {
 type InvalidateCbRegistrator = (cb: () => void) => void
 
 export interface WatchOptionsBase {
-  flush?: 'pre' | 'post' | 'sync'
+  flush?: 'pre' | 'post' | 'sync' // pre和post是针对component更新的前面和后面执行来说的
   onTrack?: ReactiveEffectOptions['onTrack']
   onTrigger?: ReactiveEffectOptions['onTrigger']
 }
@@ -130,6 +130,7 @@ export function watch<T = any>(
 }
 
 // immediate和deep只有在watch中使用了callback的情况下才能使用，watchEffect不能使用，没有callback
+// 注意区分几个概念, runner, scheduler, job
 function doWatch(
   source: WatchSource | WatchSource[] | WatchEffect,
   cb: WatchCallback | null,
@@ -167,7 +168,7 @@ function doWatch(
     getter = () => (source as Ref).value
   } else if (isReactive(source)) {
     getter = () => source
-    deep = true
+    deep = true // 后面会要递归去引用reactive对象里面的key, traverse
   } else if (isArray(source)) {
     getter = () =>
       source.map(s => {
@@ -189,6 +190,7 @@ function doWatch(
         callWithErrorHandling(source, instance, ErrorCodes.WATCH_GETTER)
     } else {
       // no cb -> simple effect
+      // watchEffect必须在setup中使用，必须要有instance
       getter = () => {
         if (instance && instance.isUnmounted) {
           return
@@ -210,12 +212,13 @@ function doWatch(
   }
 
   if (cb && deep) {
+    // reactive默认deep=true
     // 如果有callback和deep
     const baseGetter = getter
     getter = () => traverse(baseGetter())
   }
 
-  let cleanup: () => void
+  let cleanup: () => void // 用户stop的时候顺便要执行invalidate
   const onInvalidate: InvalidateCbRegistrator = (fn: () => void) => {
     cleanup = runner.options.onStop = () => {
       callWithErrorHandling(fn, instance, ErrorCodes.WATCH_CLEANUP)
@@ -237,8 +240,9 @@ function doWatch(
     return NOOP
   }
 
-  let oldValue = isArray(source) ? [] : INITIAL_WATCHER_VALUE
+  let oldValue = isArray(source) ? [] : INITIAL_WATCHER_VALUE //oldValue初始值
   const job: SchedulerJob = () => {
+    // 应该是trigger之后需要执行的内容
     if (!runner.active) {
       return
     }
@@ -268,7 +272,10 @@ function doWatch(
   // it is allowed to self-trigger (#1727)
   job.allowRecurse = !!cb
 
+  // scheduler真的是只做scheduler的工作
   let scheduler: (job: () => any) => void
+  // flush默认值为post，只有当为sync时才是立即执行scheduler，为pre只是放在微任务中的前面位置执行，post则放在微任务最后执行
+  // 使用stop watch的时候可以将flush设置为sync，可以不需要使用await nextTick()
   if (flush === 'sync') {
     // 同步立即执行
     scheduler = job

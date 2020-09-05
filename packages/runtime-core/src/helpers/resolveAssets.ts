@@ -14,6 +14,10 @@ const COMPONENTS = 'components'
 const DIRECTIVES = 'directives'
 
 /**
+ * 在本地的component或者根componennt的componnets和directives属性中查找对应的component或者directive
+ */
+
+/**
  * @private
  */
 export function resolveComponent(

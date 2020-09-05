@@ -23,6 +23,7 @@ export interface SchedulerJob {
   allowRecurse?: boolean
 }
 
+// 不同于SchudulerJob, 前者有allowRecurse
 export type SchedulerCb = Function & { id?: number }
 export type SchedulerCbs = SchedulerCb | SchedulerCb[]
 
@@ -53,6 +54,7 @@ export function nextTick(fn?: () => void): Promise<void> {
   return fn ? p.then(fn) : p
 }
 
+// schedulerJob类型带有allowRecurse属性
 export function queueJob(job: SchedulerJob) {
   // the dedupe search uses the startIndex argument of Array.includes()
   // by default the search index includes the current job that is being run
@@ -94,6 +96,7 @@ function queueCb(
   index: number
 ) {
   if (!isArray(cb)) {
+    // 单个ScheudlerCb
     if (
       !activeQueue ||
       !activeQueue.includes(

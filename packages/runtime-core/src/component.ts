@@ -356,6 +356,7 @@ const emptyAppContext = createAppContext()
 
 let uid = 0
 
+// 有了vnode在mount componnet时候调用createComponentInstance创建实例
 export function createComponentInstance(
   vnode: VNode,
   parent: ComponentInternalInstance | null,

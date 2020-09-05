@@ -19,6 +19,7 @@ import {
 } from '@vue/shared'
 import { isRef } from './ref'
 
+// 获取到所有的Smbol类型的属性集合
 const builtInSymbols = new Set(
   Object.getOwnPropertyNames(Symbol)
     .map(key => (Symbol as any)[key])
@@ -55,13 +56,14 @@ function createGetter(isReadonly = false, shallow = false) {
     } else if (key === ReactiveFlags.IS_READONLY) {
       return isReadonly
     } else if (
-      key === ReactiveFlags.RAW &&
+      key === ReactiveFlags.RAW && // ReactiveFlags.RAW返回本身，前提是已经是reactive
       receiver === (isReadonly ? readonlyMap : reactiveMap).get(target)
     ) {
       return target
     }
 
     // array的includes，indexOf, lastIndexOf特殊的对待（注意命名instrumentations）
+    // track(target, TrackOpTypes.GET, i+'')
     const targetIsArray = isArray(target)
     if (targetIsArray && hasOwn(arrayInstrumentations, key)) {
       return Reflect.get(arrayInstrumentations, key, receiver)
@@ -69,7 +71,7 @@ function createGetter(isReadonly = false, shallow = false) {
 
     const res = Reflect.get(target, key, receiver)
 
-    // 判断是否是内建属性，如果是就跳过track
+    // 判断是否是内建Symbol属性，如果是就跳过track
     const keyIsSymbol = isSymbol(key)
     if (
       keyIsSymbol
@@ -100,6 +102,7 @@ function createGetter(isReadonly = false, shallow = false) {
       // Convert returned value into a proxy as well. we do the isObject check
       // here to avoid invalid value warning. Also need to lazy access readonly
       // and reactive here to avoid circular dependency.
+      // 延迟深度处理, 返回的是proxy对象
       return isReadonly ? readonly(res) : reactive(res)
     }
 

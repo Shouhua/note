@@ -176,13 +176,14 @@ export function trigger(
   oldValue?: unknown,
   oldTarget?: Map<unknown, unknown> | Set<unknown>
 ) {
+  // depsMap里面的effect不是全部都会执行，下面的代码会执行筛选
   const depsMap = targetMap.get(target)
   if (!depsMap) {
     // never been tracked
     return
   }
 
-  const effects = new Set<ReactiveEffect>()
+  const effects = new Set<ReactiveEffect>() // NOTICE: watch进入schedule后cleanup后在运行不用产生死循环了
   // 当需要触发其他类型的effect时候使用，比如add或者delete需要触发length收集到的effect
   const add = (effectsToAdd: Set<ReactiveEffect> | undefined) => {
     if (effectsToAdd) {
@@ -199,7 +200,8 @@ export function trigger(
     // trigger all effects for target
     depsMap.forEach(add)
   } else if (key === 'length' && isArray(target)) {
-    // 当数组push/shift等的时候会触发也会触发length的effect，map里面也有类似的操作，见下
+    // 在effect使用数组forEach, map等方法时会触发也会触发length, effect被收集，当数组的push, shift等操作的时候会修改lenght
+    // 下面的代码将前面收集的effect放在触发列表中
     depsMap.forEach((dep, key) => {
       if (key === 'length' || key >= (newValue as number)) {
         add(dep)
@@ -215,10 +217,10 @@ export function trigger(
     // 以下都会触发length，所以额外需要添加lenght的依赖effects
     const isAddOrDelete =
       type === TriggerOpTypes.ADD ||
-      (type === TriggerOpTypes.DELETE && !isArray(target))
+      (type === TriggerOpTypes.DELETE && !isArray(target)) // map.delete('count')
     if (
       isAddOrDelete ||
-      (type === TriggerOpTypes.SET && target instanceof Map)
+      (type === TriggerOpTypes.SET && target instanceof Map) // map.set('count', 1)
     ) {
       add(depsMap.get(isArray(target) ? 'length' : ITERATE_KEY))
     }

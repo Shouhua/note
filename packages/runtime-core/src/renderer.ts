@@ -480,13 +480,14 @@ function baseCreateRenderer(
     // patching & not same type, unmount old tree
     // 不是相同的，直接先干掉old tree
     if (n1 && !isSameVNodeType(n1, n2)) {
+      // n1.type === n2.type && n1.key === n2.key
       anchor = getNextHostNode(n1)
       unmount(n1, parentComponent, parentSuspense, true)
       n1 = null
     }
     // bail out of optimization mode for non-compiled slots
     if (n2.patchFlag === PatchFlags.BAIL) {
-      // TODO: BAIL不懂
+      // TODO: BAIL不懂, 暂时认为是没有优化的
       optimized = false
       n2.dynamicChildren = null
     }
@@ -1228,7 +1229,7 @@ function baseCreateRenderer(
       parentSuspense
     ))
 
-    // __hmrId在vue-loader中注入
+    // __hmrId在vue-loader中注入, 此时的instance.type
     if (__DEV__ && instance.type.__hmrId) {
       registerHMR(instance)
     }

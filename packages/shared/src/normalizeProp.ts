@@ -3,6 +3,8 @@ import { isNoUnitNumericStyleProp } from './domAttrConfig'
 
 export type NormalizedStyle = Record<string, string | number>
 
+// {foo: bar} || [{foo: bar}, {fooBar: foobar}] ==>
+// {foo: bar; foo-bar: foobar}
 export function normalizeStyle(value: unknown): NormalizedStyle | undefined {
   if (isArray(value)) {
     const res: Record<string, string | number> = {}
