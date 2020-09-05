@@ -27,3 +27,11 @@ createApp(App).mount('#app')
 编译时主要涉及compiler-dom，compiler-core2个工程
 
 ## 运行时
+
+### 整个运行过程
+1. 首先产生vnode，不管是通过编译时产生的render函数，还是通过h构建
+2. 然后mount或者patch，通过vnode生成对应的componnet instance
+3. 生成对应的instance.update job, 当发生更新的时候再次执行scheduler(queueJob(instance.update)), 完成整个循环
+### performace监控
+使用window.performace监控component渲染性能
+### 支持HMR，devtools

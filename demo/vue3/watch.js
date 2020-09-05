@@ -14,7 +14,7 @@
  */
 import { reactive, watch, ref} from 'vue'
 import { onErrorCaptured, onRenderTracked, onRenderTriggered } from 'vue'
-
+(async () => {
 const state = reactive({count: 0})
 
 /**
@@ -43,8 +43,13 @@ let stop = watch(foo, (n, o) => {
 //   flush: 'pre'
 // }
 )
-foo.count++
 
+foo.count++
 // foo.value++
-// stop() // 测试stop的时候，同步模式才能看到效果，否则需要在nextTick后才能有效果
-// foo.value++
+console.log('before test')
+stop() // 测试stop的时候，同步模式才能看到效果，否则需要在nextTick后才能有效果
+const timeout = (n=0) => new Promise(r => setTimeout(r, n))
+await timeout()
+console.log('after test')
+foo.value++
+})()
