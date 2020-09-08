@@ -31,6 +31,7 @@ import {
 } from './component'
 import { isEmitListener } from './componentEmits'
 import { InternalObjectKey } from './vnode'
+import { AppContext } from './apiCreateApp'
 
 export type ComponentPropsOptions<P = Data> =
   | ComponentObjectPropsOptions<P>
@@ -107,7 +108,8 @@ type NormalizedProp =
 
 // normalized value is a tuple of the actual normalized options
 // and an array of prop keys that need value casting (booleans and defaults)
-export type NormalizedPropsOptions = [Record<string, NormalizedProp>, string[]]
+export type NormalizedProps = Record<string, NormalizedProp>
+export type NormalizedPropsOptions = [NormalizedProps, string[]] | []
 
 export function initProps(
   instance: ComponentInternalInstance,
@@ -122,7 +124,7 @@ export function initProps(
   setFullProps(instance, rawProps, props, attrs)
   // validation
   if (__DEV__) {
-    validateProps(props, instance.type)
+    validateProps(props, instance)
   }
 
   if (isStateful) {
@@ -153,7 +155,7 @@ export function updateProps(
     vnode: { patchFlag }
   } = instance
   const rawCurrentProps = toRaw(props)
-  const [options] = normalizePropsOptions(instance.type)
+  const [options] = instance.propsOptions
 
   if (
     // always force full diff if hmr is enabled
@@ -238,7 +240,7 @@ export function updateProps(
   trigger(instance, TriggerOpTypes.SET, '$attrs')
 
   if (__DEV__ && rawProps) {
-    validateProps(props, instance.type)
+    validateProps(props, instance)
   }
 }
 
@@ -248,7 +250,7 @@ function setFullProps(
   props: Data,
   attrs: Data
 ) {
-  const [options, needCastKeys] = normalizePropsOptions(instance.type)
+  const [options, needCastKeys] = instance.propsOptions
   if (rawProps) {
     for (const key in rawProps) {
       const value = rawProps[key]
@@ -261,7 +263,7 @@ function setFullProps(
       let camelKey
       if (options && hasOwn(options, (camelKey = camelize(key)))) {
         props[camelKey] = value
-      } else if (!isEmitListener(instance.type, key)) {
+      } else if (!isEmitListener(instance.emitsOptions, key)) {
         // Any non-declared (either as a prop or an emitted event) props are put
         // into a separate `attrs` object for spreading. Make sure to preserve
         // original key casing
@@ -285,7 +287,7 @@ function setFullProps(
 }
 
 function resolvePropValue(
-  options: NormalizedPropsOptions[0],
+  options: NormalizedProps,
   props: Data,
   key: string,
   value: unknown
@@ -317,10 +319,15 @@ function resolvePropValue(
 }
 
 export function normalizePropsOptions(
-  comp: ConcreteComponent
-): NormalizedPropsOptions | [] {
-  if (comp.__props) {
-    return comp.__props
+  comp: ConcreteComponent,
+  appContext: AppContext,
+  asMixin = false
+): NormalizedPropsOptions {
+  const appId = appContext.app ? appContext.app._uid : -1
+  const cache = comp.__props || (comp.__props = {})
+  const cached = cache[appId]
+  if (cached) {
+    return cached
   }
 
   const raw = comp.props
@@ -331,22 +338,24 @@ export function normalizePropsOptions(
   let hasExtends = false
   if (__FEATURE_OPTIONS_API__ && !isFunction(comp)) {
     const extendProps = (raw: ComponentOptions) => {
-      const [props, keys] = normalizePropsOptions(raw)
+      hasExtends = true
+      const [props, keys] = normalizePropsOptions(raw, appContext, true)
       extend(normalized, props)
       if (keys) needCastKeys.push(...keys)
     }
+    if (!asMixin && appContext.mixins.length) {
+      appContext.mixins.forEach(extendProps)
+    }
     if (comp.extends) {
-      hasExtends = true
       extendProps(comp.extends)
     }
     if (comp.mixins) {
-      hasExtends = true
       comp.mixins.forEach(extendProps)
     }
   }
 
   if (!raw && !hasExtends) {
-    return (comp.__props = EMPTY_ARR)
+    return (cache[appId] = EMPTY_ARR)
   }
 
   if (isArray(raw)) {
@@ -383,9 +392,8 @@ export function normalizePropsOptions(
       }
     }
   }
-  const normalizedEntry: NormalizedPropsOptions = [normalized, needCastKeys]
-  comp.__props = normalizedEntry
-  return normalizedEntry
+
+  return (cache[appId] = [normalized, needCastKeys])
 }
 
 // use function string name to check type constructors
@@ -418,9 +426,9 @@ function getTypeIndex(
 /**
  * dev only
  */
-function validateProps(props: Data, comp: ConcreteComponent) {
+function validateProps(props: Data, instance: ComponentInternalInstance) {
   const rawValues = toRaw(props)
-  const options = normalizePropsOptions(comp)[0]
+  const options = instance.propsOptions[0]
   for (const key in options) {
     let opt = options[key]
     if (opt == null) continue

@@ -1,5 +1,5 @@
 import { TrackOpTypes, TriggerOpTypes } from './operations'
-import { EMPTY_OBJ, isArray } from '@vue/shared'
+import { EMPTY_OBJ, isArray, isIntegerKey } from '@vue/shared'
 
 // 1. WeakMap不同与Map的地方，前者没有将keys和values放在2个数组中，因为这样会一直引用着keys，values，导致
 // GC不能正常回收。
@@ -187,11 +187,7 @@ export function trigger(
   // 当需要触发其他类型的effect时候使用，比如add或者delete需要触发length收集到的effect
   const add = (effectsToAdd: Set<ReactiveEffect> | undefined) => {
     if (effectsToAdd) {
-      effectsToAdd.forEach(effect => {
-        if (effect !== activeEffect) {
-          effects.add(effect)
-        }
-      })
+      effectsToAdd.forEach(effect => effects.add(effect))
     }
   }
 
@@ -215,16 +211,17 @@ export function trigger(
     }
     // also run for iteration key on ADD | DELETE | Map.SET
     // 以下都会触发length，所以额外需要添加lenght的依赖effects
-    const isAddOrDelete =
-      type === TriggerOpTypes.ADD ||
-      (type === TriggerOpTypes.DELETE && !isArray(target)) // map.delete('count')
+    const shouldTriggerIteration =
+      (type === TriggerOpTypes.ADD &&
+        (!isArray(target) || isIntegerKey(key))) ||
+      (type === TriggerOpTypes.DELETE && !isArray(target))
     if (
-      isAddOrDelete ||
-      (type === TriggerOpTypes.SET && target instanceof Map) // map.set('count', 1)
+      shouldTriggerIteration ||
+      (type === TriggerOpTypes.SET && target instanceof Map)
     ) {
       add(depsMap.get(isArray(target) ? 'length' : ITERATE_KEY))
     }
-    if (isAddOrDelete && target instanceof Map) {
+    if (shouldTriggerIteration && target instanceof Map) {
       add(depsMap.get(MAP_KEY_ITERATE_KEY))
     }
   }

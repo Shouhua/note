@@ -61,7 +61,7 @@ import { warn } from '../warning'
 export type TeleportVNode = VNode<RendererNode, RendererElement, TeleportProps>
 
 export interface TeleportProps {
-  to: string | RendererElement
+  to: string | RendererElement | null | undefined
   disabled?: boolean
 }
 
@@ -97,7 +97,7 @@ const resolveTarget = <T = RendererElement>(
       return target as any
     }
   } else {
-    if (__DEV__ && !targetSelector) {
+    if (__DEV__ && !targetSelector && !isTeleportDisabled(props)) {
       warn(`Invalid Teleport target: ${targetSelector}`)
     }
     return targetSelector as any
@@ -141,7 +141,7 @@ export const TeleportImpl = {
       const targetAnchor = (n2.targetAnchor = createText(''))
       if (target) {
         insert(targetAnchor, target)
-      } else if (__DEV__) {
+      } else if (__DEV__ && !disabled) {
         warn('Invalid Teleport target on mount:', target, `(${typeof target})`)
       }
 
