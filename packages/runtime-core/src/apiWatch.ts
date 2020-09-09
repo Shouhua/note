@@ -326,7 +326,8 @@ function doWatch(
   }
 }
 
-// this.$watch
+// componentPublicInstance.ts定义$watch = instanceWatch.bind(componentInternalIntance)
+// 不过这个功能需要__FEATURE_OPTIONS_API__
 export function instanceWatch(
   this: ComponentInternalInstance,
   source: string | Function,

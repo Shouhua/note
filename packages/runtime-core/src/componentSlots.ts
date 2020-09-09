@@ -20,6 +20,7 @@ import { isKeepAlive } from './components/KeepAlive'
 import { withCtx } from './helpers/withRenderContext'
 import { isHmrUpdating } from './hmr'
 
+// NOTICE: slot定义为函数
 export type Slot = (...args: any[]) => VNode[]
 
 export type InternalSlots = {
@@ -37,9 +38,7 @@ export type RawSlots = {
    * normalizeChildren when the component vnode is created.
    * @internal
    */
-  // internal, for tracking slot owner instance. This is attached during
-  // normalizeChildren when the component vnode is created.
-  // vnode.ts -> 546行
+  // vnode.ts -> 551行
   _ctx?: ComponentInternalInstance | null
   /**
    * indicates compiler generated slots
@@ -115,8 +114,9 @@ export const initSlots = (
   children: VNodeNormalizedChildren
 ) => {
   if (instance.vnode.shapeFlag & ShapeFlags.SLOTS_CHILDREN) {
-    const type = (children as RawSlots)._
+    const type = (children as RawSlots)._ // SlotFlags
     if (type) {
+      // compiled slots
       instance.slots = children as InternalSlots
       // make compiler marker non-enumerable
       def(children as InternalSlots, '_', type)

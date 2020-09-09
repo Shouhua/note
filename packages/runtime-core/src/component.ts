@@ -115,7 +115,7 @@ export interface FunctionalComponent<P = {}, E extends EmitsOptions = {}>
 export interface ClassComponent {
   // https://www.typescriptlang.org/docs/handbook/interfaces.html 代表类型可以被实例化，不能直接implements
   new (...args: any[]): ComponentPublicInstance<any, any, any, any, any>
-  __vccOpts: ComponentOptions
+  __vccOpts: ComponentOptions // component options = _vccOpts(class component options)
 }
 
 /**
@@ -453,9 +453,9 @@ export function createComponentInstance(
     bum: null,
     da: null,
     a: null,
-    rtg: null,
-    rtc: null,
-    ec: null
+    rtg: null, // render triggered
+    rtc: null, // render tracked
+    ec: null // error captured
   }
   if (__DEV__) {
     // 将appContext的信息放在instance.ctx下面
@@ -506,8 +506,12 @@ export function setupComponent(
 
   const { props, children, shapeFlag } = instance.vnode
   const isStateful = shapeFlag & ShapeFlags.STATEFUL_COMPONENT
-  initProps(instance, props, isStateful, isSSR) // 设置instance.props
-  initSlots(instance, children) // 设置instance.slots
+  // support options api(extends, mixins), camerlize prop key, boolean cast, props = attrs when functional without optional prop
+  initProps(instance, props, isStateful, isSSR)
+  // 设置instance.slots
+  // instance.slots = {_ctx: currentComponentInstance, default: () =>{}, foo: Function, $stabel: true, __vInternal:1}
+  // NOTICE: 这里需要在vnode.ts中设置的ctx(nomalizeChildren)
+  initSlots(instance, children)
 
   const setupResult = isStateful
     ? setupStatefulComponent(instance, isSSR)
@@ -554,14 +558,14 @@ function setupStatefulComponent(
     const setupContext = (instance.setupContext =
       setup.length > 1 ? createSetupContext(instance) : null)
 
-    currentInstance = instance
+    currentInstance = instance // 在setup中使用getCurrentInstance获取instance实例对象
     pauseTracking()
     const setupResult = callWithErrorHandling(
       setup,
       instance,
       ErrorCodes.SETUP_FUNCTION,
       // shallowReadonly保证props不会增加或者被删除属性
-      [__DEV__ ? shallowReadonly(instance.props) : instance.props, setupContext]
+      [__DEV__ ? shallowReadonly(instance.props) : instance.props, setupContext] // setup(props, { slots, emit, attrs})
     )
     resetTracking()
     currentInstance = null
@@ -586,7 +590,7 @@ function setupStatefulComponent(
       handleSetupResult(instance, setupResult, isSSR)
     }
   } else {
-    finishComponentSetup(instance, isSSR)
+    finishComponentSetup(instance, isSSR) // 保证已经生成了render函数
   }
 }
 
@@ -610,6 +614,7 @@ export function handleSetupResult(
     if (__DEV__ || __FEATURE_PROD_DEVTOOLS__) {
       instance.devtoolsRawSetupState = setupResult
     }
+    // NOTICE: 这里有对setupResult的unref处理，模版里面可以直接使用，不用.value
     instance.setupState = proxyRefs(setupResult)
     if (__DEV__) {
       exposeSetupStateOnRenderContext(instance)

@@ -193,6 +193,7 @@ const publicPropertiesMap: PublicPropertiesMap = extend(Object.create(null), {
   $watch: i => (__FEATURE_OPTIONS_API__ ? instanceWatch.bind(i) : NOOP)
 } as PublicPropertiesMap)
 
+// 属性来源
 const enum AccessTypes {
   SETUP,
   DATA,
@@ -234,6 +235,7 @@ export const PublicInstanceProxyHandlers: ProxyHandler<any> = {
     // accessCache，每次判断值在哪儿使用has属性效率低，使用accessCache
     let normalizedProps
     if (key[0] !== '$') {
+      // start with $ means publicPropertiesMap
       const n = accessCache![key]
       if (n !== undefined) {
         switch (n) {
@@ -248,6 +250,8 @@ export const PublicInstanceProxyHandlers: ProxyHandler<any> = {
           // default: just fallthrough
         }
       } else if (setupState !== EMPTY_OBJ && hasOwn(setupState, key)) {
+        // accessCache里面没有对应的来源类型
+        // NOTICE: 注意顺序
         // 当setup()返回对象时，设置setupState = reactive(setup())
         accessCache![key] = AccessTypes.SETUP
         return setupState[key]
@@ -257,7 +261,7 @@ export const PublicInstanceProxyHandlers: ProxyHandler<any> = {
       } else if (
         // only cache other properties when instance has declared (thus stable)
         // props
-        (normalizedProps = instance.propsOptions[0]) &&
+        (normalizedProps = instance.propsOptions[0]) && // camerlize props key
         hasOwn(normalizedProps, key)
       ) {
         accessCache![key] = AccessTypes.PROPS
@@ -270,6 +274,7 @@ export const PublicInstanceProxyHandlers: ProxyHandler<any> = {
       }
     }
 
+    // key start with '$', search publicPropertiesMap
     const publicGetter = publicPropertiesMap[key]
     let cssModule, globalProperties
     // public $xxx properties
@@ -354,7 +359,6 @@ export const PublicInstanceProxyHandlers: ProxyHandler<any> = {
        * 这里定义了，instance.abc会将值挂到ctx下面
        * 详情可以查看componentProxy.spec.ts下面的"user attached properties"的test case
        */
-
       if (__DEV__ && key in instance.appContext.config.globalProperties) {
         Object.defineProperty(ctx, key, {
           enumerable: true,
@@ -419,12 +423,13 @@ export const RuntimeCompiledPublicInstanceProxyHandlers = extend(
        */
       // fast path for unscopables when using `with` block
       if ((key as any) === Symbol.unscopables) {
+        // 所有属性在with环境中都能访问
         return
       }
       return PublicInstanceProxyHandlers.get!(target, key, target)
     },
     has(_: ComponentRenderContext, key: string) {
-      const has = key[0] !== '_' && !isGloballyWhitelisted(key)
+      const has = key[0] !== '_' && !isGloballyWhitelisted(key) // 运行时环境中不能使用全局白名单
       if (__DEV__ && !has && PublicInstanceProxyHandlers.has!(_, key)) {
         warn(
           `Property ${JSON.stringify(
@@ -440,6 +445,7 @@ export const RuntimeCompiledPublicInstanceProxyHandlers = extend(
 // In dev mode, the proxy target exposes the same properties as seen on `this`
 // for easier console inspection. In prod mode it will be an empty object so
 // these properties definitions can be skipped.
+// component中this的定义
 export function createRenderContext(instance: ComponentInternalInstance) {
   const target: Record<string, any> = {}
 

@@ -30,6 +30,7 @@ let renderer: Renderer<Element> | HydrationRenderer
 let enabledHydration = false
 
 // 延时创建渲染器，当用户只依赖响应式包的时候，可以通过tree-shaking移除核心渲染逻辑相关的代码
+// 因为render里面有dom的操作，所以需要将dom相关的操作放在runtime-dom中，然后传递生成render
 function ensureRenderer() {
   return renderer || (renderer = createRenderer<Node, Element>(rendererOptions))
 }

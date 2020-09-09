@@ -134,6 +134,7 @@ export function initProps(
   } else {
     if (!instance.type.props) {
       // functional w/ optional props, props === attrs
+      // NOTICE: functional without optional props, props = attrs
       instance.props = attrs
     } else {
       // functional w/ declared props
@@ -264,6 +265,7 @@ function setFullProps(
       if (options && hasOwn(options, (camelKey = camelize(key)))) {
         props[camelKey] = value
       } else if (!isEmitListener(instance.emitsOptions, key)) {
+        // 没有在emitsOptions中声明的都放到attrs去spread
         // Any non-declared (either as a prop or an emitted event) props are put
         // into a separate `attrs` object for spreading. Make sure to preserve
         // original key casing
@@ -359,6 +361,7 @@ export function normalizePropsOptions(
   }
 
   if (isArray(raw)) {
+    // ['foo', 'bar'] => {foo: {},bar: {}}
     for (let i = 0; i < raw.length; i++) {
       if (__DEV__ && !isString(raw[i])) {
         warn(`props must be strings when using array syntax.`, raw[i])
@@ -369,6 +372,7 @@ export function normalizePropsOptions(
       }
     }
   } else if (raw) {
+    // {foo: Array| Function|Obeject, bar: Function}
     if (__DEV__ && !isObject(raw)) {
       warn(`invalid props options`, raw)
     }
@@ -381,11 +385,12 @@ export function normalizePropsOptions(
         if (prop) {
           const booleanIndex = getTypeIndex(Boolean, prop.type)
           const stringIndex = getTypeIndex(String, prop.type)
-          prop[BooleanFlags.shouldCast] = booleanIndex > -1
+          prop[BooleanFlags.shouldCast] = booleanIndex > -1 // 如果有boolean，就需要转化
           prop[BooleanFlags.shouldCastTrue] =
             stringIndex < 0 || booleanIndex < stringIndex
           // if the prop needs boolean casting or default value
           if (booleanIndex > -1 || hasOwn(prop, 'default')) {
+            // Boolean或者有默认值
             needCastKeys.push(normalizedKey)
           }
         }

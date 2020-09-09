@@ -344,7 +344,7 @@ export const setRef = (
   }
   const oldRef = oldRawRef && oldRawRef[1]
   const refs = owner.refs === EMPTY_OBJ ? (owner.refs = {}) : owner.refs
-  const setupState = owner.setupState
+  const setupState = owner.setupState // proxyReactive(setupResult)
 
   // unset old ref
   if (oldRef != null && oldRef !== ref) {
@@ -1283,7 +1283,7 @@ function baseCreateRenderer(
     if (__DEV__) {
       startMeasure(instance, `init`)
     }
-    // 1. initProps, initSlots
+    // 1. initProps(normalize key, attr), initSlots
     // 2. 主要是运行setup（），注册ref，reactive，vue的lifecycle，为view的上下文作准备
     // 3. 根据template准备render函数
     // 4. instance.setupState = setup()
@@ -1375,7 +1375,7 @@ function baseCreateRenderer(
     // effect函数里面会去将目前的函数注册到对应的ref，reactive的get handler中的deps
     instance.update = effect(function componentEffect() {
       if (!instance.isMounted) {
-        let vnodeHook: VNodeHook | null | undefined
+        let vnodeHook: VNodeHook | null | undefined // (vnode) => {}
         const { el, props } = initialVNode
         const { bm, m, parent } = instance
 
@@ -1392,6 +1392,9 @@ function baseCreateRenderer(
         if (__DEV__) {
           startMeasure(instance, `render`)
         }
+        // 这个函数主要是运行render函数，所以需要currentRenderingInstance(=componentInternalInstance)
+        // currentRenderingInstance主要是使用在这个里面，用于resolveComponent, resolveDirectives等
+        // 运行编译器返回的render函数，确定falloutThrough, 最终返回VNode
         const subTree = (instance.subTree = renderComponentRoot(instance))
         if (__DEV__) {
           endMeasure(instance, `render`)

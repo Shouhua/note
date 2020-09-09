@@ -69,15 +69,28 @@ export function renderComponentRoot(
   if (__DEV__) {
     accessedAttrs = false
   }
-  // 主要处理FallthroughAttrs
+  // 处理FallthroughAttrs
   try {
     let fallthroughAttrs
     if (vnode.shapeFlag & ShapeFlags.STATEFUL_COMPONENT) {
       // withProxy is a proxy with a different `has` trap only for
       // runtime-compiled render functions using `with` block.
       const proxyToUse = withProxy || proxy
+      /**
+       * export function render(_ctx, _cache, $props, $setup, $data, $options) {
+          const _component_greet = _resolveComponent("greet")
+
+          return (_openBlock(), _createBlock(_component_greet, null, {
+            default: _withCtx(() => [
+              _hoisted_1
+            ]),
+            _: 1
+          }))
+        }
+       */
       result = normalizeVNode(
         render!.call(
+          // NOTICE: 生成component里面template的vnode，比如Fragment，循环去生成和比较components
           proxyToUse,
           proxyToUse!,
           renderCache,
@@ -92,12 +105,14 @@ export function renderComponentRoot(
       // functional
       const render = Component as FunctionalComponent
       // in dev, mark attrs accessed if optional props (attrs === props)
-      // 如果定义了FunctionalComponent.props
+      // 如果定义了FunctionalComponent.props, 前面有定义过，set props = attr when functional comp without optional props
+      // 详细见componentProps.ts里面的initProps函数
       if (__DEV__ && attrs === props) {
         markAttrsAccessed()
       }
+      // 主要是看FunctionalComponent的定义
       result = normalizeVNode(
-        render.length > 1 // TODO: 不懂场景?
+        render.length > 1 // functional component w/ optional api
           ? render(
               props,
               __DEV__
@@ -150,6 +165,7 @@ export function renderComponentRoot(
             // it should not fallthrough.
             // related: #1543, #1643, #1989
             fallthroughAttrs = filterModelListeners(
+              // onUpdate:xxx only apply for component, but not plain element
               fallthroughAttrs,
               propsOptions
             )
@@ -167,7 +183,7 @@ export function renderComponentRoot(
                 // v-model handler默认要传递
                 // remove `on`, lowercase first letter to reflect event casing
                 // accurately
-                eventAttrs.push(key[2].toLowerCase() + key.slice(3))
+                eventAttrs.push(key[2].toLowerCase() + key.slice(3)) // eventAttrs = ["click.passive",]
               }
             } else {
               extraAttrs.push(key)

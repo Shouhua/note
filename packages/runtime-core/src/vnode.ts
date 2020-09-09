@@ -291,6 +291,7 @@ export const InternalObjectKey = `__vInternal`
 const normalizeKey = ({ key }: VNodeProps): VNode['key'] =>
   key != null ? key : null
 
+// NOTICE: normalize ref set VNode.ref = [currentRenderingInstance, ref]
 const normalizeRef = ({ ref }: VNodeProps): VNode['ref'] => {
   return (ref != null
     ? isArray(ref)
@@ -339,6 +340,7 @@ function _createVNode(
   }
 
   // class & style normalization.
+  // vnode里面的props.class, props.style只是做了拍扁, 不同于component里面的normalizePropsOptions里面做了camelize操作
   if (props) {
     // for reactive or proxy objects, we need to clone it to enable mutation.
     if (isProxy(props) || InternalObjectKey in props) {
@@ -392,7 +394,7 @@ function _createVNode(
     type,
     props,
     key: props && normalizeKey(props),
-    ref: props && normalizeRef(props),
+    ref: props && normalizeRef(props), // 设置当前的ref=[currentRenderingInstance, ref]
     scopeId: currentScopeId,
     children: null,
     component: null,
@@ -544,7 +546,7 @@ export function cloneIfMounted(child: VNode): VNode {
   return child.el === null ? child : cloneVNode(child)
 }
 
-// 主要是要处理children和slots
+// 主要是要处理children和slots, 设置跟子代相关的shapeFlags, 比如ARRAY_CHILDREN
 export function normalizeChildren(vnode: VNode, children: unknown) {
   let type = 0
   const { shapeFlag } = vnode
@@ -572,6 +574,7 @@ export function normalizeChildren(vnode: VNode, children: unknown) {
         // (compiled / normalized slots already have context)
         ;(children as RawSlots)._ctx = currentRenderingInstance
       } else if (slotFlag === SlotFlags.FORWARDED && currentRenderingInstance) {
+        // 案例可以见renderOptimizedMode.spec.ts中"dynamicChildren should be tracked correctly when normalizing slots to plain children"
         // a child component receives forwarded slots from the parent.
         // its slot type is determined by its parent's slot type.
         if (

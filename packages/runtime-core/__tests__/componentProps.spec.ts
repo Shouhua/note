@@ -106,6 +106,7 @@ describe('component props', () => {
     expect(attrs).toEqual({ qux: 5 })
   })
 
+  // NOTICE: functional component props and attrs without options property
   test('functional without declaration', () => {
     let props: any
     let attrs: any

@@ -33,8 +33,10 @@
         }
       }
     };
-    // const proxy = Vue.createApp().mount(App, '#app');
-    const proxy = Vue.createApp(App).mount('#app');
+    // const proxy = Vue.createApp()mount(App, '#app');
+    const app = Vue.createApp(App)
+    debugger
+    const proxy = app.mount('#app');
     setTimeout(() => {
       // proxy会检查proxy.data和proxy.renderContext
       // HOC 高阶组件（high order component）
