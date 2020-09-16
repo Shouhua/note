@@ -90,8 +90,9 @@ export function renderComponentRoot(
         }
        */
       result = normalizeVNode(
+        // NOTICE: (subtree)生成component里面template的vnode，比如Fragment，循环去生成和比较components
+        // NOTICE: // 在render中可以使用this，this的指向其实就是跟用户看到的第一个参数是一样的
         render!.call(
-          // NOTICE: 生成component里面template的vnode，比如Fragment，循环去生成和比较components
           proxyToUse,
           proxyToUse!,
           renderCache,

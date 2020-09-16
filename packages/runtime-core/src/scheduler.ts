@@ -168,6 +168,7 @@ export function flushPostFlushCbs(seen?: CountMap) {
       seen = seen || new Map()
     }
 
+    // 从小到大的排序
     activePostFlushCbs.sort((a, b) => getId(a) - getId(b))
 
     for (

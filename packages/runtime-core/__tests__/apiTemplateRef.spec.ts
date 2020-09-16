@@ -87,6 +87,7 @@ describe('api: template refs', () => {
 
     const Comp = defineComponent(() => () => h('div', { ref: fn }))
     render(h(Comp), root)
+    // fn.mock.calls[0][0] fn被第一次调用是的传递的第一个参数
     expect(fn.mock.calls[0][0]).toBe(root.children[0])
   })
 

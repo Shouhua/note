@@ -1,6 +1,8 @@
 /**
  1. 然而，有心的朋友可能会从上面这些代码中观察到一个问题，我们还是在 render 方法中使用到了 this 对象，
  当然这在实现功能上面并不存在什么问题，但是，这跟Composition API提倡的函数式做法的理念并不一致。
+ render(ctx, cache, ...args) render中的this指向ctx是一样的，具体可以看componentRenderUtils.ts中的
+ render调用函数render.call(proxyToUse, proxyToUse, ...args)
 
 其实，新的框架已经考虑到了这一点，并给出了方案：在 setup 方法中返回这个 render 方法。
 我们的 Counter 组件如果按照上面的方案改写一下，就会是这样：
@@ -325,7 +327,11 @@ export const setRef = (
   vnode: VNode | null
 ) => {
   if (isArray(rawRef)) {
-    rawRef.forEach((r, i) =>
+    // [{ i: ComponentInternalInstance r: VNodeRef }]
+    rawRef.forEach((
+      r,
+      i // r = { i: ComponentInternalInstance r: VNodeRef }, i = index
+    ) =>
       setRef(
         r,
         oldRawRef && (isArray(oldRawRef) ? oldRawRef[i] : oldRawRef),
@@ -341,6 +347,7 @@ export const setRef = (
   if (!vnode) {
     value = null
   } else {
+    // 如果是组件，ref值为currentComponentInstance, 如果为plain element, 则为DOM对象
     if (vnode.shapeFlag & ShapeFlags.STATEFUL_COMPONENT) {
       value = vnode.component!.proxy
     } else {
@@ -375,6 +382,7 @@ export const setRef = (
   if (isString(ref)) {
     const doSet = () => {
       refs[ref] = value
+      // 如果setup的返回参数中有对应的值，则对应的值也会被设置
       if (hasOwn(setupState, ref)) {
         setupState[ref] = value
       }
@@ -383,7 +391,7 @@ export const setRef = (
     // null values means this is unmount and it should not overwrite another
     // ref with the same key
     if (value) {
-      ;(doSet as SchedulerCb).id = -1
+      ;(doSet as SchedulerCb).id = -1 // sef refs before lifecycle hooks
       queuePostRenderEffect(doSet, parentSuspense)
     } else {
       doSet()

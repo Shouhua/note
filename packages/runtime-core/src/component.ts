@@ -204,6 +204,17 @@ export interface ComponentInternalInstance {
   type: ConcreteComponent
   parent: ComponentInternalInstance | null
   root: ComponentInternalInstance
+  /**
+  export interface AppContext {
+    app: App // for devtools
+    config: AppConfig // {globalProperties}
+    mixins: ComponentOptions[]
+    components: Record<string, Component>
+    directives: Record<string, Directive>
+    provides: Record<string | symbol, any>
+    reload?: () => void // HMR only
+  }
+   */
   appContext: AppContext
   /**
    * Vnode representing this component in its parent's vdom tree
@@ -235,9 +246,10 @@ export interface ComponentInternalInstance {
   /**
    * Tracking reactive effects (e.g. watchers) associated with this component
    * so that they can be automatically stopped on component unmount
+   * update也是这个ReactiveEffect类型的，前者适用于更新自己的, 注释说的很清楚，主要用于unmount的时候卸载
    * @internal
    */
-  effects: ReactiveEffect[] | null // update也是这个ReactiveEffect类型的，前者适用于更新自己的, 注释说的很清楚，主要用于unmount的时候卸载
+  effects: ReactiveEffect[] | null
   /**
    * cache for proxy access type to avoid hasOwnProperty calls
    * 优化项，添加PublicInstanceProxyHandlers使用到, instance.proxy = new Proxy(instance.ctx, PublicInstanceProxyHandlers)(本文档487行)
@@ -276,6 +288,7 @@ export interface ComponentInternalInstance {
   // the rest are only for stateful components ---------------------------------
 
   // main proxy that serves as the public instance (`this`)
+  // PublicInstanceProxyHandlers来处理，数据首先进行了引导，其实与ctx大致是一样的
   proxy: ComponentPublicInstance | null
 
   /**
@@ -482,9 +495,9 @@ export function createComponentInstance(
     ec: null // error captured
   }
   if (__DEV__) {
-    // 将appContext的信息放在instance.ctx下面
-    // renderContext就是render中使用this的上下文，直接将instance的大部分东西一股脑全部双向绑定给ctx, 后面instance.proxy=proxy(instance.ctx)
-    instance.ctx = createRenderContext(instance) // instance.ctx = {_: instance, $开头的信息，$nextTick,$forceUpdate等, 还有最初appConfig的信息}
+    // renderContext就是render(ctx, ...args)中使用this的上下文，直接将instance的大部分东西一股脑全部双向绑定给ctx, 后面instance.proxy=proxy(instance.ctx)
+    // instance.ctx = {_: instance, $开头的信息，$nextTick,$forceUpdate等, 还有最初appConfig.config.globalProperties的信息}
+    instance.ctx = createRenderContext(instance)
   } else {
     instance.ctx = { _: instance }
   }
