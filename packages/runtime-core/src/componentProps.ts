@@ -261,20 +261,26 @@ function setFullProps(
       }
       // prop option names are camelized during normalization, so to support
       // kebab -> camel conversion here we need to camelize the key.
+      // 用户输入的kebab props key可能经过camerlized
       let camelKey
       if (options && hasOwn(options, (camelKey = camelize(key)))) {
+        // 寻找所有在props声明的props, 没有声明的可能包括attrs和event handler
         props[camelKey] = value
       } else if (!isEmitListener(instance.emitsOptions, key)) {
+        // 是否是instance.emits中声明过的events
         // 没有在emitsOptions中声明的都放到attrs去spread
         // Any non-declared (either as a prop or an emitted event) props are put
         // into a separate `attrs` object for spreading. Make sure to preserve
         // original key casing
+        // attrs里面包括了attrs和没有在emits中声明的events, 包括onUpdate:**的事件, 这个会在后面传递attrs的代码中过滤
+        // componentRenderUtils.ts -> renderComponentRoot() -> fallthroughAttrs
         attrs[key] = value
       }
     }
   }
 
   if (needCastKeys) {
+    // 有Boolean的type或者有default
     const rawCurrentProps = toRaw(props)
     for (let i = 0; i < needCastKeys.length; i++) {
       const key = needCastKeys[i]
@@ -366,7 +372,7 @@ export function normalizePropsOptions(
       if (__DEV__ && !isString(raw[i])) {
         warn(`props must be strings when using array syntax.`, raw[i])
       }
-      const normalizedKey = camelize(raw[i])
+      const normalizedKey = camelize(raw[i]) // props声明都会camelize
       if (validatePropName(normalizedKey)) {
         normalized[normalizedKey] = EMPTY_OBJ
       }
@@ -379,14 +385,22 @@ export function normalizePropsOptions(
     for (const key in raw) {
       const normalizedKey = camelize(key)
       if (validatePropName(normalizedKey)) {
-        const opt = raw[key]
+        const opt = raw[key] // Object, Array, Function(比如Number，String都属于function类型)
+        /**
+         * {
+         *    type: Number | [Number, String],
+         *    default:
+         *    required:
+         *    validation:
+         * }
+         */
         const prop: NormalizedProp = (normalized[normalizedKey] =
           isArray(opt) || isFunction(opt) ? { type: opt } : opt)
         if (prop) {
-          const booleanIndex = getTypeIndex(Boolean, prop.type)
+          const booleanIndex = getTypeIndex(Boolean, prop.type) // type可以是Array，Function，String等
           const stringIndex = getTypeIndex(String, prop.type)
           prop[BooleanFlags.shouldCast] = booleanIndex > -1 // 如果有boolean，就需要转化
-          prop[BooleanFlags.shouldCastTrue] =
+          prop[BooleanFlags.shouldCastTrue] = // 主要是处理为Boolean的时候，用户只输入key，比如<div hello-world />中，hello-world就属于这种
             stringIndex < 0 || booleanIndex < stringIndex
           // if the prop needs boolean casting or default value
           if (booleanIndex > -1 || hasOwn(prop, 'default')) {

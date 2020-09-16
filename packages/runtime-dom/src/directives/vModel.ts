@@ -67,6 +67,8 @@ export const vModelText: ModelDirective<
     el.value = value == null ? '' : value
     el._assign = getModelAssigner(vnode)
     const castToNumber = number || el.type === 'number'
+    // https://developer.mozilla.org/zh-CN/docs/Web/Events/change
+    // input的change事件是元素的值发生改变并且提交的时候(比如按enter健)才会触发
     addEventListener(el, lazy ? 'change' : 'input', e => {
       if ((e.target as any).composing) return
       let domValue: string | number = el.value
@@ -115,7 +117,7 @@ export const vModelCheckbox: ModelDirective<HTMLInputElement> = {
     el._assign = getModelAssigner(vnode)
     addEventListener(el, 'change', () => {
       const modelValue = (el as any)._modelValue
-      const elementValue = getValue(el)
+      const elementValue = getValue(el) // _value or value
       const checked = el.checked
       const assign = el._assign
       if (isArray(modelValue)) {
@@ -124,6 +126,7 @@ export const vModelCheckbox: ModelDirective<HTMLInputElement> = {
         if (checked && !found) {
           assign(modelValue.concat(elementValue))
         } else if (!checked && found) {
+          // unchecked -> checked
           const filtered = [...modelValue]
           filtered.splice(index, 1)
           assign(filtered)

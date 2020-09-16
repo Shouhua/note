@@ -46,6 +46,7 @@ const defaultFallback = createSimpleExpression(`undefined`, false)
 //    so only nested slots see positive numbers.
 export const trackSlotScopes: NodeTransform = (node, context) => {
   if (
+    // v-slot命令只能应用在<template>或者<Component>
     node.type === NodeTypes.ELEMENT &&
     (node.tagType === ElementTypes.COMPONENT ||
       node.tagType === ElementTypes.TEMPLATE)
@@ -74,6 +75,7 @@ export const trackSlotScopes: NodeTransform = (node, context) => {
 export const trackVForSlotScopes: NodeTransform = (node, context) => {
   let vFor
   if (
+    // <template v-for="item in list" v-slot/>
     isTemplateNode(node) &&
     node.props.some(isVSlot) &&
     (vFor = findDir(node, 'for'))
@@ -116,6 +118,7 @@ const buildClientSlotFn: SlotFnBuilder = (props, children, loc) =>
 // Instead of being a DirectiveTransform, v-slot processing is called during
 // transformElement to build the slots object for a component.
 // 类似于children的转化
+// 在v-slot和v-for, v-if中，动态args就是动态slot
 export function buildSlots(
   node: ElementNode,
   context: TransformContext,
@@ -163,6 +166,7 @@ export function buildSlots(
 
   // 2. Iterate through children and check for template slots
   //    <template v-slot:foo="{ prop }">
+  // 如果v-slot是tempalte里面的，就需要收集真正的children
   let hasTemplateSlots = false
   let hasNamedDefaultSlot = false
   const implicitDefaultChildren: TemplateChildNode[] = []
@@ -326,7 +330,7 @@ export function buildSlots(
 
   const slotFlag = hasDynamicSlots
     ? SlotFlags.DYNAMIC
-    : hasForwardedSlots(node.children)
+    : hasForwardedSlots(node.children) // forwardedSlots means <slot /> or children has <slot />
       ? SlotFlags.FORWARDED
       : SlotFlags.STABLE
 
@@ -337,6 +341,7 @@ export function buildSlots(
         `_`,
         // 2 = compiled but dynamic = can skip normalization, but must run diff
         // 1 = compiled and static = can skip normalization AND diff as optimized
+        // normalization on the runtime(componentSlots.ts)
         createSimpleExpression('' + slotFlag, false)
       )
     ),

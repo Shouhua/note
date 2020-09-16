@@ -32,6 +32,6 @@ export function withCtx(
     }
     return res
   }
-  renderFnWithContext._c = true
+  renderFnWithContext._c = true // compiled
   return renderFnWithContext
 }

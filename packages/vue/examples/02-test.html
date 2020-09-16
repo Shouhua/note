@@ -8,34 +8,48 @@
 </head>
 <body>
   <div id="app">
-    <h2>{{ message }}</h2>
-    <button @click="handleClick">Click Me</button>
+    <!-- <h2>{{ message }}</h2>
+    <button @click="handleClick">Click Me</button> -->
   </div>  
   <script src="../dist/vue.global.js"></script>
   <script>
     const message = Vue.ref('Hello, world!');
-    const App = {
-      // template: '',
-      // render: () => Vue.h('div', message.value),
-      setup() {
-        Vue.onMounted(() => {
-          console.log('onMounted');
-        });
-        Vue.onRenderTracked((obj) => {
-          console.log('onRenderTracked: ', obj);
-        });
-        function handleClick() {
-          console.log('click handled...');
-        };
-        return {
-          message,
-          handleClick
-        }
-      }
-    };
+    // const App = {
+    //   // template: '',
+    //   // render: () => Vue.h('div', message.value),
+    //   setup() {
+    //     Vue.onMounted(() => {
+    //       console.log('onMounted');
+    //     });
+    //     Vue.onRenderTracked((obj) => {
+    //       console.log('onRenderTracked: ', obj);
+    //     });
+    //     function handleClick() {
+    //       console.log('click handled...');
+    //     };
+    //     return {
+    //       message,
+    //       handleClick
+    //     }
+    //   }
+    // };
     // const proxy = Vue.createApp()mount(App, '#app');
+    const App = {
+      name: 'App',
+      data() {
+        return {
+          useHello: true
+        }
+      },
+      setup(props, {emit, slots, attrs}) {
+        // const instance = getCurrentInstance()
+        const useHello = true
+        return () => Vue.h('div', {class: {hello: useHello}}, [
+          Vue.h('hello, world')
+        ])
+      }
+    }
     const app = Vue.createApp(App)
-    debugger
     const proxy = app.mount('#app');
     setTimeout(() => {
       // proxy会检查proxy.data和proxy.renderContext

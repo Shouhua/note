@@ -128,7 +128,7 @@ export interface VNode<
   children: VNodeNormalizedChildren
   component: ComponentInternalInstance | null
   suspense: SuspenseBoundary | null
-  dirs: DirectiveBinding[] | null
+  dirs: DirectiveBinding[] | null // withDirectives(VNode, [...directives])
   transition: TransitionHooks<HostElement> | null
 
   // DOM
@@ -340,11 +340,12 @@ function _createVNode(
   }
 
   // class & style normalization.
-  // vnode里面的props.class, props.style只是做了拍扁, 不同于component里面的normalizePropsOptions里面做了camelize操作
+  // vnode里面的props.class, props.style只是做了拍扁，这里是用户传入的props
+  // 不同于component里面的normalizePropsOptions里面做了camelize操作, 这里是用户定义的props
   if (props) {
     // for reactive or proxy objects, we need to clone it to enable mutation.
     if (isProxy(props) || InternalObjectKey in props) {
-      props = extend({}, props)
+      props = extend({}, props) // Object.assign({}, props)
     }
     let { class: klass, style } = props
     if (klass && !isString(klass)) {

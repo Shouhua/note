@@ -35,7 +35,12 @@ import {
 import { injectProp, findDir, findProp } from '../utils'
 import { PatchFlags, PatchFlagNames } from '@vue/shared'
 
+/**
+ * 可以参考vIf.spec.ts里面可以看到，实际上是将相关的node先去掉，然后统一添加在createIfBranch
+ * 生成的NodeType.IfBranch节点下的children下面
+ */
 export const transformIf = createStructuralDirectiveTransform(
+  // (name, fn: (node, dir, context) => void)) => NodeTransform: ((node, context) => () => void))
   /^(if|else|else-if)$/,
   (node, dir, context) => {
     return processIf(node, dir, context, (ifNode, branch, isRoot) => {

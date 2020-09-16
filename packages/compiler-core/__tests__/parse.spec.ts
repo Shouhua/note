@@ -586,6 +586,7 @@ describe('compiler: parse', () => {
         tagType: ElementTypes.ELEMENT
       })
 
+      // NOTICE: 有is命令的tagType也是Component
       expect(ast.children[1]).toMatchObject({
         type: NodeTypes.ELEMENT,
         tag: 'div',

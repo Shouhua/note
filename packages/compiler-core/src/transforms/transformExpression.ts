@@ -111,6 +111,7 @@ export function processExpression(
   // bail on parens to prevent any possible function invocations.
   const bailConstant = rawExp.indexOf(`(`) > -1
   if (isSimpleIdentifier(rawExp)) {
+    // 不匹配/^\d|[^\$\w]/
     if (
       !asParams &&
       !context.identifiers[rawExp] &&
@@ -156,6 +157,7 @@ export function processExpression(
     ids.some(id => id.start === node.start)
 
   // walk the AST and look for identifiers that need to be prefixed.
+  // NOTICE: 这里会处理slot props，当return body里面含有slot props时，不添加前缀_ctx
   ;(walk as any)(ast, {
     enter(node: Node & PrefixMeta, parent: Node) {
       if (node.type === 'Identifier') {

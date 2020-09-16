@@ -10,6 +10,7 @@ const seen = new WeakSet()
 export const transformOnce: NodeTransform = (node, context) => {
   if (node.type === NodeTypes.ELEMENT && findDir(node, 'once', true)) {
     if (seen.has(node)) {
+      // 嵌套v-once，子代中跳过
       return
     }
     seen.add(node)

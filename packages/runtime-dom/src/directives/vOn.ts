@@ -1,5 +1,6 @@
 import { hyphenate } from '@vue/shared'
 
+// https://v3.vuejs.org/guide/events.html#key-aliases
 const systemModifiers = ['ctrl', 'shift', 'alt', 'meta']
 
 type KeyedEvent = KeyboardEvent | MouseEvent | TouchEvent

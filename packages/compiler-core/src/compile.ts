@@ -32,9 +32,10 @@ export function getBaseTransformPreset(
 ): TransformPreset {
   return [
     [
-      transformOnce,
-      transformIf,
-      transformFor,
+      // node transform
+      transformOnce, // v-once
+      transformIf, // v-if
+      transformFor, // v-for
       ...(!__BROWSER__ && prefixIdentifiers
         ? [
             // order is important
@@ -44,15 +45,16 @@ export function getBaseTransformPreset(
         : __BROWSER__ && __DEV__
           ? [transformExpression]
           : []),
-      transformSlotOutlet,
+      transformSlotOutlet, // <slot></slot>
       transformElement,
       trackSlotScopes,
       transformText
     ],
     {
-      on: transformOn,
-      bind: transformBind,
-      model: transformModel
+      // directive tranform
+      on: transformOn, // @click
+      bind: transformBind, // :name
+      model: transformModel // v-model
     }
   ]
 }

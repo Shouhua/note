@@ -487,8 +487,8 @@ function baseCreateRenderer(
       n1 = null
     }
     // bail out of optimization mode for non-compiled slots
+    // 不优化模式，比如renderSlots里面SlotFlags!==Stable,那patchFlags就为BAIL
     if (n2.patchFlag === PatchFlags.BAIL) {
-      // TODO: BAIL不懂, 暂时认为是没有优化的
       optimized = false
       n2.dynamicChildren = null
     }

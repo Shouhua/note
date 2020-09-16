@@ -118,7 +118,7 @@ export function renderComponentRoot(
               __DEV__
                 ? {
                     get attrs() {
-                      markAttrsAccessed()
+                      markAttrsAccessed() // dev环境下，使用这个可以判断在组件内部有没有使用attrs，如果没有使用，接下来会有判断去warn
                       return attrs
                     },
                     slots,
@@ -151,14 +151,17 @@ export function renderComponentRoot(
       ;[root, setRoot] = getChildRoot(result)
     }
 
+    // https://v3.vuejs.org/guide/component-attrs.html#attribute-inheritance
     if (Component.inheritAttrs !== false && fallthroughAttrs) {
       const keys = Object.keys(fallthroughAttrs)
       const { shapeFlag } = root
       if (keys.length) {
         if (
+          // 只有single root node才能自动的传递
           shapeFlag & ShapeFlags.ELEMENT ||
           shapeFlag & ShapeFlags.COMPONENT
         ) {
+          // 如果有props的声明和onUpdate开头的事件处理，就需要在attr把这部分过滤掉
           if (propsOptions && keys.some(isModelListener)) {
             // If a v-model listener (onUpdate:xxx) has a corresponding declared
             // prop, it indicates this component expects to handle v-model and
@@ -170,6 +173,7 @@ export function renderComponentRoot(
               propsOptions
             )
           }
+          // NOTICE: 这里进行attr传递
           root = cloneVNode(root, fallthroughAttrs)
         } else if (__DEV__ && !accessedAttrs && root.type !== Comment) {
           const allAttrs = Object.keys(attrs)
@@ -180,7 +184,6 @@ export function renderComponentRoot(
             if (isOn(key)) {
               // ignore v-model handlers when they fail to fallthrough
               if (!isModelListener(key)) {
-                // v-model handler默认要传递
                 // remove `on`, lowercase first letter to reflect event casing
                 // accurately
                 eventAttrs.push(key[2].toLowerCase() + key.slice(3)) // eventAttrs = ["click.passive",]

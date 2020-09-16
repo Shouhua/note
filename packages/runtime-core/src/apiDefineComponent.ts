@@ -206,6 +206,7 @@ export function defineComponent<
   >
 
 // implementation, close to no-op
+// 为了ts有更好的提示
 export function defineComponent(options: unknown) {
   return isFunction(options) ? { setup: options, name: options.name } : options
 }

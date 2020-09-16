@@ -69,6 +69,8 @@ export function stringifyStyle(styles: NormalizedStyle | undefined): string {
   return ret
 }
 
+// vnode中使用此函数时，value[name]已经经过执行了render(ctx, ...)，所以可以获得boolean值
+// componentRenderUtils.ts中renderComponentRoot()，normalizeChildren(render.call(...args)), 此时已经将class中的value计算过了
 export function normalizeClass(value: unknown): string {
   let res = ''
   if (isString(value)) {

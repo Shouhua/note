@@ -11,6 +11,7 @@ export function patchStyle(el: Element, prev: Style, next: Style) {
   if (!next) {
     el.removeAttribute('style')
   } else if (isString(next)) {
+    // element.style.cssText
     if (prev !== next) {
       style.cssText = next
     }
@@ -60,6 +61,7 @@ function setStyle(
 const prefixes = ['Webkit', 'Moz', 'ms']
 const prefixCache: Record<string, string> = {}
 
+// NOTICE: 直接判断是否支持某个css样式，可以使用property是否在style中
 function autoPrefix(style: CSSStyleDeclaration, rawName: string): string {
   const cached = prefixCache[rawName]
   if (cached) {

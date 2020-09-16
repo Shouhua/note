@@ -99,6 +99,7 @@ export const transformModel: DirectiveTransform = (dir, node, context) => {
   }
 
   // modelModifiers: { foo: true, "bar-baz": true }
+  // <comp v-model:greet.trim='hello' />
   if (dir.modifiers.length && node.tagType === ElementTypes.COMPONENT) {
     const modifiers = dir.modifiers
       .map(m => (isSimpleIdentifier(m) ? m : JSON.stringify(m)) + `: true`)

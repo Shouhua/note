@@ -75,9 +75,9 @@ const normalizeSlot = (
   }, ctx)
 
 const normalizeObjectSlots = (rawSlots: RawSlots, slots: InternalSlots) => {
-  const ctx = rawSlots._ctx
+  const ctx = rawSlots._ctx // vnode.ts中的normalizeChildren已经填充
   for (const key in rawSlots) {
-    if (isInternalKey(key)) continue
+    if (isInternalKey(key)) continue // skip interanl key and just get default slot,named slot
     const value = rawSlots[key]
     if (isFunction(value)) {
       slots[key] = normalizeSlot(key, value, ctx) // 生成类似于render渲染函数的函数
