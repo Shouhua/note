@@ -287,8 +287,8 @@ export function transform(root: RootNode, options: TransformOptions) {
 function createRootCodegen(root: RootNode, context: TransformContext) {
   const { helper } = context
   const { children } = root
-  const child = children[0]
   if (children.length === 1) {
+    const child = children[0]
     // if the single child is an element, turn it into a block.
     // 单后代，但是不是<slot />，比如<div></div>
     if (isSingleElementRoot(root, child) && child.codegenNode) {

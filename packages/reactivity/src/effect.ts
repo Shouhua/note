@@ -1,5 +1,5 @@
 import { TrackOpTypes, TriggerOpTypes } from './operations'
-import { EMPTY_OBJ, isArray, isIntegerKey } from '@vue/shared'
+import { EMPTY_OBJ, isArray, isIntegerKey, isMap } from '@vue/shared'
 
 // 1. WeakMap不同与Map的地方，前者没有将keys和values放在2个数组中，因为这样会一直引用着keys，values，导致
 // GC不能正常回收。
@@ -209,20 +209,34 @@ export function trigger(
       // void 0 === undefined undefined在一些环境下可以被重写
       add(depsMap.get(key))
     }
+
     // also run for iteration key on ADD | DELETE | Map.SET
-    // 以下都会触发length，所以额外需要添加lenght的依赖effects
-    const shouldTriggerIteration =
-      (type === TriggerOpTypes.ADD &&
-        (!isArray(target) || isIntegerKey(key))) ||
-      (type === TriggerOpTypes.DELETE && !isArray(target))
-    if (
-      shouldTriggerIteration ||
-      (type === TriggerOpTypes.SET && target instanceof Map)
-    ) {
-      add(depsMap.get(isArray(target) ? 'length' : ITERATE_KEY))
-    }
-    if (shouldTriggerIteration && target instanceof Map) {
-      add(depsMap.get(MAP_KEY_ITERATE_KEY))
+    switch (type) {
+      case TriggerOpTypes.ADD:
+        if (!isArray(target)) {
+          add(depsMap.get(ITERATE_KEY))
+          if (isMap(target)) {
+            add(depsMap.get(MAP_KEY_ITERATE_KEY))
+          }
+        } else if (isIntegerKey(key)) {
+          // 以下都会触发length，所以额外需要添加lenght的依赖effects
+          // new index added to array -> length changes
+          add(depsMap.get('length'))
+        }
+        break
+      case TriggerOpTypes.DELETE:
+        if (!isArray(target)) {
+          add(depsMap.get(ITERATE_KEY))
+          if (isMap(target)) {
+            add(depsMap.get(MAP_KEY_ITERATE_KEY))
+          }
+        }
+        break
+      case TriggerOpTypes.SET:
+        if (isMap(target)) {
+          add(depsMap.get(ITERATE_KEY))
+        }
+        break
     }
   }
 

@@ -11,7 +11,9 @@ import {
   looseEqual,
   looseIndexOf,
   invokeArrayFns,
-  toNumber
+  toNumber,
+  isSet,
+  looseHas
 } from '@vue/shared'
 
 type AssignerFn = (value: any) => void
@@ -131,6 +133,14 @@ export const vModelCheckbox: ModelDirective<HTMLInputElement> = {
           filtered.splice(index, 1)
           assign(filtered)
         }
+      } else if (isSet(modelValue)) {
+        const found = modelValue.has(elementValue)
+        if (checked && !found) {
+          assign(modelValue.add(elementValue))
+        } else if (!checked && found) {
+          modelValue.delete(elementValue)
+          assign(modelValue)
+        }
       } else {
         assign(getCheckboxValue(el, checked))
       }
@@ -152,6 +162,8 @@ function setChecked(
   ;(el as any)._modelValue = value
   if (isArray(value)) {
     el.checked = looseIndexOf(value, vnode.props!.value) > -1
+  } else if (isSet(value)) {
+    el.checked = looseHas(value, vnode.props!.value)
   } else if (value !== oldValue) {
     el.checked = looseEqual(value, getCheckboxValue(el, true))
   }
@@ -198,10 +210,10 @@ export const vModelSelect: ModelDirective<HTMLSelectElement> = {
 
 function setSelected(el: HTMLSelectElement, value: any) {
   const isMultiple = el.multiple
-  if (isMultiple && !isArray(value)) {
+  if (isMultiple && !isArray(value) && !isSet(value)) {
     __DEV__ &&
       warn(
-        `<select multiple v-model> expects an Array value for its binding, ` +
+        `<select multiple v-model> expects an Array or Set value for its binding, ` +
           `but got ${Object.prototype.toString.call(value).slice(8, -1)}.`
       )
     return
@@ -210,7 +222,11 @@ function setSelected(el: HTMLSelectElement, value: any) {
     const option = el.options[i]
     const optionValue = getValue(option)
     if (isMultiple) {
-      option.selected = looseIndexOf(value, optionValue) > -1
+      if (isArray(value)) {
+        option.selected = looseIndexOf(value, optionValue) > -1
+      } else {
+        option.selected = looseHas(value, optionValue)
+      }
     } else {
       if (looseEqual(getValue(option), value)) {
         el.selectedIndex = i
@@ -298,6 +314,10 @@ if (__NODE_JS__) {
   vModelCheckbox.getSSRProps = ({ value }, vnode) => {
     if (isArray(value)) {
       if (vnode.props && looseIndexOf(value, vnode.props.value) > -1) {
+        return { checked: true }
+      }
+    } else if (isSet(value)) {
+      if (vnode.props && looseHas(value, vnode.props.value)) {
         return { checked: true }
       }
     } else if (value) {
