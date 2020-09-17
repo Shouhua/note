@@ -29,6 +29,7 @@ export interface ReactiveEffectOptions {
   onTrack?: (event: DebuggerEvent) => void
   onTrigger?: (event: DebuggerEvent) => void
   onStop?: () => void
+  allowRecurse?: boolean
 }
 
 export type DebuggerEvent = {
@@ -187,7 +188,11 @@ export function trigger(
   // 当需要触发其他类型的effect时候使用，比如add或者delete需要触发length收集到的effect
   const add = (effectsToAdd: Set<ReactiveEffect> | undefined) => {
     if (effectsToAdd) {
-      effectsToAdd.forEach(effect => effects.add(effect))
+      effectsToAdd.forEach(effect => {
+        if (effect !== activeEffect || effect.options.allowRecurse) {
+          effects.add(effect)
+        }
+      })
     }
   }
 
