@@ -19,6 +19,7 @@ export interface SchedulerJob {
    * triggers itself again, it's likely intentional and it is the user's
    * responsibility to perform recursive state mutation that eventually
    * stabilizes (#1727).
+   * https://github.com/vuejs/vue-next/issues/1801
    */
   allowRecurse?: boolean
 }

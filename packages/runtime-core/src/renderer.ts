@@ -303,6 +303,7 @@ export const enum MoveType {
 const prodEffectOptions = {
   scheduler: queueJob,
   // #1801, #2043 component render effects should allow recursive updates
+  // 允许recurse, 父节点更新子节点，再触发父节点，具体可见https://github.com/vuejs/vue-next/issues/1801
   allowRecurse: true
 }
 

@@ -68,6 +68,7 @@ function createRecord(id: string): boolean {
   return true
 }
 
+// code rerender
 function rerender(id: string, newRender?: Function) {
   const record = map.get(id)
   if (!record) return
@@ -85,6 +86,7 @@ function rerender(id: string, newRender?: Function) {
   })
 }
 
+// template reload
 function reload(id: string, newComp: ComponentOptions) {
   const record = map.get(id)
   if (!record) return

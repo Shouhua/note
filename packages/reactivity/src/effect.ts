@@ -189,6 +189,7 @@ export function trigger(
   const add = (effectsToAdd: Set<ReactiveEffect> | undefined) => {
     if (effectsToAdd) {
       effectsToAdd.forEach(effect => {
+        // allowRecurse 是否允许self trigger
         if (effect !== activeEffect || effect.options.allowRecurse) {
           effects.add(effect)
         }
