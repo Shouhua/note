@@ -281,9 +281,10 @@ function doWatch(
   if (flush === 'sync') {
     // 同步立即执行
     scheduler = job
-  } else if (flush === 'pre') {
-    // ensure it's queued before component updates (which have positive ids)
-    job.id = -1
+  } else if (flush === 'post') {
+    scheduler = () => queuePostRenderEffect(job, instance && instance.suspense)
+  } else {
+    // default: 'pre'
     scheduler = () => {
       if (!instance || instance.isMounted) {
         queuePreFlushCb(job)
@@ -293,9 +294,6 @@ function doWatch(
         job()
       }
     }
-  } else {
-    // flust = post时执行
-    scheduler = () => queuePostRenderEffect(job, instance && instance.suspense)
   }
   // callback函数只有在source变化的时候才调用
   // so it runs before component update effects in pre flush mode
@@ -316,6 +314,8 @@ function doWatch(
     } else {
       oldValue = runner() // 只是执行了runner里面的effect(), 在reactive或ref变量上注册
     }
+  } else if (flush === 'post') {
+    queuePostRenderEffect(runner, instance && instance.suspense)
   } else {
     runner()
   }

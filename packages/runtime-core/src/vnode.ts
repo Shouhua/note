@@ -17,7 +17,8 @@ import {
   Data,
   ConcreteComponent,
   ClassComponent,
-  Component
+  Component,
+  isClassComponent
 } from './component'
 import { RawSlots } from './componentSlots'
 import { isProxy, Ref, toRaw, ReactiveFlags } from '@vue/reactivity'
@@ -349,8 +350,7 @@ function _createVNode(
   }
 
   // class component normalization.
-  if (isFunction(type) && '__vccOpts' in type) {
-    // class component options {...}
+  if (isClassComponent(type)) {
     type = type.__vccOpts
   }
 
