@@ -47,4 +47,3 @@ compiler_core_1.transform(rootNode, {
 console.log(rootNode);
 const { code, ast } = compiler_core_1.baseCompile(rootNode, {});
 console.log(code, ast);
-//# sourceMappingURL=baseParse.js.map

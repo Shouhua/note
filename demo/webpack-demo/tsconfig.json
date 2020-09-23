@@ -5,3 +5,4 @@
     "outDir": "./tsDist"
   }
 }
+// tsc -w -p ./demo/webpack-demo

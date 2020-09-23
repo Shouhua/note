@@ -15,7 +15,7 @@ export const nextTick = (fn?: () => void) => {
   return fn ? p.then(fn) : p
 }
 
-export function queueJob(job: Job) {
+export function queueJob(job: SchedulerJob) {
   queue.push(job)
   queueFlush()
 }
@@ -25,7 +25,7 @@ function queueFlush() {
     currentFlushPromise = resolvedPromise.then(flushJobs)
   }
 }
-export function invalidateJob(job: Job) {
+export function invalidateJob(job: SchedulerJob) {
   const i = queue.indexOf(job)
   if(~i) {
     queue[i] = null

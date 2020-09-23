@@ -8,7 +8,7 @@ declare global {
 
 interface Job {
   (): void
-  id?: number
+  id?: number | string
   allowRecursive: boolean
 }
 

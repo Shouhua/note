@@ -377,4 +377,3 @@ const watch = (source, cb, { immediate, deep, flush, onTrack, onTrigger } = EMPT
     };
 };
 exports.watch = watch;
-//# sourceMappingURL=reactive.js.map

@@ -12,3 +12,6 @@
   },
   // "include": ["./demo/vue3/*"]
 }
+// NOTICE: Add tsc options -p or --project when to specify a tsconfig.json, for example:
+//    tsc -w -p ./demo/vue3 ./demo/vue3 include tsconfig.json 
+// if use tsc -w ./demo/vue3/tsconfig means only compile ./demo/vue3/tsconfig.json, and emit error can't support json file
