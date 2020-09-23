@@ -2,12 +2,13 @@
   "compilerOptions": {
     "module": "CommonJS", // 设计模块引用层面的，在最终的产出文件中，commonjs使用require
     // "module": "ESNext",
+    "target": "ESNext", // 设计语言层面的的，es6以前最好使用commonjs的module
     "moduleResolution": "node", // 模块寻找方式
     "lib": ["ESNext", "DOM", "ScriptHost"],
-    "target": "ESNext", // 设计语言层面的的，es6以前最好使用commonjs的module
-    "sourceMap": true,
+    "esModuleInterop": true, // 支持使用import d from 'cjs'的方式引入commonjs包
+    // "sourceMap": true,
     // "noImplicitAny": true,
-    "outDir": "./demo/vue3/dist"
+    // "outDir": "./demo/vue3/dist"
   },
-  "include": ["./demo/vue3/*"]
+  // "include": ["./demo/vue3/*"]
 }

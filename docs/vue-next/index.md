@@ -34,4 +34,15 @@ createApp(App).mount('#app')
 3. 生成对应的instance.update job, 当发生更新的时候再次执行scheduler(queueJob(instance.update)), 完成整个循环
 ### performace监控
 使用window.performace监控component渲染性能
+```js
+const performance = window.performance
+const startTag = 'vue-component-1'
+const endTag = 'vue-component-1:end'
+performace.mark(startTag)
+performance.mark(endTag)
+performance.measure('<component> hello', startTag, endTag)
+performance.clearMark(startTag)
+performance.clearMark(endTag)
+```
+window.memory可以查看浏览器的内存使用情况(only chrome)
 ### 支持HMR，devtools

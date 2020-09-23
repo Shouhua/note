@@ -14,6 +14,17 @@ function Foo() {
 const foo = new Foo()
 Foo()
 
+function Bar() {
+  if(!(this instanceof Bar)) {
+    console.log('not init by new')
+    return
+  }
+  console.log('init by new')
+}
+
+const bar = new Bar()
+Bar()
+
 /**
  * new operator
  */

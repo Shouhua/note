@@ -3,7 +3,7 @@
 // 'use strict'
 // 在严格模式下，指向全局的this为undefined
 // 箭头函数使用call，apply和bind时，第一个参数会被忽略，可以当成null
-// 箭头函数不会创建自己的this,它只会从自己的作用域链的上一层继承this
+// 箭头函数不会创建自己的this,它只会从自己的作用域链的上一层继承this,所以调用bind，call，apply的时候，会忽略第一个参数
 // 箭头函数不绑定arguments
 // 首先明确函数才具有作用域，this指向caller
 // 作用域和上下文是2个概念
@@ -18,6 +18,11 @@ hoistVar1 = 1
 console.log(hoistVar1) // 1
 var hoistVar
 
+/**
+ * function和arrow function中的this指向，后者倾向于用于与this无关的场景中，比如array操作中的HOC(高阶函数), 指向有块级作用域
+ * 传统function倾向于用于与this有关的场景中, 比如addEventListener中的setTimeout(指向当前操作dom node), 对象中的函数(指向当前对象)
+ * 当然所有场景都是可以使用的，但是this的指向可能与我们理解的有一些差异
+ */
 var order = {
   name: 'desk',
   count: 30,
@@ -69,10 +74,10 @@ const luke = {
     },
 };
 
-luke.func1();
-luke.func2();
-luke.func3();
-luke.func4();
+luke.func1(); // 111
+luke.func2(); // 2
+luke.func3(); // 2
+luke.func4(); // 111
 
 // 闭包问题
 for(var i = 0; i < 3; i++) {
@@ -84,3 +89,15 @@ for(var i = 0; i < 3; i++) {
   }, 0, i) // 运行时使用的时全局的i，如果只改变var为let会提示undefined，可以传递值进入
 }
 console.log('i: ', i)
+
+var name = 'global'
+function getInfo() {
+  var name = 'local'
+  return {
+    getName: () => {
+      return this.name
+    }
+  }
+}
+
+console.log(getInfo().getName())

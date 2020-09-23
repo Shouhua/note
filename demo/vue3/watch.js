@@ -12,8 +12,11 @@
  *  onTrigger: () => {}
  * }
  */
-import { reactive, watch, ref} from 'vue'
+import { reactive, watch, ref, watchEffect } from 'vue'
 import { onErrorCaptured, onRenderTracked, onRenderTriggered } from 'vue'
+
+const timeout = (n=0) => new Promise(r => setTimeout(r, n))
+
 (async () => {
 const state = reactive({count: 0})
 
@@ -48,8 +51,17 @@ foo.count++
 // foo.value++
 console.log('before test')
 stop() // 测试stop的时候，同步模式才能看到效果，否则需要在nextTick后才能有效果
-const timeout = (n=0) => new Promise(r => setTimeout(r, n))
 await timeout()
 console.log('after test')
 foo.value++
 })()
+
+const arr = reactive([])
+
+watchEffect(()=>{
+  arr.push(1)
+})
+
+watchEffect(()=>{
+  arr.push(2)
+})

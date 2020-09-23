@@ -7,6 +7,38 @@
     {
       "type": "node",
       "request": "launch",
+      "name": "findComponent", 
+      "program": "${workspaceFolder}/node_modules/jest/bin/jest",
+      "skipFiles": [
+        "<node_internals>/**"
+      ],
+      "args": ["--runInBand", "${workspaceFolder}/demo/vue3/__tests__/findComponent.spec.js", "--testNamePattern", "'with wrapper'"],
+      // "cwd": "${workspaceFolder}/demo/vue3/__tests__"
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "webpack", // 调试webpack loader
+      "program": "${workspaceFolder}/node_modules/webpack/bin/webpack.js",
+      "skipFiles": [
+        "<node_internals>/**"
+      ],
+      "args": ["--config", "${workspaceFolder}/demo/webpack-demo/webpack.config.js"],
+      // "runtimeArgs": ["--inspect-brk"],
+      "cwd": "${workspaceFolder}/demo/webpack-demo/" // 设置内容为当前目录，不然拿不到index.js
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "parse",
+      "program": "${workspaceFolder}/demo/vue3/dist/parse.js",
+      "skipFiles": [
+        "<node_internals>/**"
+      ]
+    },
+    {
+      "type": "node",
+      "request": "launch",
       "name": "reactive",
       "program": "${workspaceFolder}/demo/vue3/dist/reactive.js",
       "skipFiles": [

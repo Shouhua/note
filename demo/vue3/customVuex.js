@@ -20,7 +20,7 @@ class Store {
     }
   }
 
-  commit(handle, payload) {
+  commit(handle, payload) { // commit mutations
     const fn = this.mutations[handle];
     if(!fn) {
       throw new Error(`[Hackex]: ${handle} is not defined`)
@@ -28,7 +28,7 @@ class Store {
     fn(this.state, payload);
   }
 
-  dispatch(handle, payload) {
+  dispatch(handle, payload) { // dispatch actions
     const fn = this.actions[handle];
     if(!fn) {
       throw new Error(`[Hackex]: ${handle} is not defined`)
