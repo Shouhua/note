@@ -146,7 +146,6 @@ export function renderComponentRoot(
     // attr merging
     // in dev mode, comments are preserved, and it's possible for a template
     // to have comments along side the root element which makes it a fragment
-    // dev模式下，comments是会保存的，这有可能把root搞成fragment的形式
     let root = result
     let setRoot: ((root: VNode) => void) | undefined = undefined
     if (__DEV__) {
@@ -195,7 +194,7 @@ export function renderComponentRoot(
             }
           }
           if (extraAttrs.length) {
-            // 传递
+            // extraneous-不相干的，没有直接联系的
             warn(
               `Extraneous non-props attributes (` +
                 `${extraAttrs.join(', ')}) ` +

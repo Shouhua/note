@@ -205,6 +205,8 @@ const publicPropertiesMap: PublicPropertiesMap = extend(Object.create(null), {
   $el: i => i.vnode.el,
   $data: i => i.data,
   $props: i => (__DEV__ ? shallowReadonly(i.props) : i.props),
+  // https://github.com/vuejs/vue-next/pull/1682
+  // proxyRefs获取还是会转换, 只会影响plain object key value
   $attrs: i => (__DEV__ ? shallowReadonly(i.attrs) : i.attrs),
   $slots: i => (__DEV__ ? shallowReadonly(i.slots) : i.slots),
   $refs: i => (__DEV__ ? shallowReadonly(i.refs) : i.refs),

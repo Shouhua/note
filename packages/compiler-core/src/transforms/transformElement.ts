@@ -75,7 +75,7 @@ export const transformElement: NodeTransform = (node, context) => {
 
     // The goal of the transform is to create a codegenNode implementing the
     // VNodeCall interface.
-    // vnodeTag = Symbol(builtin component) | string(user component: _component_foo) | CallExpression(dynamic component)
+    // vnodeTag = Symbol(builtin component) | String(user component: _component_foo) | CallExpression(dynamic component)
     const vnodeTag = isComponent
       ? resolveComponentType(node as ComponentNode, context)
       : `"${tag}"`
@@ -476,6 +476,7 @@ export function buildProps(
       const directiveTransform = context.directiveTransforms[name]
       if (directiveTransform) {
         // has built-in directive transform.
+        // NOTICE: 这里directive transform factory处理directive
         const { props, needRuntime } = directiveTransform(prop, node, context)
         !ssr && props.forEach(analyzePatchFlag) // 分析props, 判断变量，比如hasClassBinding
         properties.push(...props)

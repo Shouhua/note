@@ -19,10 +19,12 @@ import { ImportItem, TransformContext } from './transform'
 // SVG and MathML在html中属于外部元素
 export type Namespace = number
 
+// compiler-dom中还会添加DOMNamespaces，里面还包括SVG和MathML
 export const enum Namespaces {
   HTML
 }
 
+// 对应ast中的type
 export const enum NodeTypes {
   ROOT, // 0
   ELEMENT, // 1
@@ -57,8 +59,7 @@ export const enum NodeTypes {
   JS_RETURN_STATEMENT
 }
 
-// node的element type有4中, 在parseTag中设置
-// 对应node的tagType
+// 在parseTag中设置, 对应ast中的tagType
 export const enum ElementTypes {
   ELEMENT, // 0
   COMPONENT, // 1
@@ -66,6 +67,7 @@ export const enum ElementTypes {
   TEMPLATE // 3
 }
 
+// ast基础信息
 export interface Node {
   type: NodeTypes
   loc: SourceLocation
@@ -126,7 +128,7 @@ export interface BaseElementNode extends Node {
   tag: string
   tagType: ElementTypes
   isSelfClosing: boolean
-  props: Array<AttributeNode | DirectiveNode>
+  props: Array<AttributeNode | DirectiveNode> // 属性和指定都是props
   children: TemplateChildNode[]
 }
 
@@ -244,7 +246,7 @@ export interface IfNode extends Node {
 
 export interface IfBranchNode extends Node {
   type: NodeTypes.IF_BRANCH
-  condition: ExpressionNode | undefined // else
+  condition: ExpressionNode | undefined
   children: TemplateChildNode[]
   userKey?: AttributeNode | DirectiveNode
 }

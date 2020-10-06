@@ -13,6 +13,7 @@ import { createCompilerError, ErrorCodes } from '../errors'
 import { RENDER_SLOT } from '../runtimeHelpers'
 
 // <slot></slot>
+// renderSlot($slots, slotName, slotProps || {}, () => return children)
 export const transformSlotOutlet: NodeTransform = (node, context) => {
   if (isSlotOutlet(node)) {
     const { children, loc } = node

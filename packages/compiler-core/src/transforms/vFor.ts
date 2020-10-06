@@ -50,6 +50,8 @@ export const transformFor = createStructuralDirectiveTransform(
     return processFor(node, dir, context, forNode => {
       // create the loop render function expression now, and add the
       // iterator on exit after all children have been traversed
+
+      // renderList(list, (value, key, index) => { return ...})
       const renderExp = createCallExpression(helper(RENDER_LIST), [
         forNode.source
       ]) as ForRenderListExpression
@@ -57,7 +59,7 @@ export const transformFor = createStructuralDirectiveTransform(
       const keyProperty = keyProp
         ? createObjectProperty(
             `key`,
-            keyProp.type === NodeTypes.ATTRIBUTE
+            keyProp.type === NodeTypes.ATTRIBUTE // attribute or directive(key, :key)
               ? createSimpleExpression(keyProp.value!.content, true)
               : keyProp.exp!
           )
@@ -75,6 +77,8 @@ export const transformFor = createStructuralDirectiveTransform(
         )
       }
 
+      // v-for="item in 3" - stable fragement
+      // v-for="item in list" - unkeyed/keyed fragment and openBlock(true)
       const isStableFragment =
         forNode.source.type === NodeTypes.SIMPLE_EXPRESSION &&
         forNode.source.isConstant
@@ -85,10 +89,10 @@ export const transformFor = createStructuralDirectiveTransform(
           : PatchFlags.UNKEYED_FRAGMENT
       forNode.codegenNode = createVNodeCall(
         context,
-        helper(FRAGMENT),
-        undefined,
-        renderExp,
-        `${fragmentFlag} /* ${PatchFlagNames[fragmentFlag]} */`,
+        helper(FRAGMENT), // tag
+        undefined, // props
+        renderExp, // children
+        `${fragmentFlag} /* ${PatchFlagNames[fragmentFlag]} */`, // path flags
         undefined,
         undefined,
         true /* isBlock */,
@@ -98,6 +102,7 @@ export const transformFor = createStructuralDirectiveTransform(
 
       return () => {
         // finish the codegen now that all children have been traversed
+        // 此时所有的节点已经解析完毕，添加renderList后面的arguments
         let childBlock: BlockCodegenNode
         const isTemplate = isTemplateNode(node)
         const { children } = forNode
@@ -105,11 +110,13 @@ export const transformFor = createStructuralDirectiveTransform(
         // check <template v-for> key placement
         if ((__DEV__ || !__BROWSER__) && isTemplate) {
           node.children.some(c => {
+            // 只是为了检查是否错误的key使用
             if (c.type === NodeTypes.ELEMENT) {
               const key = findProp(c, 'key')
               if (key) {
                 context.onError(
                   createCompilerError(
+                    // <template v-for> key should be placed on the <template> tag.
                     ErrorCodes.X_V_FOR_TEMPLATE_KEY_PLACEMENT,
                     key.loc
                   )
@@ -122,6 +129,8 @@ export const transformFor = createStructuralDirectiveTransform(
 
         const needFragmentWrapper =
           children.length !== 1 || children[0].type !== NodeTypes.ELEMENT
+
+        // <slot v-for="..."> or <template v-for="..."><slot/></template>
         const slotOutlet = isSlotOutlet(node)
           ? node
           : isTemplate &&
@@ -149,7 +158,7 @@ export const transformFor = createStructuralDirectiveTransform(
             node.children,
             `${PatchFlags.STABLE_FRAGMENT} /* ${
               PatchFlagNames[PatchFlags.STABLE_FRAGMENT]
-            } */`,
+            } */`, // TODO: why set stable framgement directly
             undefined,
             undefined,
             true
@@ -169,8 +178,16 @@ export const transformFor = createStructuralDirectiveTransform(
           }
         }
 
+        // createFunctionExpression
+        // params: FunctionExpression['params'],
+        // returns: FunctionExpression['returns'] = undefined,
+        // newline: boolean = false,
+        // isSlot: boolean = false,
+        // loc: SourceLocation = locStub
+
+        // ([value, key, index]) => childBlock, renderList的第二个参数
         renderExp.arguments.push(createFunctionExpression(
-          createForLoopParams(forNode.parseResult),
+          createForLoopParams(forNode.parseResult), // [value, key, index]
           childBlock,
           true /* force newline */
         ) as ForIteratorExpression)
@@ -193,6 +210,14 @@ export function processFor(
     return
   }
 
+  /**
+  export interface ForParseResult {
+    source: ExpressionNode
+    value: ExpressionNode | undefined
+    key: ExpressionNode | undefined
+    index: ExpressionNode | undefined
+  }
+   */
   const parseResult = parseForExpression(
     // can only be simple expression because vFor transform is applied
     // before expression transform.
@@ -246,10 +271,10 @@ export function processFor(
   }
 }
 
-const forAliasRE = /([\s\S]*?)\s+(?:in|of)\s+([\s\S]*)/
+const forAliasRE = /([\s\S]*?)\s+(?:in|of)\s+([\s\S]*)/ // item in list
 // This regex doesn't cover the case if key or index aliases have destructuring,
 // but those do not make sense in the first place, so this works in practice.
-const forIteratorRE = /,([^,\}\]]*)(?:,([^,\}\]]*))?$/
+const forIteratorRE = /,([^,\}\]]*)(?:,([^,\}\]]*))?$/ // value, key, index match ", key, index", group1 = "key"
 const stripParensRE = /^\(|\)$/g
 
 export interface ForParseResult {
@@ -295,7 +320,7 @@ export function parseForExpression(
     .trim()
   const trimmedOffset = LHS.indexOf(valueContent)
 
-  const iteratorMatch = valueContent.match(forIteratorRE)
+  const iteratorMatch = valueContent.match(forIteratorRE) // (value, key, index) in list
   if (iteratorMatch) {
     valueContent = valueContent.replace(forIteratorRE, '').trim()
 
@@ -373,6 +398,7 @@ function createAliasExpression(
   )
 }
 
+// (value, key ,index)
 export function createForLoopParams({
   value,
   key,

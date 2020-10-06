@@ -935,7 +935,7 @@ describe('compiler: parse', () => {
             }
           },
           {
-            type: NodeTypes.ATTRIBUTE, // TODO: 不懂
+            type: NodeTypes.ATTRIBUTE,
             name: 'style',
             value: {
               type: NodeTypes.TEXT,

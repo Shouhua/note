@@ -269,8 +269,8 @@ function setFullProps(
         // 寻找所有在props声明的props, 没有声明的可能包括attrs和event handler
         props[camelKey] = value
       } else if (!isEmitListener(instance.emitsOptions, key)) {
-        // 是否是instance.emits中声明过的events
-        // 没有在emitsOptions中声明的都放到attrs去spread
+        // https://github.com/vuejs/rfcs/blob/49de6decac4dc99840410d082e3bd7c98b580193/active-rfcs/0031-attr-fallthrough.md
+        // 在Component.emits中声明的events不会放到$attrs中
         // Any non-declared (either as a prop or an emitted event) props are put
         // into a separate `attrs` object for spreading. Make sure to preserve
         // original key casing

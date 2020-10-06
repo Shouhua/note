@@ -5,6 +5,12 @@
   "version": "0.2.0",
   "configurations": [
     {
+      "name": "02-test.html",
+      "type": "chrome",
+      "request": "launch",
+      "file": "${workspaceFolder}/packages/vue/examples/02-test.html"
+    },
+    {
       "type": "node",
       "name": "vscode-jest-tests",
       "request": "launch",

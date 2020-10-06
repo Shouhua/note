@@ -10,6 +10,8 @@ import {
 } from '@vue/runtime-core'
 import { ShapeFlags } from '@vue/shared'
 
+// https://developer.mozilla.org/zh-CN/docs/Web/CSS/Using_CSS_custom_properties
+// 在组件的根元素上添加全局变量，内部元素正常使用css变量
 export function useCssVars(
   getter: (ctx: ComponentPublicInstance) => Record<string, string>,
   scoped = false

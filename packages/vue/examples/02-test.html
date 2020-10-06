@@ -3,59 +3,48 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="X-UA-Compatible" content="ie=edge">
   <title>Document</title>
 </head>
-<body>
-  <div id="app">
-    <!-- <h2>{{ message }}</h2>
-    <button @click="handleClick">Click Me</button> -->
-  </div>  
-  <script src="../dist/vue.global.js"></script>
-  <script>
-    const message = Vue.ref('Hello, world!');
-    // const App = {
-    //   // template: '',
-    //   // render: () => Vue.h('div', message.value),
-    //   setup() {
-    //     Vue.onMounted(() => {
-    //       console.log('onMounted');
-    //     });
-    //     Vue.onRenderTracked((obj) => {
-    //       console.log('onRenderTracked: ', obj);
-    //     });
-    //     function handleClick() {
-    //       console.log('click handled...');
-    //     };
-    //     return {
-    //       message,
-    //       handleClick
-    //     }
-    //   }
-    // };
-    // const proxy = Vue.createApp()mount(App, '#app');
-    const App = {
-      name: 'App',
-      data() {
-        return {
-          useHello: true
+  <body>
+    <div id="app">
+    </div>  
+    <script type="text/x-template" id="app-template">
+      <div id="app">
+
+        <!-- <div v-if="true"
+             v-once
+        >
+          a
+        </div>
+        <div v-else v-once>
+          b
+        </div> -->
+    
+        <!-- v-once inside v-for -->
+        <div v-for="i in 5"
+             :key="i">
+          <div v-once
+               :id="i"
+          >
+            {{ i }}
+          </div>
+        </div>
+    
+      </div>
+    </script>
+    <script src="../dist/vue.global.js"></script>
+    <script>
+      const App = {
+        name: 'App',
+        template: '#app-template',
+        setup() {
+          return {
+            list: Vue.reactive([1, 2])
+          }
         }
-      },
-      setup(props, {emit, slots, attrs}) {
-        // const instance = getCurrentInstance()
-        const useHello = true
-        return () => Vue.h('div', {class: {hello: useHello}}, [
-          Vue.h('hello, world')
-        ])
       }
-    }
-    const app = Vue.createApp(App)
-    const proxy = app.mount('#app');
-    setTimeout(() => {
-      // proxy会检查proxy.data和proxy.renderContext
-      // HOC 高阶组件（high order component）
-      proxy.message = 'after 1s';
-    }, 1000);
-  </script>
-</body>
+      const app = Vue.createApp(App)
+      const proxy = app.mount('#app');
+    </script>
+  </body>
 </html>

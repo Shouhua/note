@@ -48,7 +48,7 @@ export function compile(
         // ignore <script> and <tag>
         // this is not put inside DOMNodeTransforms because that list is used
         // by compiler-ssr to generate vnode fallback branches
-        ignoreSideEffectTags,
+        ignoreSideEffectTags, // ignore <script> and <style>
         ...DOMNodeTransforms,
         ...(options.nodeTransforms || [])
       ],

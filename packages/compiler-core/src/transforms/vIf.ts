@@ -47,6 +47,7 @@ export const transformIf = createStructuralDirectiveTransform(
       // #1587: We need to dynamically increment the key based on the current
       // node's sibling nodes, since chained v-if/else branches are
       // rendered at the same depth
+      // 多个平级的v-if，会根据每个v-if的branch去设置key
       const siblings = context.parent!.children
       let i = siblings.indexOf(ifNode)
       let key = 0
@@ -68,6 +69,8 @@ export const transformIf = createStructuralDirectiveTransform(
           ) as IfConditionalExpression
         } else {
           // attach this branch's codegen node to the v-if root.
+          // #2305 v-if w/ v-once make conditiaonl expression(JS_CONDITIONAL_EXPRESSION) to cache expression(JS_CACHE_EXPRESSION)
+          // so v-else use cache expression to find parent will throw error
           const parentCondition = getParentCondition(ifNode.codegenNode!)
           parentCondition.alternate = createCodegenNodeForBranch(
             branch,
@@ -93,7 +96,7 @@ export function processIf(
 ) {
   if (
     dir.name !== 'else' &&
-    (!dir.exp || !(dir.exp as SimpleExpressionNode).content.trim())
+    (!dir.exp || !(dir.exp as SimpleExpressionNode).content.trim()) // v-if=""
   ) {
     const loc = dir.exp ? dir.exp.loc : node.loc
     context.onError(
@@ -113,6 +116,14 @@ export function processIf(
   }
 
   if (dir.name === 'if') {
+    /**
+    export interface IfBranchNode extends Node {
+      type: NodeTypes.IF_BRANCH
+      condition: ExpressionNode | undefined - dir.exp
+      children: TemplateChildNode[] - node.children
+      userKey?: AttributeNode | DirectiveNode - key prop
+    } 
+     */
     const branch = createIfBranch(node, dir)
     const ifNode: IfNode = {
       type: NodeTypes.IF,
@@ -129,6 +140,7 @@ export function processIf(
     const comments = []
     let i = siblings.indexOf(node)
     while (i-- >= -1) {
+      // search v-if from 0 - i
       const sibling = siblings[i]
       if (__DEV__ && sibling && sibling.type === NodeTypes.COMMENT) {
         context.removeNode(sibling)
@@ -199,6 +211,17 @@ function createCodegenNodeForBranch(
   context: TransformContext
 ): IfConditionalExpression | BlockCodegenNode {
   if (branch.condition) {
+    // v-else means condition is undfined, v-if or v-else-if
+    /*
+    ConditionalExpression {
+      type: NodeTypes.JS_CONDITIONAL_EXPRESSION,
+      test, // branch.condition
+      consequent, // createChildrenCodegenNode(branch, keyIndex, context),
+      alternate, 
+      newline,
+      loc: locStub
+    }
+    */
     return createConditionalExpression(
       branch.condition,
       createChildrenCodegenNode(branch, keyIndex, context),
@@ -230,28 +253,41 @@ function createChildrenCodegenNode(
     children.length !== 1 || firstChild.type !== NodeTypes.ELEMENT
   if (needFragmentWrapper) {
     if (children.length === 1 && firstChild.type === NodeTypes.FOR) {
+      // 这个时候for已经解析了
       // optimize away nested fragments when child is a ForNode
       const vnodeCall = firstChild.codegenNode!
       injectProp(vnodeCall, keyProperty, context)
       return vnodeCall
     } else {
+      /**
+      {type: NodeTypes.VNODE_CALL,
+      tag,
+      props,
+      children,
+      patchFlag,
+      dynamicProps,
+      directives,
+      isBlock,
+      disableTracking,
+      loc}
+    */
       return createVNodeCall(
         context,
-        helper(FRAGMENT),
-        createObjectExpression([keyProperty]),
+        helper(FRAGMENT), // tag
+        createObjectExpression([keyProperty]), // props
         children,
         `${PatchFlags.STABLE_FRAGMENT} /* ${
           PatchFlagNames[PatchFlags.STABLE_FRAGMENT]
-        } */`,
-        undefined,
-        undefined,
-        true,
-        false,
+        } */`, // patch flags
+        undefined, // dynamicProps
+        undefined, // directives
+        true, // isBlock
+        false, // disableTracking
         branch.loc
       )
     }
   } else {
-    const vnodeCall = (firstChild as ElementNode)
+    const vnodeCall = (firstChild as ElementNode) // 这个时候已经解析了
       .codegenNode as BlockCodegenNode
     // Change createVNode to createBlock.
     if (vnodeCall.type === NodeTypes.VNODE_CALL) {

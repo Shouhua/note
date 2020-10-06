@@ -98,6 +98,9 @@ export function processExpression(
     return node
   }
 
+  // export interface BindingMetadata {
+  //   [key: string]: 'data' | 'props' | 'setup' | 'options'
+  // }
   const { bindingMetadata } = context
   const prefix = (raw: string) => {
     const source = hasOwn(bindingMetadata, raw)
@@ -109,14 +112,14 @@ export function processExpression(
   // fast path if expression is a simple identifier.
   const rawExp = node.content
   // bail on parens to prevent any possible function invocations.
-  const bailConstant = rawExp.indexOf(`(`) > -1
+  const bailConstant = rawExp.indexOf(`(`) > -1 // 函数调用，比如foo(a, b)
   if (isSimpleIdentifier(rawExp)) {
     // 不匹配/^\d|[^\$\w]/
     if (
       !asParams &&
       !context.identifiers[rawExp] &&
-      !isGloballyWhitelisted(rawExp) &&
-      !isLiteralWhitelisted(rawExp)
+      !isGloballyWhitelisted(rawExp) && // Math.max(1, 2) 需要后面ast解析处理
+      !isLiteralWhitelisted(rawExp) // true false null this
     ) {
       node.content = prefix(rawExp)
     } else if (!context.identifiers[rawExp] && !bailConstant) {

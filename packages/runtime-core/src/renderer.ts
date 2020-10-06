@@ -1,32 +1,5 @@
 /**
- 1. 然而，有心的朋友可能会从上面这些代码中观察到一个问题，我们还是在 render 方法中使用到了 this 对象，
- 当然这在实现功能上面并不存在什么问题，但是，这跟Composition API提倡的函数式做法的理念并不一致。
- render(ctx, cache, ...args) render中的this指向ctx是一样的，具体可以看componentRenderUtils.ts中的
- render调用函数render.call(proxyToUse, proxyToUse, ...args)
-
-其实，新的框架已经考虑到了这一点，并给出了方案：在 setup 方法中返回这个 render 方法。
-我们的 Counter 组件如果按照上面的方案改写一下，就会是这样：
-
-const Counter = {
-    setup() {
-        const { count, increase, reset } = useCount()
-
-        return () => [
-            h('div', { class: 'counter-display' }, [
-                h('span', { class: 'counter-label' }, '恭喜你，你已经写了'),
-                h('span', { class: 'counter-text' }, count.value),
-                h('span', { class: 'counter-label' }, '斤代码！'),
-            ]),
-            h('div', { class: 'counter-btns' }, [
-                h('button', { class: 'btn', onClick: increase }, '写一斤'),
-                h('button', { class: 'btn', onClick: reset }, '删库啦'),
-            ])
-        ]
-    }
-}
-如此一来，我们就完全摆脱对 this 的使用啦。
-
-2. // code returned from the main loader for 'source.vue'
+// code returned from the main loader for 'source.vue'
 
 // import the <template> block
 import render from 'source.vue?vue&type=template'
@@ -370,7 +343,7 @@ export const setRef = (
   }
   const oldRef = oldRawRef && (oldRawRef as VNodeNormalizedRefAtom).r
   const refs = owner.refs === EMPTY_OBJ ? (owner.refs = {}) : owner.refs
-  const setupState = owner.setupState // proxyReactive(setupResult)
+  const setupState = owner.setupState // proxyRefs(setupResult)
 
   // unset old ref
   if (oldRef != null && oldRef !== ref) {
@@ -584,6 +557,7 @@ function baseCreateRenderer(
             internals
           )
         } else if (__FEATURE_SUSPENSE__ && shapeFlag & ShapeFlags.SUSPENSE) {
+          // 至此开始进入suspense的渲染，全部在suspense的范围内进行, 包括后面的async setup的suspense.registerDep
           ;(type as typeof SuspenseImpl).process(
             n1,
             n2,
@@ -875,6 +849,7 @@ function baseCreateRenderer(
       }
       let subTree = parentComponent.subTree
       if (__DEV__ && subTree.type === Fragment) {
+        // dev环境下会显示comment节点，很可能就形成了fragment
         subTree =
           filterSingleRoot(subTree.children as VNodeArrayChildren) || subTree
       }
@@ -993,7 +968,7 @@ function baseCreateRenderer(
             const next = newProps[key]
             if (
               next !== prev ||
-              (hostForcePatchProp && hostForcePatchProp(el, key))
+              (hostForcePatchProp && hostForcePatchProp(el, key)) // key === 'value'
             ) {
               hostPatchProp(
                 el,
@@ -1319,10 +1294,13 @@ function baseCreateRenderer(
     if (__DEV__) {
       startMeasure(instance, `init`)
     }
-    // 1. initProps(normalize key, attr), initSlots
-    // 2. 主要是运行setup（），注册ref，reactive，vue的lifecycle，为view的上下文作准备
-    // 3. 根据template准备render函数
-    // 4. instance.setupState = setup()
+    /**
+      1. prepare setup context, which include initProps(normalize key, attr), initSlots, attrs, emit
+      2. 主要是运行setup function, 注册ref，reactive，vue的lifecycle，为view的上下文作准备
+      3. 根据template准备render函数
+      4. instance.setupState = setup()
+      NOTICE: async setup只是将setup result assign给instance.asyncDep, 没有执行handleSetupResult和finishComponentSetup
+     */
     setupComponent(instance)
     if (__DEV__) {
       endMeasure(instance, `init`)
@@ -1330,6 +1308,7 @@ function baseCreateRenderer(
 
     // setup() is async. This component relies on async logic to be resolved
     // before proceeding
+    // 如果声明了async setup但是没有suspense，就会漏掉相关组件的渲染
     if (__FEATURE_SUSPENSE__ && instance.asyncDep) {
       parentSuspense && parentSuspense.registerDep(instance, setupRenderEffect)
 

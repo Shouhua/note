@@ -103,8 +103,12 @@ export interface ComponentInternalOptions {
 }
 
 /**
- * function componnet不像2.x时代的优化性能的作用，新版更多的是简洁component的作用
+ * functional component不像2.x时代的优化性能的作用，新版更多的是简洁component的作用
+ * https://v3.vuejs.org/guide/migration/functional-components.html#overview
  * 详情见RFC文档：https://github.com/vuejs/rfcs/blob/master/active-rfcs/0007-functional-async-api-change.md
+ * NOTICE: functional component在setupComponent中setupResult=undefined, 不会执行setupStatefulComponennt，所以
+ *  也没有对应的instance.proxy, 没有tempalte，不用ensure render, 所以没有setupStatefulComponent的执行步骤
+ * NOTICE: fucntional component直接返回render函数
  */
 export interface FunctionalComponent<P = {}, E extends EmitsOptions = {}>
   extends ComponentInternalOptions {
@@ -222,6 +226,7 @@ export interface ComponentInternalInstance {
   vnode: VNode
   /**
    * The pending new vnode from parent updates
+   * NOTICE: docs中添加internal modifier，api extractor看来是说库内部使用，外部的*.d.ts中是不存在的
    * @internal
    */
   next: VNode | null

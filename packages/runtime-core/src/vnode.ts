@@ -182,6 +182,7 @@ let currentBlock: VNode[] | null = null
  * ```
  * disableTracking is true when creating a v-for fragment block, since a v-for
  * fragment always diffs its children.
+ * v-for只有当不是stable framgement的时候才会disableTracking=true，例如item in 3就disableTracking=false
  *
  * @private
  */
@@ -643,6 +644,7 @@ export function normalizeChildren(vnode: VNode, children: unknown) {
 }
 
 /**
+ * https://github.com/vuejs/rfcs/blob/master/active-rfcs/0031-attr-fallthrough.md
  * 可以用于合并fallthrough attrs(class, style, listeners, 各种属性，以前的native modifier废弃)
   import { mergeProps } from 'vue'
 
@@ -653,7 +655,7 @@ export function normalizeChildren(vnode: VNode, children: unknown) {
       return h('div', mergeProps({ class: 'foo' }, this.$attrs))
     }
   } 
-  NOTICE: 这个在编译时会有这个函数出现在render函数中, 应该主要用于编译时的函数ß
+  NOTICE: 这个在编译时会有这个函数出现在render函数中, 应该主要用于编译时的函数, 防止$attrs上面的class覆盖子组件中的class
  */
 export function mergeProps(...args: (Data & VNodeProps)[]) {
   const ret = extend({}, args[0])

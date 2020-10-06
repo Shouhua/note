@@ -285,6 +285,7 @@ function doWatch(
     scheduler = () => queuePostRenderEffect(job, instance && instance.suspense)
   } else {
     // default: 'pre'
+    // https://github.com/vuejs/vue-next/issues/1706#issuecomment-666258948%5C
     scheduler = () => {
       if (!instance || instance.isMounted) {
         queuePreFlushCb(job)

@@ -1,40 +1,3 @@
-/**
- * Vue2.x 中的代码片段：
-
-import Vue from 'vue'
-import App from './App.vue'
-
-Vue.config.ignoredElements = [/^app-/]
-Vue.use()
-Vue.mixin()
-Vue.component()
-Vue.directive()
-
-new Vue({
-  render: h => h(App)
-}).$mount('#app')
-复制代码
-Vue3.x 中取消了全局变量 Vue，改为实例函数 createApp() 创建实例对象。
-
-import { createApp } from 'vue'
-import App from './App.vue'
-
-const app = createApp(App)
-
-app.config.ignoredElements = [/^app-/]
-app.use()
-app.mixin()
-app.component()
-app.directive()
-
-app.mount('#app')
-复制代码
-RFC查看网友讨论：github.com/vuejs/rfcs/…
-
-这个变化很大，将会给我们从 Vue2.x 升级到 Vue3.x 带来不小的工作量。
-
-为什么这么改变？其实也好理解，Vue3.x 基于函数式编程，所以：一切皆函数。 为了保证每个函数都有自己的小 圈子 能独立运行，所以从源头上就开始 开刀。
- */
 import {
   ConcreteComponent,
   Data,
@@ -104,7 +67,6 @@ export interface AppConfig {
   ) => void
 }
 
-// 这个AppContext表示createApp初始化的时候使用
 export interface AppContext {
   app: App // for devtools
   config: AppConfig

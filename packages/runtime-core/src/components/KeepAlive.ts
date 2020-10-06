@@ -119,6 +119,7 @@ const KeepAliveImpl = {
       queuePostRenderEffect(() => {
         instance.isDeactivated = false
         if (instance.a) {
+          // activated hook
           invokeArrayFns(instance.a)
         }
         const vnodeHook = vnode.props && vnode.props.onVnodeMounted
@@ -133,6 +134,7 @@ const KeepAliveImpl = {
       move(vnode, storageContainer, null, MoveType.LEAVE, parentSuspense)
       queuePostRenderEffect(() => {
         if (instance.da) {
+          // deactived hook
           invokeArrayFns(instance.da)
         }
         const vnodeHook = vnode.props && vnode.props.onVnodeUnmounted

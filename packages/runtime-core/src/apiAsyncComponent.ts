@@ -25,6 +25,9 @@ export interface AsyncComponentOptions<T = any> {
   errorComponent?: Component
   delay?: number
   timeout?: number
+  // The async component can opt-out of Suspense control and
+  // let the component always control its own loading state by specifying suspensible: false in its options.
+  // 就是说是否托管在Suspense下面，suspense有fallback等, 如果不是就可以是使用自己的loadingComponent等
   suspensible?: boolean
   onError?: (
     error: Error,
