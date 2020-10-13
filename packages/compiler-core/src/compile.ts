@@ -52,8 +52,8 @@ export function getBaseTransformPreset(
     ],
     {
       // directive tranform
-      on: transformOn, // @click
-      bind: transformBind, // :name
+      on: transformOn, // v-on:click
+      bind: transformBind, // v-bind:name
       model: transformModel // v-model
     }
   ]

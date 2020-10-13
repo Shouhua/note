@@ -160,6 +160,7 @@ export const transformOn: DirectiveTransform = (
   }
 
   // apply extended compiler augmentor
+  // compiler-dom->vOn.ts->transformOn
   if (augmentor) {
     ret = augmentor(ret)
   }

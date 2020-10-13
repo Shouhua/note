@@ -612,7 +612,7 @@ describe('compiler: transform component slots', () => {
   test('named slot with v-if + v-else-if + v-else', () => {
     const { root, slots } = parseWithSlots(
       `<Comp>
-        <template #one v-if="ok">foo</template>
+        <template #one v-if="ok" v-once>foo</template>
         <template #two="props" v-else-if="orNot">bar</template>
         <template #one v-else>baz</template>
       </Comp>`

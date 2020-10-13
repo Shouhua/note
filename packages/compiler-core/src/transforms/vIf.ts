@@ -69,7 +69,8 @@ export const transformIf = createStructuralDirectiveTransform(
           ) as IfConditionalExpression
         } else {
           // attach this branch's codegen node to the v-if root.
-          // #2305 v-if w/ v-once make conditiaonl expression(JS_CONDITIONAL_EXPRESSION) to cache expression(JS_CACHE_EXPRESSION)
+          // #2305
+          // #2182, #2035 v-if w/ v-once make conditiaonl expression(JS_CONDITIONAL_EXPRESSION) to cache expression(JS_CACHE_EXPRESSION)
           // so v-else use cache expression to find parent will throw error
           const parentCondition = getParentCondition(ifNode.codegenNode!)
           parentCondition.alternate = createCodegenNodeForBranch(

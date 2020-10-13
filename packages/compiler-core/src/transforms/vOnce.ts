@@ -14,6 +14,9 @@ export const transformOnce: NodeTransform = (node, context) => {
       return
     }
     seen.add(node)
+    // TODO： 这行是不是是可以放在有codegenNode下面，有种情况<template v-once v-if="true" v-slot/>
+    // 这个时候是不会走vIf.ts的transfrom的，所以回来的时候也不会生成js_cache_expression，但是还是会有set_block_tracking的heler，
+    // 在生成的render中还是会”import setBlockTracking as _setBlockTracking“
     context.helper(SET_BLOCK_TRACKING)
     return () => {
       const cur = context.currentNode as ElementNode | IfNode | ForNode

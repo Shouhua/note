@@ -10,15 +10,24 @@
     </div>  
     <script type="text/x-template" id="app-template">
       <div id="app">
-
-        <!-- <div v-if="true"
+        <Comp>
+          <template #one v-once v-if="ok">foo</template>
+          <template #two="props" v-else-if="orNot">bar</template>
+          <template #one v-else>baz</template>
+        </Comp>
+      </div>
+    </script>
+    <script src="../dist/vue.global.js"></script>
+    <script>
+      /**
+       *         <div v-if="true"
              v-once
         >
           a
         </div>
         <div v-else v-once>
           b
-        </div> -->
+        </div>
     
         <!-- v-once inside v-for -->
         <div v-for="i in 5"
@@ -29,17 +38,15 @@
             {{ i }}
           </div>
         </div>
-    
-      </div>
-    </script>
-    <script src="../dist/vue.global.js"></script>
-    <script>
+       */
       const App = {
         name: 'App',
         template: '#app-template',
         setup() {
           return {
-            list: Vue.reactive([1, 2])
+            list: Vue.reactive([1, 2]),
+            hello: Vue.ref('world'),
+            count: Vue.ref(1)
           }
         }
       }

@@ -8,6 +8,13 @@ interface CompiledSlotDescriptor {
 
 /**
  * Compiler runtime helper for creating dynamic slots object
+ * createSlots({_:2}, [(_ctx.showIf)
+      ? {
+          name: "default",
+          fn: _withCtx(() => [])
+        }
+      : undefined
+  ])
  * @private
  */
 export function createSlots(

@@ -47,6 +47,7 @@ export const transformExpression: NodeTransform = (node, context) => {
         const arg = dir.arg
         // do not process exp if this is v-on:arg - we need special handling
         // for wrapping inline statements.
+        // transformElement.ts->postTransformElement(), vOn.ts专门处理
         if (
           exp &&
           exp.type === NodeTypes.SIMPLE_EXPRESSION &&

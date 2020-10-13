@@ -117,8 +117,7 @@ const buildClientSlotFn: SlotFnBuilder = (props, children, loc) =>
 
 // Instead of being a DirectiveTransform, v-slot processing is called during
 // transformElement to build the slots object for a component.
-// 类似于children的转化
-// 在v-slot和v-for, v-if中，动态args就是动态slot
+// dynamic slots：1. <tempmate v-for v-slot /> 2. <tempate v-if v-slot /> 3. <template v-slot:[ds] />
 export function buildSlots(
   node: ElementNode,
   context: TransformContext,
@@ -150,6 +149,8 @@ export function buildSlots(
 
   // 1. Check for slot with slotProps on component itself.
   //    <Comp v-slot="{ prop }"/>
+  // 和以下生成一样的render
+  // <Comp><template v-slot="{prop}"/></Comp>
   const onComponentSlot = findDir(node, 'slot', true)
   if (onComponentSlot) {
     const { arg, exp } = onComponentSlot

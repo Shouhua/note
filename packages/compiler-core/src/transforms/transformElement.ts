@@ -56,7 +56,10 @@ import { getStaticType } from './hoistStatic'
 const directiveImportMap = new WeakMap<DirectiveNode, symbol>()
 
 // generate a JavaScript AST for this element's codegen
-// 这个可以想象成对应与parse里面的parseElement,包括tag，attribute等
+// 主要是生成vnode，vnode需要的属性等
+// directive和prop的区别，directive是没有相应的transform，会使用withDirective, 比如v-focus，还有内置的v-show
+// @focus -> v-on:focus -> {type: directive, name: 'on', arg: undefined, exp: undefined}
+// v-focus -> {type: directive, name: focus, arg: undefined, exp: undefined}
 export const transformElement: NodeTransform = (node, context) => {
   if (
     !(
@@ -112,9 +115,11 @@ export const transformElement: NodeTransform = (node, context) => {
       patchFlag = propsBuildResult.patchFlag
       dynamicPropNames = propsBuildResult.dynamicPropNames
       const directives = propsBuildResult.directives
+      // [[_directive_focus], [vShow, _ctx.show]]
       vnodeDirectives =
         directives && directives.length
           ? (createArrayExpression(
+              // {type: JS_ARRAY_EXPRESSION, element: [], loc: *}
               directives.map(dir => buildDirectiveArgs(dir, context))
             ) as DirectiveArguments)
           : undefined
@@ -403,9 +408,9 @@ export function buildProps(
 
       // skip v-slot - it is handled by its dedicated transform.
       if (name === 'slot') {
-        // v-model value must be a valid JavaScript member expression.
         if (!isComponent) {
           context.onError(
+            // v-slot can only be used on components or <template> tags.
             createCompilerError(ErrorCodes.X_V_SLOT_MISPLACED, loc)
           )
         }
@@ -446,7 +451,7 @@ export function buildProps(
             mergeArgs.push(exp)
           } else {
             // v-on="obj" -> toHandlers(obj)
-            // 后面运行时解析 toHandlers.ts
+            // 运行时解析，详见toHandlers.ts
             mergeArgs.push({
               type: NodeTypes.JS_CALL_EXPRESSION,
               loc,
@@ -472,7 +477,7 @@ export function buildProps(
       // vbind.ts: 主要是处理了camel modifier, camel(arg.content)
       // vOn.ts: 主要是处理了handler的inline情况，cacheHanlder
       // vModel.ts: 主要是默认情况和多个vmodel的情况，比如v-model，v-model:foo
-      // 内置的命令转换函数
+      // NOTICE: 内置的命令转换函数
       const directiveTransform = context.directiveTransforms[name]
       if (directiveTransform) {
         // has built-in directive transform.
@@ -482,6 +487,7 @@ export function buildProps(
         properties.push(...props)
         if (needRuntime) {
           // 比如v-show就有runtime，vShow, 这个在compiler-dom
+          // compiler-dom中的v-model, needRuntime for input, select, radio etc
           runtimeDirectives.push(prop)
           if (isSymbol(needRuntime)) {
             directiveImportMap.set(prop, needRuntime)
@@ -563,7 +569,14 @@ export function buildProps(
 // modifiers. We also need to merge static and dynamic class / style attributes.
 // - onXXX handlers / style: merge into array
 // - class: merge into single expression with concatenation
-// 添加动态key的property，合并style，class，
+// style="color: red"经过transformStyle.ts转化后:style="{color: red}", 然后合并
+/* {
+  type: directive, name: 'bind',
+  arg: {type: simpleExpression, isStatic: true, isConstant: true, content: 'style'},
+  exp: {type: simpleExpression, isStatic: false, isConstant: true, content: '{color: red}'},
+  modifies: [],
+  loc: ***
+*/
 function dedupeProperties(properties: Property[]): Property[] {
   const knownProps: Map<string, Property> = new Map()
   const deduped: Property[] = []
@@ -616,16 +629,17 @@ function buildDirectiveArgs(
   const dirArgs: ArrayExpression['elements'] = []
   const runtime = directiveImportMap.get(dir)
   if (runtime) {
-    // v-show
+    // v-show 系统自带，直接import，比如import vShow
     dirArgs.push(context.helperString(runtime))
   } else {
+    // 自定义命令 resoveDirective
     // inject statement for resolving directive
     context.helper(RESOLVE_DIRECTIVE)
-    context.directives.add(dir.name)
+    context.directives.add(dir.name) // const _directive_focus = _resolveDirective("focus")
     dirArgs.push(toValidAssetId(dir.name, `directive`)) // _directive_click
   }
   const { loc } = dir
-  if (dir.exp) dirArgs.push(dir.exp) // clickHanlder
+  if (dir.exp) dirArgs.push(dir.exp) // directive handler
   if (dir.arg) {
     if (!dir.exp) {
       dirArgs.push(`void 0`)
@@ -649,6 +663,7 @@ function buildDirectiveArgs(
       )
     )
   }
+  // dirArgs = [helper(runtime/resolveDirective), handler, name, modifiers]
   return createArrayExpression(dirArgs, dir.loc)
 }
 

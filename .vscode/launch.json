@@ -8,7 +8,7 @@
       "name": "02-test.html",
       "type": "chrome",
       "request": "launch",
-      "file": "${workspaceFolder}/packages/vue/examples/02-test.html"
+      "file": "${workspaceFolder}/packages/vue/examples/02-test.html",
     },
     {
       "type": "node",
@@ -23,7 +23,8 @@
       // "console": "integratedTerminal",
       "internalConsoleOptions": "neverOpen",
       "disableOptimisticBPs": true,
-      "program": "${workspaceFolder}/node_modules/jest/bin/jest"
+      "program": "${workspaceFolder}/node_modules/jest/bin/jest",
+      "outputCapture": "std"
     },
   ]
 }

@@ -40,6 +40,7 @@ export const transformModel: DirectiveTransform = (dir, node, context) => {
     isSimpleIdentifier(expString) &&
     context.identifiers[expString]
   ) {
+    // v-model cannot be used on v-for or v-slot scope variables because they are not writable.
     context.onError(
       createCompilerError(ErrorCodes.X_V_MODEL_ON_SCOPE_VARIABLE, exp.loc)
     )

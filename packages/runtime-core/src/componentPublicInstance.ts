@@ -449,7 +449,7 @@ export const RuntimeCompiledPublicInstanceProxyHandlers = extend(
        */
       // fast path for unscopables when using `with` block
       if ((key as any) === Symbol.unscopables) {
-        // 所有属性在with环境中都能访问
+        // 所有属性在with环境中都能访问, with环境中的变量会先访问这个属性
         return
       }
       return PublicInstanceProxyHandlers.get!(target, key, target)

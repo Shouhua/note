@@ -99,6 +99,7 @@ export const transformModel: DirectiveTransform = (dir, node, context) => {
     // inject runtime directive
     // by returning the helper symbol via needRuntime
     // the import will replaced a resolveDirective call.
+    // NOTICE: needRuntime
     if (!isInvalidType) {
       baseResult.needRuntime = context.helper(directiveToUse)
     }

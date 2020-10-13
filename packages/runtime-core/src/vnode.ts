@@ -184,6 +184,7 @@ let currentBlock: VNode[] | null = null
  * fragment always diffs its children.
  * v-for只有当不是stable framgement的时候才会disableTracking=true，例如item in 3就disableTracking=false
  *
+ * blockStack只是用于block层级嵌套中间量，currentBlock用于收集dynamicChildren
  * @private
  */
 export function openBlock(disableTracking = false) {
@@ -249,6 +250,7 @@ export function createBlock(
   closeBlock()
   // a block is always going to be patched, so track it as a child of its
   // parent block
+  // 对于此时vnode的parent来说，适合条件就要加入到父级的dynamicChildren中
   if (shouldTrack > 0 && currentBlock) {
     currentBlock.push(vnode)
   }
