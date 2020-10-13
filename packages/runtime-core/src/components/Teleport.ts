@@ -52,7 +52,8 @@ import {
   MoveType,
   RendererElement,
   RendererNode,
-  RendererOptions
+  RendererOptions,
+  traverseStaticChildren
 } from '../renderer'
 import { VNode, VNodeArrayChildren, VNodeProps } from '../vnode'
 import { isString, ShapeFlags } from '@vue/shared'
@@ -67,7 +68,7 @@ export interface TeleportProps {
 
 export const isTeleport = (type: any): boolean => type.__isTeleport
 
-const isTeleportDisabled = (props: VNode['props']): boolean =>
+export const isTeleportDisabled = (props: VNode['props']): boolean =>
   props && (props.disabled || props.disabled === '')
 
 const resolveTarget = <T = RendererElement>(
@@ -189,16 +190,7 @@ export const TeleportImpl = {
         // even in block tree mode we need to make sure all root-level nodes
         // in the teleport inherit previous DOM references so that they can
         // be moved in future patches.
-        if (n2.shapeFlag & ShapeFlags.ARRAY_CHILDREN) {
-          const oldChildren = n1.children as VNode[]
-          const children = n2.children as VNode[]
-          for (let i = 0; i < children.length; i++) {
-            // only inherit for non-patched nodes (i.e. static ones)
-            if (!children[i].el) {
-              children[i].el = oldChildren[i].el
-            }
-          }
-        }
+        traverseStaticChildren(n1, n2, true)
       } else if (!optimized) {
         patchChildren(
           n1,

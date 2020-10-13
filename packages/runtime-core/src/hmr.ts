@@ -26,7 +26,7 @@ export interface HMRRuntime {
 // it easier to be used in toolings like vue-loader
 // Note: for a component to be eligible for HMR it also needs the __hmrId option
 // to be set so that its instances can be registered / removed.
-if (__DEV__) {
+if (__DEV__ && (__BROWSER__ || __TEST__)) {
   // Ecmascript 2020 引入了globalThis，不再需要判断全局环境变量
   const globalObject: any =
     typeof global !== 'undefined'

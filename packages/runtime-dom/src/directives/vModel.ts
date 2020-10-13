@@ -65,8 +65,7 @@ type ModelDirective<T> = ObjectDirective<T & { _assign: AssignerFn }>
 export const vModelText: ModelDirective<
   HTMLInputElement | HTMLTextAreaElement
 > = {
-  created(el, { value, modifiers: { lazy, trim, number } }, vnode) {
-    el.value = value == null ? '' : value
+  created(el, { modifiers: { lazy, trim, number } }, vnode) {
     el._assign = getModelAssigner(vnode)
     const castToNumber = number || el.type === 'number'
     // https://developer.mozilla.org/zh-CN/docs/Web/Events/change
@@ -96,8 +95,14 @@ export const vModelText: ModelDirective<
       addEventListener(el, 'change', onCompositionEnd)
     }
   },
+  // set value on mounted so it's after min/max for type="range"
+  mounted(el, { value }) {
+    el.value = value == null ? '' : value
+  },
   beforeUpdate(el, { value, modifiers: { trim, number } }, vnode) {
     el._assign = getModelAssigner(vnode)
+    // avoid clearing unresolved text. #2302
+    if ((el as any).composing) return
     if (document.activeElement === el) {
       if (trim && el.value.trim() === value) {
         return
@@ -186,11 +191,14 @@ export const vModelRadio: ModelDirective<HTMLInputElement> = {
 }
 
 export const vModelSelect: ModelDirective<HTMLSelectElement> = {
-  created(el, binding, vnode) {
+  created(el, { modifiers: { number } }, vnode) {
     addEventListener(el, 'change', () => {
       const selectedVal = Array.prototype.filter
         .call(el.options, (o: HTMLOptionElement) => o.selected)
-        .map(getValue)
+        .map(
+          (o: HTMLOptionElement) =>
+            number ? toNumber(getValue(o)) : getValue(o)
+        )
       el._assign(el.multiple ? selectedVal : selectedVal[0])
     })
     el._assign = getModelAssigner(vnode)
