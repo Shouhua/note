@@ -38,7 +38,6 @@ export function setCurrentRenderingInstance(
 // dev only flag to track whether $attrs was used during render.
 // If $attrs was used during render then the warning for failed attrs
 // fallthrough can be suppressed.
-// 用于判断用户代码中是否使用$attrs
 let accessedAttrs: boolean = false
 
 export function markAttrsAccessed() {
@@ -77,21 +76,9 @@ export function renderComponentRoot(
       // withProxy is a proxy with a different `has` trap only for
       // runtime-compiled render functions using `with` block.
       const proxyToUse = withProxy || proxy
-      /**
-       * export function render(_ctx, _cache, $props, $setup, $data, $options) {
-          const _component_greet = _resolveComponent("greet")
-
-          return (_openBlock(), _createBlock(_component_greet, null, {
-            default: _withCtx(() => [
-              _hoisted_1
-            ]),
-            _: 1
-          }))
-        }
-       */
       result = normalizeVNode(
-        // NOTICE: (subtree)生成component里面template的vnode，比如Fragment，循环去生成和比较components
-        // NOTICE: // 在render中可以使用this，this的指向其实就是跟用户看到的第一个参数是一样的
+        // NOTICE: (subtree)生成component里面template的vnode，比如编译成render函数后的render函数
+        // NOTICE: 在render函数中可以使用this，this的指向其实就是跟用户看到的第一个参数是一样的
         render!.call(
           proxyToUse,
           proxyToUse!,
@@ -135,7 +122,6 @@ export function renderComponentRoot(
        *  style, and v-on listeners.
        *  https://github.com/vuejs/rfcs/blob/master/active-rfcs/0031-attr-fallthrough.md
        */
-
       // 判断是不是使用了optional props declaration，如果使用了，则直接等于attrs
       // 如果没有，则只是提取其中的class，style，v-on listeners, RFC里面有原因
       fallthroughAttrs = Component.props
@@ -174,9 +160,10 @@ export function renderComponentRoot(
               propsOptions
             )
           }
-          // NOTICE: 这里进行attr传递
+          // NOTICE: 这里进行attr传递, attr中是过滤掉model listener的
           root = cloneVNode(root, fallthroughAttrs)
         } else if (__DEV__ && !accessedAttrs && root.type !== Comment) {
+          // 比如Fragment, 如果没有手动的使用:bind="$attr", 会warn
           const allAttrs = Object.keys(attrs)
           const eventAttrs: string[] = []
           const extraAttrs: string[] = []
@@ -194,8 +181,8 @@ export function renderComponentRoot(
             }
           }
           if (extraAttrs.length) {
-            // extraneous-不相干的，没有直接联系的
             warn(
+              // extraneous-不相干的，没有直接联系的
               `Extraneous non-props attributes (` +
                 `${extraAttrs.join(', ')}) ` +
                 `were passed to component but could not be automatically inherited ` +
@@ -349,6 +336,7 @@ export function shouldUpdateComponent(
 
   if (optimized && patchFlag >= 0) {
     if (patchFlag & PatchFlags.DYNAMIC_SLOTS) {
+      // v-slot w/ v-for, v-slot:[arg], v-slot w/ v-if
       // slot content that references values that might have changed,
       // e.g. in a v-for
       return true

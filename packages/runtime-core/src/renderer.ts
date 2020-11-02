@@ -1278,7 +1278,7 @@ function baseCreateRenderer(
     isSVG,
     optimized
   ) => {
-    // instance, 主要是从VNode里面拿信息
+    // instance, 主要是从VNode里面拿信息, instanceof instance.type === instanceof vnode.type
     const instance: ComponentInternalInstance = (initialVNode.component = createComponentInstance(
       initialVNode,
       parentComponent,
@@ -1371,6 +1371,7 @@ function baseCreateRenderer(
         instance.next = n2
         // in case the child component is also queued, remove it to avoid
         // double updating the same child component in the same flush.
+        // 避免组件自身数据变化导致的重复更新
         invalidateJob(instance.update)
         // instance.update is the reactive effect runner.
         instance.update()
@@ -1416,6 +1417,7 @@ function baseCreateRenderer(
         // 这个函数主要是运行render函数，所以需要currentRenderingInstance(=componentInternalInstance)
         // currentRenderingInstance主要是使用在这个里面，用于resolveComponent, resolveDirectives等
         // 运行编译器返回的render函数，确定falloutThrough, 最终返回VNode
+        // 目前处于使用component的环境中，subTree指的是component里面的内容代码，
         const subTree = (instance.subTree = renderComponentRoot(instance))
         if (__DEV__) {
           endMeasure(instance, `render`)
@@ -1576,7 +1578,6 @@ function baseCreateRenderer(
     flushPreFlushCbs(undefined, instance.update)
   }
 
-  // vnode子节点是vnode的情况下，变为新的vnode
   const patchChildren: PatchChildrenFn = (
     n1,
     n2,

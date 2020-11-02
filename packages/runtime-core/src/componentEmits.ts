@@ -211,7 +211,7 @@ export function isEmitListener(
   }
   key = key.replace(/Once$/, '')
   return (
-    hasOwn(options, key[2].toLowerCase() + key.slice(3)) ||
+    hasOwn(options, key[2].toLowerCase() + key.slice(3)) || // 字符串的处理取出来拼接，不能改变原生的string
     hasOwn(options, key.slice(2))
   )
 }

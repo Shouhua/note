@@ -136,7 +136,7 @@ export interface VNode<
   scopeId: string | null // SFC only
   children: VNodeNormalizedChildren
   component: ComponentInternalInstance | null
-  dirs: DirectiveBinding[] | null // withDirectives(VNode, [...directives])
+  dirs: DirectiveBinding[] | null // render中的withDirectives(VNode, [...directives])会转化为dirs，只包括自定义的命令
   transition: TransitionHooks<HostElement> | null
 
   // DOM
@@ -321,6 +321,7 @@ export const createVNode = (__DEV__
   : _createVNode) as typeof _createVNode
 
 // 这里的type就是用户放进来的App
+// vnode是没有attr的概念的，在后面component instance中处理
 // 新建VNode做了：
 // 1. 确定type，如果是stateful component，如果传进来的是一个对象，比如初始化传进来的App对象就是这样
 // 2. 确定shapeFlag, VNode是什么类型的，stateful component = 4

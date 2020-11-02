@@ -1,57 +1,58 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Document</title>
-</head>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Example</title>
+    <!-- <script src="https://unpkg.com/vue@3.0.0-beta.14/dist/vue.global.js"></script> -->
+    <script src="https://unpkg.com/vue@3.0.2/dist/vue.global.js"></script>
+  </head>
   <body>
-    <div id="app">
-    </div>  
-    <script type="text/x-template" id="app-template">
-      <div id="app">
-        <Comp>
-          <template #one v-once v-if="ok">foo</template>
-          <template #two="props" v-else-if="orNot">bar</template>
-          <template #one v-else>baz</template>
-        </Comp>
+    <script type="text/x-template" id="tabs-template">
+      <div>
+        <p>Active Tab value: {{ activeTab }}</p>
+        <ul>
+          <template v-for="tab in tabs" :key="tab.key">
+            <li>
+              <a href="#" @click.stop.prevent="activeTab = tab.key">{{
+                tab.title
+              }}</a>
+            </li>
+          </template>
+        </ul>
+        <div>
+          <slot :name="activeTab" :key="activeTab"></slot>
+        </div>
       </div>
     </script>
-    <script src="../dist/vue.global.js"></script>
+    <div id="app">
+      <tabs
+        :tabs="[
+          { title: 'Tab 1', key: 'tab-one' },
+          { title: 'Tab 2', key: 'tab-two' },
+        ]">
+        <template v-slot:tab-one>Tab 1 Content</template>
+        <template v-slot:tab-two>Tab 2 Content</template>
+      </tabs>
+    </div>
     <script>
-      /**
-       *         <div v-if="true"
-             v-once
-        >
-          a
-        </div>
-        <div v-else v-once>
-          b
-        </div>
-    
-        <!-- v-once inside v-for -->
-        <div v-for="i in 5"
-             :key="i">
-          <div v-once
-               :id="i"
-          >
-            {{ i }}
-          </div>
-        </div>
-       */
-      const App = {
-        name: 'App',
-        template: '#app-template',
-        setup() {
-          return {
-            list: Vue.reactive([1, 2]),
-            hello: Vue.ref('world'),
-            count: Vue.ref(1)
-          }
-        }
+    const Tabs = {
+      template: '#tabs-template',
+      name: "Tabs",
+      props: {
+        tabs: Array,
+      },
+      data() {
+        return {
+          activeTab: this.$props.tabs[0].key,
+        };
+      },
+    }
+    Vue.createApp({
+      components: {
+        Tabs
       }
-      const app = Vue.createApp(App)
-      const proxy = app.mount('#app');
+    }).mount('#app')
     </script>
   </body>
 </html>

@@ -106,7 +106,8 @@ export const transformElement: NodeTransform = (node, context) => {
         (tag === 'svg' ||
           tag === 'foreignObject' ||
           // #938: elements with dynamic keys should be forced into blocks
-          findProp(node, 'key', true))) // 带有key的强制使用block
+          // NOTICE: 带有动态key属性的强制使用block, 因为vnode是根据key和type来比较是否一样的，动态的无法知道是否一样，所有需要全部比较，加入dynamicChildren
+          findProp(node, 'key', true)))
 
     // props
     if (props.length > 0) {

@@ -144,11 +144,11 @@ export function initProps(
 
   if (isStateful) {
     // stateful
-    // 注意: prop类型是shallowReactive, props对象的增删改操作会影响，但是属性value的值不是ractive
+    // NOTICE: prop类型是shallowReactive, props对象的增删改操作会影响，但属性value的值不是ractive
     instance.props = isSSR ? props : shallowReactive(props)
   } else {
     if (!instance.type.props) {
-      // functional w/ optional props, props === attrs
+      // functional w/ optional props, props = props
       // NOTICE: functional without optional props, props = attrs
       instance.props = attrs
     } else {
@@ -261,6 +261,7 @@ export function updateProps(
   }
 
   // trigger updates for $attrs in case it's used in component slots
+  // https://github.com/vuejs/vue-next/issues/1346
   trigger(instance, TriggerOpTypes.SET, '$attrs')
 
   if (__DEV__ && rawProps) {
