@@ -5,3 +5,4 @@ const job1 = function () {
 };
 job1.allowRecursive = !!job1;
 window.init = () => { };
+//# sourceMappingURL=typescript.js.map

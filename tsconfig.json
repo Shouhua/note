@@ -6,12 +6,14 @@
     "moduleResolution": "node", // 模块寻找方式
     "lib": ["ESNext", "DOM", "ScriptHost"],
     "esModuleInterop": true, // 支持使用import d from 'cjs'的方式引入commonjs包
-    // "sourceMap": true,
+    "sourceMap": true,
     // "noImplicitAny": true,
     // "outDir": "./demo/vue3/dist"
   },
   // "include": ["./demo/vue3/*"]
 }
-// NOTICE: Add tsc options -p or --project when to specify a tsconfig.json, for example:
-//    tsc -w -p ./demo/vue3 ./demo/vue3 include tsconfig.json 
-// if use tsc -w ./demo/vue3/tsconfig means only compile ./demo/vue3/tsconfig.json, and emit error can't support json file
+// NOTICE: 
+// 1. Add tsc options -p or --project when to specify a tsconfig.json, for example:
+//      tsc -w -p ./demo/vue3 ./demo/vue3 include tsconfig.json 
+//    if use tsc -w ./demo/vue3/tsconfig means only compile ./demo/vue3/tsconfig.json, and emit error can't support json file
+// 2. debug ts file need "sourcemap: true"

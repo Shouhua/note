@@ -76,11 +76,13 @@
       "type": "node",
       "request": "launch",
       "name": "baseParse",
-      "program": "${workspaceFolder}/dist/baseParse.js",
+      "program": "${workspaceFolder}/demo/vue3/dist/baseParse.js",
       "skipFiles": [
         "<node_internals>/**"
       ],
-      "preLaunchTask": "tsc: watch - tsconfig.json"
+      // "outputCapture": "console"
+      // "runtimeArgs": ["-r", "esm"]
+      // "preLaunchTask": "tsc: watch - tsconfig.json"
     },
     {
       "type": "node",
