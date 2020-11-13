@@ -8,49 +8,76 @@
     <script src="https://unpkg.com/vue@3.0.2/dist/vue.global.js"></script>
   </head>
   <body>
-    <script type="text/x-template" id="tabs-template">
+    <script type="text/x-template" id="child-template">
       <div>
-        <p>Active Tab value: {{ activeTab }}</p>
-        <ul>
-          <template v-for="tab in tabs" :key="tab.key">
-            <li>
-              <a href="#" @click.stop.prevent="activeTab = tab.key">{{
-                tab.title
-              }}</a>
-            </li>
-          </template>
-        </ul>
-        <div>
-          <slot :name="activeTab" :key="activeTab"></slot>
-        </div>
+        <h2>Child</h2>
+      </div>
+    </script>
+    <script type="text/x-template" id="parent-template">
+      <div>
+        <h2>Parent</h2>
+        <div><label for="">a: </label><span>{{a}}</span></div>
+        <div><label for="">b: </label><span>{{b}}</span></div>
+        <div><label for="">c: </label><span>{{c}}</span></div>
+        <div><label for="">d: </label><span>{{d}}</span></div>
+        
+        <button @click="changeA">change a++</button>
+        <Child ref="child" @changeBFromChild="changeBFromChild"></Child>
       </div>
     </script>
     <div id="app">
-      <tabs
-        :tabs="[
-          { title: 'Tab 1', key: 'tab-one' },
-          { title: 'Tab 2', key: 'tab-two' },
-        ]">
-        <template v-slot:tab-one>Tab 1 Content</template>
-        <template v-slot:tab-two>Tab 2 Content</template>
-      </tabs>
+      <Parent></Parent>
     </div>
     <script>
-    const Tabs = {
-      template: '#tabs-template',
-      name: "Tabs",
-      props: {
-        tabs: Array,
-      },
-      data() {
-        return {
-          activeTab: this.$props.tabs[0].key,
+    const Child = {
+      template: '#child-template',
+      name: 'Child',
+      setup(props, { emit }) {
+        const doSomething = () => { 
+          console.log('child do something start')
+          emit('changeBFromChild', Math.random()) 
+          console.log('child do something end');
         };
-      },
+        return {
+          doSomething
+        }
+      }
+    }
+    const Parent = {
+      template: '#parent-template',
+      name: "Parent",
+      components: {
+        Child
+      }, props: { },
+      setup() {
+        let a = Vue.ref(1)
+        let b = Vue.ref(1)
+        let c = Vue.computed(() => {
+          console.log('c computed');
+          return (a.value+b.value)
+        })
+        let d = Vue.computed(() => {
+          console.log('d computed');
+          return c.value + 1})
+        const changeA = () => a.value++
+        const { ctx } = Vue.getCurrentInstance()
+        Vue.watch(() => a.value, () => {
+          ctx.$refs.child.doSomething()
+        })
+        const changeBFromChild = () => b.value++
+        return {
+          a,
+          b,
+          c,
+          d,
+          changeA,
+          changeBFromChild
+        }
+      }
     }
     Vue.createApp({
       components: {
-        Tabs
+        Parent
       }
     }).mount('#app')
     </script>

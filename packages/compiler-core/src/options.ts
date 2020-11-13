@@ -61,6 +61,21 @@ export type HoistTransform = (
   parent: ParentNode
 ) => void
 
+/**
+ * https://github.com/vuejs/rfcs/blob/sfc-improvements/active-rfcs/0000-sfc-script-setup.md
+ * The SFCScriptBlock returned by compiledScript also exposes a bindings object, which is the exported binding metadata gathered during the compilation. For example, given the following <script setup>:
+    <script setup="props">
+      export const foo = 1
+      export default {
+        props: ['bar']
+      }
+    </script>
+  The bindings object will be:
+    {
+      foo: 'setup',
+      bar: 'props'
+    }
+*/
 export interface BindingMetadata {
   [key: string]: 'data' | 'props' | 'setup' | 'options'
 }
