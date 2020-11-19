@@ -7,7 +7,6 @@ import postcss, {
 } from 'postcss'
 import trimPlugin from './stylePluginTrim'
 import scopedPlugin from './stylePluginScoped'
-import scopedVarsPlugin from './stylePluginScopedVars'
 import {
   processors,
   StylePreprocessor,
@@ -15,6 +14,7 @@ import {
   PreprocessLang
 } from './stylePreprocessors'
 import { RawSourceMap } from 'source-map'
+import { cssVarsPlugin } from './cssVars'
 
 export interface SFCStyleCompileOptions {
   source: string
@@ -22,8 +22,8 @@ export interface SFCStyleCompileOptions {
   id: string
   map?: RawSourceMap
   scoped?: boolean
-  vars?: boolean
   trim?: boolean
+  isProd?: boolean
   preprocessLang?: PreprocessLang
   preprocessOptions?: any
   preprocessCustomRequire?: (id: string) => any
@@ -82,8 +82,8 @@ export function doCompileStyle(
     filename,
     id,
     scoped = false,
-    vars = false,
     trim = true,
+    isProd = false,
     modules = false,
     modulesOptions = {},
     preprocessLang,
@@ -96,11 +96,7 @@ export function doCompileStyle(
   const source = preProcessedSource ? preProcessedSource.code : options.source
 
   const plugins = (postcssPlugins || []).slice()
-  if (vars && scoped) {
-    // vars + scoped, only applies to raw source before other transforms
-    // #1623
-    plugins.unshift(scopedVarsPlugin(id))
-  }
+  plugins.unshift(cssVarsPlugin({ id, isProd }))
   if (trim) {
     plugins.push(trimPlugin())
   }

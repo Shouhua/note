@@ -106,6 +106,7 @@ export function renderComponentRoot(
               props,
               __DEV__
                 ? {
+                    props,
                     get attrs() {
                       markAttrsAccessed() // dev环境下，使用这个可以判断在组件内部有没有使用attrs，如果没有使用，接下来会有判断去warn
                       return attrs
@@ -113,7 +114,7 @@ export function renderComponentRoot(
                     slots,
                     emit
                   }
-                : { attrs, slots, emit }
+                : { props, attrs, slots, emit }
             )
           : render(props, null as any /* we know it doesn't need it */)
       )

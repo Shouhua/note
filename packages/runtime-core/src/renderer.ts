@@ -325,13 +325,13 @@ export const setRef = (
     return
   }
 
-  let value: ComponentPublicInstance | RendererNode | null
+  let value: ComponentPublicInstance | RendererNode | Record<string, any> | null
   if (!vnode) {
     value = null
   } else {
     // 如果是组件，ref值为currentComponentInstance, 如果为plain element, 则为DOM对象
     if (vnode.shapeFlag & ShapeFlags.STATEFUL_COMPONENT) {
-      value = vnode.component!.proxy
+      value = vnode.component!.exposed || vnode.component!.proxy
     } else {
       value = vnode.el
     }
