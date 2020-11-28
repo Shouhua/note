@@ -21,7 +21,8 @@ import {
   createVNodeCall,
   AttributeNode,
   locStub,
-  CacheExpression
+  CacheExpression,
+  ConstantTypes
 } from '../ast'
 import { createCompilerError, ErrorCodes } from '../errors'
 import { processExpression } from './transformExpression'
@@ -256,7 +257,12 @@ function createChildrenCodegenNode(
   const { helper } = context
   const keyProperty = createObjectProperty(
     `key`,
-    createSimpleExpression(`${keyIndex}`, false, locStub, true)
+    createSimpleExpression(
+      `${keyIndex}`,
+      false,
+      locStub,
+      ConstantTypes.CAN_HOIST
+    )
   )
   const { children } = branch
   const firstChild = children[0]
@@ -287,9 +293,10 @@ function createChildrenCodegenNode(
         helper(FRAGMENT), // tag
         createObjectExpression([keyProperty]), // props
         children,
-        `${PatchFlags.STABLE_FRAGMENT} /* ${
-          PatchFlagNames[PatchFlags.STABLE_FRAGMENT]
-        } */`, // patch flags
+        PatchFlags.STABLE_FRAGMENT +
+          (__DEV__
+            ? ` /* ${PatchFlagNames[PatchFlags.STABLE_FRAGMENT]} */`
+            : ``), // patch flags
         undefined, // dynamicProps
         undefined, // directives
         true, // isBlock

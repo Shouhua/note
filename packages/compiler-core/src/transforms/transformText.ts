@@ -4,11 +4,13 @@ import {
   CompoundExpressionNode,
   createCallExpression,
   CallExpression,
-  ElementTypes
+  ElementTypes,
+  ConstantTypes
 } from '../ast'
 import { isText } from '../utils'
 import { CREATE_TEXT } from '../runtimeHelpers'
 import { PatchFlags, PatchFlagNames } from '@vue/shared'
+import { getConstantType } from './hoistStatic'
 
 // Merge adjacent text nodes and expressions into a single expression
 // e.g. <div>abc {{ d }} {{ e }}</div> should have a single expression node as child.
@@ -79,10 +81,14 @@ export const transformText: NodeTransform = (node, context) => {
             callArgs.push(child)
           }
           // mark dynamic text with flag so it gets patched inside a block
-          if (!context.ssr && child.type !== NodeTypes.TEXT) {
-            // NodeTypes.INTERPOLLATION
+          // NodeTypes.INTERPOLLATION
+          if (
+            !context.ssr &&
+            getConstantType(child) === ConstantTypes.NOT_CONSTANT
+          ) {
             callArgs.push(
-              `${PatchFlags.TEXT} /* ${PatchFlagNames[PatchFlags.TEXT]} */`
+              PatchFlags.TEXT +
+                (__DEV__ ? ` /* ${PatchFlagNames[PatchFlags.TEXT]} */` : ``)
             )
           }
           children[i] = {

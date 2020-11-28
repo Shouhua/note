@@ -562,12 +562,11 @@ function createSuspenseBoundary(
     },
 
     registerDep(instance, setupRenderEffect) {
-      if (!suspense.pendingBranch) {
-        return
+      const isInPendingSuspense = !!suspense.pendingBranch
+      if (isInPendingSuspense) {
+        suspense.deps++
       }
-
       const hydratedEl = instance.vnode.el
-      suspense.deps++
       instance
         .asyncDep!.catch(err => {
           handleError(err, instance, ErrorCodes.SETUP_FUNCTION)
@@ -582,7 +581,6 @@ function createSuspenseBoundary(
           ) {
             return
           }
-          suspense.deps--
           // retry from this component
           instance.asyncResolved = true
           const { vnode } = instance
@@ -617,7 +615,8 @@ function createSuspenseBoundary(
           if (__DEV__) {
             popWarningContext()
           }
-          if (suspense.deps === 0) {
+          // only decrease deps count if suspense is not already resolved
+          if (isInPendingSuspense && --suspense.deps === 0) {
             suspense.resolve()
           }
         })

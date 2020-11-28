@@ -22,7 +22,8 @@ import {
   TextNode,
   TemplateChildNode,
   InterpolationNode,
-  createRoot
+  createRoot,
+  ConstantTypes
 } from './ast'
 
 type OptionalOptions = 'isNativeTag' | 'isBuiltInComponent'
@@ -722,7 +723,9 @@ function parseAttribute(
         type: NodeTypes.SIMPLE_EXPRESSION,
         content,
         isStatic,
-        isConstant: isStatic,
+        constType: isStatic
+          ? ConstantTypes.CAN_STRINGIFY
+          : ConstantTypes.NOT_CONSTANT,
         loc
       }
     }
@@ -743,8 +746,8 @@ function parseAttribute(
         content: value.content,
         isStatic: false,
         // Treat as non-constant by default. This can be potentially set to
-        // true by `transformExpression` to make it eligible for hoisting.
-        isConstant: false,
+        // other values by `transformExpression` to make it eligible for hoisting.
+        constType: ConstantTypes.NOT_CONSTANT,
         loc: value.loc
       },
       arg,
@@ -851,7 +854,7 @@ function parseInterpolation(
       type: NodeTypes.SIMPLE_EXPRESSION,
       isStatic: false,
       // Set `isConstant` to false by default and will decide in transformExpression
-      isConstant: false,
+      constType: ConstantTypes.NOT_CONSTANT,
       content,
       loc: getSelection(context, innerStart, innerEnd)
     },

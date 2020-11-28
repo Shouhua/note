@@ -209,9 +209,10 @@ export function isEmitListener(
   if (!options || !isOn(key)) {
     return false
   }
-  key = key.replace(/Once$/, '')
+  key = key.slice(2).replace(/Once$/, '')
   return (
-    hasOwn(options, key[2].toLowerCase() + key.slice(3)) || // 字符串的处理取出来拼接，不能改变原生的string
-    hasOwn(options, key.slice(2))
+    hasOwn(options, key[0].toLowerCase() + key.slice(1)) ||
+    hasOwn(options, hyphenate(key)) ||
+    hasOwn(options, key)
   )
 }

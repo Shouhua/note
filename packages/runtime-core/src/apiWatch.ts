@@ -301,7 +301,7 @@ function doWatch(
     scheduler
   })
 
-  recordInstanceBoundEffect(runner)
+  recordInstanceBoundEffect(runner, instance)
 
   // initial run
   if (cb) {

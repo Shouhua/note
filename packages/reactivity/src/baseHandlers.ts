@@ -86,7 +86,8 @@ function createGetter(isReadonly = false, shallow = false) {
     // array的includes，indexOf, lastIndexOf特殊的对待（注意命名instrumentations）
     // track(target, TrackOpTypes.GET, i+'')
     const targetIsArray = isArray(target)
-    if (targetIsArray && hasOwn(arrayInstrumentations, key)) {
+
+    if (!isReadonly && targetIsArray && hasOwn(arrayInstrumentations, key)) {
       return Reflect.get(arrayInstrumentations, key, receiver)
     }
 

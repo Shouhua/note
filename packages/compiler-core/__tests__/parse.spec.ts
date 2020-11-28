@@ -9,7 +9,8 @@ import {
   NodeTypes,
   Position,
   TextNode,
-  InterpolationNode
+  InterpolationNode,
+  ConstantTypes
 } from '../src/ast'
 
 describe('compiler: parse', () => {
@@ -177,7 +178,7 @@ describe('compiler: parse', () => {
           type: NodeTypes.SIMPLE_EXPRESSION,
           content: `message`,
           isStatic: false,
-          isConstant: false,
+          constType: ConstantTypes.NOT_CONSTANT,
           loc: {
             start: { offset: 2, line: 1, column: 3 },
             end: { offset: 9, line: 1, column: 10 },
@@ -202,7 +203,7 @@ describe('compiler: parse', () => {
           type: NodeTypes.SIMPLE_EXPRESSION,
           content: `a<b`,
           isStatic: false,
-          isConstant: false,
+          constType: ConstantTypes.NOT_CONSTANT,
           loc: {
             start: { offset: 3, line: 1, column: 4 },
             end: { offset: 6, line: 1, column: 7 },
@@ -228,7 +229,7 @@ describe('compiler: parse', () => {
           type: NodeTypes.SIMPLE_EXPRESSION,
           content: `a<b`,
           isStatic: false,
-          isConstant: false,
+          constType: ConstantTypes.NOT_CONSTANT,
           loc: {
             start: { offset: 3, line: 1, column: 4 },
             end: { offset: 6, line: 1, column: 7 },
@@ -247,7 +248,7 @@ describe('compiler: parse', () => {
         content: {
           type: NodeTypes.SIMPLE_EXPRESSION,
           isStatic: false,
-          isConstant: false,
+          constType: ConstantTypes.NOT_CONSTANT,
           content: 'c>d',
           loc: {
             start: { offset: 12, line: 1, column: 13 },
@@ -273,8 +274,8 @@ describe('compiler: parse', () => {
         content: {
           type: NodeTypes.SIMPLE_EXPRESSION,
           isStatic: false,
-          // The `isConstant` is the default value and will be determined in `transformExpression`.
-          isConstant: false,
+          // The `constType` is the default value and will be determined in `transformExpression`.
+          constType: ConstantTypes.NOT_CONSTANT,
           content: '"</div>"',
           loc: {
             start: { offset: 8, line: 1, column: 9 },
@@ -303,7 +304,7 @@ describe('compiler: parse', () => {
           type: NodeTypes.SIMPLE_EXPRESSION,
           content: `msg`,
           isStatic: false,
-          isConstant: false,
+          constType: ConstantTypes.NOT_CONSTANT,
           loc: {
             start: { offset: 4, line: 1, column: 5 },
             end: { offset: 7, line: 1, column: 8 },
@@ -1033,7 +1034,7 @@ describe('compiler: parse', () => {
           type: NodeTypes.SIMPLE_EXPRESSION,
           content: 'a',
           isStatic: false,
-          isConstant: false,
+          constType: ConstantTypes.NOT_CONSTANT,
           loc: {
             start: { offset: 11, line: 1, column: 12 },
             end: { offset: 12, line: 1, column: 13 },
@@ -1059,7 +1060,7 @@ describe('compiler: parse', () => {
           type: NodeTypes.SIMPLE_EXPRESSION,
           content: 'click',
           isStatic: true, // 只有出现[]才是false
-          isConstant: true,
+          constType: ConstantTypes.CAN_STRINGIFY,
 
           loc: {
             source: 'click',
@@ -1096,7 +1097,7 @@ describe('compiler: parse', () => {
           type: NodeTypes.SIMPLE_EXPRESSION,
           content: 'event',
           isStatic: false,
-          isConstant: false,
+          constType: ConstantTypes.NOT_CONSTANT,
 
           loc: {
             source: '[event]',
@@ -1169,7 +1170,7 @@ describe('compiler: parse', () => {
           type: NodeTypes.SIMPLE_EXPRESSION,
           content: 'click',
           isStatic: true,
-          isConstant: true,
+          constType: ConstantTypes.CAN_STRINGIFY,
 
           loc: {
             source: 'click',
@@ -1206,7 +1207,7 @@ describe('compiler: parse', () => {
           type: NodeTypes.SIMPLE_EXPRESSION,
           content: 'a.b',
           isStatic: false,
-          isConstant: false,
+          constType: ConstantTypes.NOT_CONSTANT,
 
           loc: {
             source: '[a.b]',
@@ -1243,7 +1244,7 @@ describe('compiler: parse', () => {
           type: NodeTypes.SIMPLE_EXPRESSION,
           content: 'a',
           isStatic: true,
-          isConstant: true,
+          constType: ConstantTypes.CAN_STRINGIFY,
 
           loc: {
             source: 'a',
@@ -1264,7 +1265,7 @@ describe('compiler: parse', () => {
           type: NodeTypes.SIMPLE_EXPRESSION,
           content: 'b',
           isStatic: false,
-          isConstant: false,
+          constType: ConstantTypes.NOT_CONSTANT,
 
           loc: {
             start: { offset: 8, line: 1, column: 9 },
@@ -1291,7 +1292,7 @@ describe('compiler: parse', () => {
           type: NodeTypes.SIMPLE_EXPRESSION,
           content: 'a',
           isStatic: true,
-          isConstant: true,
+          constType: ConstantTypes.CAN_STRINGIFY,
 
           loc: {
             source: 'a',
@@ -1312,7 +1313,7 @@ describe('compiler: parse', () => {
           type: NodeTypes.SIMPLE_EXPRESSION,
           content: 'b',
           isStatic: false,
-          isConstant: false,
+          constType: ConstantTypes.NOT_CONSTANT,
 
           loc: {
             start: { offset: 13, line: 1, column: 14 },
@@ -1339,7 +1340,7 @@ describe('compiler: parse', () => {
           type: NodeTypes.SIMPLE_EXPRESSION,
           content: 'a',
           isStatic: true,
-          isConstant: true,
+          constType: ConstantTypes.CAN_STRINGIFY,
 
           loc: {
             source: 'a',
@@ -1360,7 +1361,7 @@ describe('compiler: parse', () => {
           type: NodeTypes.SIMPLE_EXPRESSION,
           content: 'b',
           isStatic: false,
-          isConstant: false,
+          constType: ConstantTypes.NOT_CONSTANT,
 
           loc: {
             start: { offset: 8, line: 1, column: 9 },
@@ -1387,7 +1388,7 @@ describe('compiler: parse', () => {
           type: NodeTypes.SIMPLE_EXPRESSION,
           content: 'a',
           isStatic: true,
-          isConstant: true,
+          constType: ConstantTypes.CAN_STRINGIFY,
 
           loc: {
             source: 'a',
@@ -1408,7 +1409,7 @@ describe('compiler: parse', () => {
           type: NodeTypes.SIMPLE_EXPRESSION,
           content: 'b',
           isStatic: false,
-          isConstant: false,
+          constType: ConstantTypes.NOT_CONSTANT,
 
           loc: {
             start: { offset: 14, line: 1, column: 15 },
@@ -1435,7 +1436,7 @@ describe('compiler: parse', () => {
           type: NodeTypes.SIMPLE_EXPRESSION,
           content: 'a',
           isStatic: true,
-          isConstant: true,
+          constType: ConstantTypes.CAN_STRINGIFY,
           loc: {
             source: 'a',
             start: {
@@ -1455,8 +1456,8 @@ describe('compiler: parse', () => {
           type: NodeTypes.SIMPLE_EXPRESSION,
           content: '{ b }',
           isStatic: false,
-          // The `isConstant` is the default value and will be determined in transformExpression
-          isConstant: false,
+          // The `constType` is the default value and will be determined in transformExpression
+          constType: ConstantTypes.NOT_CONSTANT,
           loc: {
             start: { offset: 10, line: 1, column: 11 },
             end: { offset: 15, line: 1, column: 16 },
@@ -1484,7 +1485,7 @@ describe('compiler: parse', () => {
           type: NodeTypes.SIMPLE_EXPRESSION,
           content: 'foo.bar',
           isStatic: true,
-          isConstant: true,
+          constType: ConstantTypes.CAN_STRINGIFY,
           loc: {
             source: 'foo.bar',
             start: {

@@ -81,7 +81,7 @@ export const transformFor = createStructuralDirectiveTransform(
       // v-for="item in list" - unkeyed/keyed fragment and openBlock(true)
       const isStableFragment =
         forNode.source.type === NodeTypes.SIMPLE_EXPRESSION &&
-        forNode.source.isConstant
+        forNode.source.constType > 0
       const fragmentFlag = isStableFragment
         ? PatchFlags.STABLE_FRAGMENT
         : keyProp
@@ -92,7 +92,8 @@ export const transformFor = createStructuralDirectiveTransform(
         helper(FRAGMENT), // tag
         undefined, // props
         renderExp, // children
-        `${fragmentFlag} /* ${PatchFlagNames[fragmentFlag]} */`, // path flags
+        fragmentFlag +
+          (__DEV__ ? ` /* ${PatchFlagNames[fragmentFlag]} */` : ``),
         undefined,
         undefined,
         true /* isBlock */,
@@ -156,9 +157,10 @@ export const transformFor = createStructuralDirectiveTransform(
             helper(FRAGMENT),
             keyProperty ? createObjectExpression([keyProperty]) : undefined,
             node.children,
-            `${PatchFlags.STABLE_FRAGMENT} /* ${
-              PatchFlagNames[PatchFlags.STABLE_FRAGMENT]
-            } */`, // TODO: why set stable framgement directly
+            PatchFlags.STABLE_FRAGMENT +
+              (__DEV__
+                ? ` /* ${PatchFlagNames[PatchFlags.STABLE_FRAGMENT]} */`
+                : ``), // TODO: why set stable framgement directly
             undefined,
             undefined,
             true

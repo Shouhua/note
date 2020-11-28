@@ -113,7 +113,7 @@ export interface ComponentInternalOptions {
 export interface FunctionalComponent<P = {}, E extends EmitsOptions = {}>
   extends ComponentInternalOptions {
   // use of any here is intentional so it can be a valid JSX Element constructor
-  (props: P, ctx: Omit<SetupContext<E, P>, 'expose'>): any
+  (props: P, ctx: Omit<SetupContext<E>, 'expose'>): any
   props?: ComponentPropsOptions<P>
   emits?: E | (keyof E)[]
   inheritAttrs?: boolean
@@ -176,8 +176,7 @@ export const enum LifecycleHooks {
   ERROR_CAPTURED = 'ec'
 }
 
-export interface SetupContext<E = EmitsOptions, P = Data> {
-  props: P
+export interface SetupContext<E = EmitsOptions> {
   attrs: Data
   slots: Slots
   emit: EmitFn<E>
@@ -244,6 +243,11 @@ export interface ComponentInternalInstance {
    * @internal
    */
   render: InternalRenderFunction | null // 这个函数要跟全局的render函数区别，后者是渲染函数, 这个函数是template编译后产生的render函数
+  /**
+   * SSR render function
+   * @internal
+   */
+  ssrRender?: Function | null
   /**
    * Object containing values this component provides for its descendents
    * @internal
@@ -648,7 +652,13 @@ export function handleSetupResult(
 ) {
   if (isFunction(setupResult)) {
     // setup returned an inline render function
-    instance.render = setupResult as InternalRenderFunction
+    if (__NODE_JS__ && (instance.type as ComponentOptions).__ssrInlineRender) {
+      // when the function's name is `ssrRender` (compiled by SFC inline mode),
+      // set it as ssrRender instead.
+      instance.ssrRender = setupResult
+    } else {
+      instance.render = setupResult as InternalRenderFunction
+    }
   } else if (isObject(setupResult)) {
     if (__DEV__ && isVNode(setupResult)) {
       warn(
@@ -737,7 +747,9 @@ function finishComponentSetup(
   // support for 2.x options
   if (__FEATURE_OPTIONS_API__) {
     currentInstance = instance
+    pauseTracking()
     applyOptions(instance, Component)
+    resetTracking()
     currentInstance = null
   }
 
@@ -779,7 +791,9 @@ const attrHandlers: ProxyHandler<Data> = {
   }
 }
 
-function createSetupContext(instance: ComponentInternalInstance): SetupContext {
+export function createSetupContext(
+  instance: ComponentInternalInstance
+): SetupContext {
   const expose: SetupContext['expose'] = exposed => {
     if (__DEV__ && instance.exposed) {
       warn(`expose() should be called only once per setup().`)
@@ -807,7 +821,6 @@ function createSetupContext(instance: ComponentInternalInstance): SetupContext {
     })
   } else {
     return {
-      props: instance.props,
       attrs: instance.attrs,
       slots: instance.slots,
       emit: instance.emit,
@@ -818,9 +831,12 @@ function createSetupContext(instance: ComponentInternalInstance): SetupContext {
 
 // record effects created during a component's setup() so that they can be
 // stopped when the component unmounts
-export function recordInstanceBoundEffect(effect: ReactiveEffect) {
-  if (currentInstance) {
-    ;(currentInstance.effects || (currentInstance.effects = [])).push(effect)
+export function recordInstanceBoundEffect(
+  effect: ReactiveEffect,
+  instance = currentInstance
+) {
+  if (instance) {
+    ;(instance.effects || (instance.effects = [])).push(effect)
   }
 }
 
