@@ -261,7 +261,8 @@ function createMinifiedConfig(format) {
         compress: {
           ecma: 2015,
           pure_getters: true
-        }
+        },
+        safari10: true
       })
     ]
   )

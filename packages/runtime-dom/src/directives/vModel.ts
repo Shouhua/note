@@ -118,8 +118,7 @@ export const vModelText: ModelDirective<
 }
 
 export const vModelCheckbox: ModelDirective<HTMLInputElement> = {
-  created(el, binding, vnode) {
-    setChecked(el, binding, vnode)
+  created(el, _, vnode) {
     el._assign = getModelAssigner(vnode)
     addEventListener(el, 'change', () => {
       const modelValue = (el as any)._modelValue
@@ -138,16 +137,20 @@ export const vModelCheckbox: ModelDirective<HTMLInputElement> = {
           assign(filtered)
         }
       } else if (isSet(modelValue)) {
+        const cloned = new Set(modelValue)
         if (checked) {
-          modelValue.add(elementValue)
+          cloned.add(elementValue)
         } else {
-          modelValue.delete(elementValue)
+          cloned.delete(elementValue)
         }
+        assign(cloned)
       } else {
         assign(getCheckboxValue(el, checked))
       }
     })
   },
+  // set initial checked on mount to wait for true-value/false-value
+  mounted: setChecked,
   beforeUpdate(el, binding, vnode) {
     el._assign = getModelAssigner(vnode)
     setChecked(el, binding, vnode)
@@ -188,7 +191,8 @@ export const vModelRadio: ModelDirective<HTMLInputElement> = {
 }
 
 export const vModelSelect: ModelDirective<HTMLSelectElement> = {
-  created(el, { modifiers: { number } }, vnode) {
+  created(el, { value, modifiers: { number } }, vnode) {
+    const isSetModel = isSet(value)
     addEventListener(el, 'change', () => {
       const selectedVal = Array.prototype.filter
         .call(el.options, (o: HTMLOptionElement) => o.selected)
@@ -196,7 +200,13 @@ export const vModelSelect: ModelDirective<HTMLSelectElement> = {
           (o: HTMLOptionElement) =>
             number ? toNumber(getValue(o)) : getValue(o)
         )
-      el._assign(el.multiple ? selectedVal : selectedVal[0])
+      el._assign(
+        el.multiple
+          ? isSetModel
+            ? new Set(selectedVal)
+            : selectedVal
+          : selectedVal[0]
+      )
     })
     el._assign = getModelAssigner(vnode)
   },

@@ -84,7 +84,7 @@ export const transformText: NodeTransform = (node, context) => {
           // NodeTypes.INTERPOLLATION
           if (
             !context.ssr &&
-            getConstantType(child) === ConstantTypes.NOT_CONSTANT
+            getConstantType(child, context) === ConstantTypes.NOT_CONSTANT
           ) {
             callArgs.push(
               PatchFlags.TEXT +
