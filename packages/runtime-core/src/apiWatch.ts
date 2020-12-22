@@ -138,6 +138,7 @@ export function watch<T = any, Immediate extends Readonly<boolean> = false>(
 
 // immediate和deep只有在watch中使用了callback的情况下才能使用，watchEffect不能使用，没有callback
 // 注意区分几个概念, runner, scheduler, job
+// NOTICE: https://github.com/vuejs/vue-next/issues/1706#issuecomment-664621035 解释watch功能
 function doWatch(
   source: WatchSource | WatchSource[] | WatchEffect | object,
   cb: WatchCallback | null,

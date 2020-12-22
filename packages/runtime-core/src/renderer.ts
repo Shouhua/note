@@ -375,6 +375,9 @@ export const setRef = (
       ;(doSet as SchedulerCb).id = -1 // sef refs before lifecycle hooks
       queuePostRenderEffect(doSet, parentSuspense)
     } else {
+      // unmount set ref=null，防止使用v-if导致的unmount将ref设置为null，有可能unmount在mount新组件后面setRef，结果就不准确了
+      // 所有在value=null时，同步执行set ref值
+      // https://github.com/vuejs/vue-next/issues/1789
       doSet()
     }
   } else if (isRef(ref)) {
@@ -761,7 +764,14 @@ function baseCreateRenderer(
         )
       }
 
+      /**
+       * https://github.com/vuejs/vue-next/issues/1931 原因是用户注册的change事件在系统注册的change事件前面执行，所有拿到的数据是旧的
+       * runtime-dom/src/directives/vModel.ts, 举个例子，select中的vModel是有2个change事件的，一个是系统注册的，还有一个是用户注册的,
+       * 在vue@3.0.0-rc.7中，系统注册change事件是在mounted中，这个时候patchProps->patchEvent已经发生，导致用户首先注册
+       * 这个例子中还有个注意点，就是vue的运行机制是拦截，之所以用户change后会在下个promise触发update，是因为onModelValue中改变了value的值
+       */
       if (dirs) {
+        // dirs里面包括用户自定义的事件，还包括系统vmodel里面的事件, 详见runtime-dom/src/directives/vModel.ts
         invokeDirectiveHook(vnode, null, parentComponent, 'created')
       }
       // props
@@ -1318,7 +1328,6 @@ function baseCreateRenderer(
       return
     }
 
-    // 主要是注册instance.update，在这个里面运行instance里面的render，让函数注册在reactive中，再次更新时唤醒运行
     setupRenderEffect(
       instance,
       initialVNode,
@@ -1355,7 +1364,7 @@ function baseCreateRenderer(
         return
       } else {
         // normal update
-        instance.next = n2
+        instance.next = n2 // 通过父组件的renderComponentRoot获取到的vnode
         // in case the child component is also queued, remove it to avoid
         // double updating the same child component in the same flush.
         // 避免组件自身数据变化导致的重复更新
@@ -1480,10 +1489,12 @@ function baseCreateRenderer(
         }
 
         if (next) {
+          // parent calling processComponent
           next.el = vnode.el
           updateComponentPreRender(instance, next, optimized)
         } else {
-          next = vnode
+          // triggered by mutation of component's own state
+          next = vnode // 只是组件内部subtree引起的变化，所有可以直接使用vnode
         }
 
         // beforeUpdate hook

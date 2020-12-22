@@ -54,14 +54,12 @@ export const transformModel: DirectiveTransform = (dir, node, context) => {
     isSimpleIdentifier(expString) &&
     context.identifiers[expString]
   ) {
-    // v-model cannot be used on v-for or v-slot scope variables because they are not writable.
     context.onError(
       createCompilerError(ErrorCodes.X_V_MODEL_ON_SCOPE_VARIABLE, exp.loc)
     )
     return createTransformProps()
   }
 
-  // 默认v-mode会转化成modelValue, onUpdate:modelValue
   const propName = arg ? arg : createSimpleExpression('modelValue', true)
   const eventName = arg
     ? isStaticExp(arg)
@@ -116,7 +114,6 @@ export const transformModel: DirectiveTransform = (dir, node, context) => {
   }
 
   // modelModifiers: { foo: true, "bar-baz": true }
-  // <comp v-model:greet.trim='hello' />
   if (dir.modifiers.length && node.tagType === ElementTypes.COMPONENT) {
     const modifiers = dir.modifiers
       .map(m => (isSimpleIdentifier(m) ? m : JSON.stringify(m)) + `: true`)

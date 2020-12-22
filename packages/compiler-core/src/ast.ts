@@ -16,7 +16,6 @@ import { ImportItem, TransformContext } from './transform'
 // Vue template is a platform-agnostic superset of HTML (syntax only).
 // More namespaces like SVG and MathML are declared by platform specific
 // compilers.
-// SVG and MathML在html中属于外部元素
 export type Namespace = number
 
 // compiler-dom中还会添加DOMNamespaces，里面还包括SVG和MathML
@@ -117,10 +116,10 @@ export interface RootNode extends Node {
 }
 
 export type ElementNode =
-  | PlainElementNode
-  | ComponentNode
-  | SlotOutletNode
-  | TemplateNode
+  | PlainElementNode // <div />
+  | ComponentNode // <Comp />
+  | SlotOutletNode // <slot />
+  | TemplateNode // <template />
 
 export interface BaseElementNode extends Node {
   type: NodeTypes.ELEMENT
@@ -128,7 +127,7 @@ export interface BaseElementNode extends Node {
   tag: string
   tagType: ElementTypes
   isSelfClosing: boolean
-  props: Array<AttributeNode | DirectiveNode> // 属性和指定都是props
+  props: Array<AttributeNode | DirectiveNode> // 在compiler中属性和指令都是props
   children: TemplateChildNode[]
 }
 

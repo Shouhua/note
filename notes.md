@@ -7,3 +7,8 @@ git switch master
 git merge upstream/master
 git push orgin master
 ```
+## ls-lint
+文件和目录名称校验
+
+## tsd
+typescript类型测试

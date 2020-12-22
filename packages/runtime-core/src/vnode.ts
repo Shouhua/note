@@ -136,7 +136,14 @@ export interface VNode<
   scopeId: string | null // SFC only
   children: VNodeNormalizedChildren
   component: ComponentInternalInstance | null
-  dirs: DirectiveBinding[] | null // render中的withDirectives(VNode, [...directives])会转化为dirs，只包括自定义的命令
+  /**
+   * render中的withDirectives(VNode, [...directives])会转化为dirs, 包括：
+   * 1. custom directives, for example, v-focus
+   * 2. system runtime directives, for example, <select v-model="selectedValue" />会转化成vModelSelect的命令
+   * onVNodeMounted等hook是放在props中的
+   * 可以在template explorer中调试，结果使用了withDirectives, 还有vModelSelect的helper
+   */
+  dirs: DirectiveBinding[] | null
   transition: TransitionHooks<HostElement> | null
 
   // DOM
@@ -320,13 +327,13 @@ export const createVNode = (__DEV__
   ? createVNodeWithArgsTransform
   : _createVNode) as typeof _createVNode
 
-// 这里的type就是用户放进来的App
+// 这里的type就是用户放进来的App,举个例子，其实可以是VNodeTypes，主要是编译器结果
 // vnode是没有attr的概念的，在后面component instance中处理
 // 新建VNode做了：
-// 1. 确定type，如果是stateful component，如果传进来的是一个对象，比如初始化传进来的App对象就是这样
+// 1. 确定type，如果传进来的是一个对象，就是stateful componenet, 比如初始化传进来的App对象就是这样
 // 2. 确定shapeFlag, VNode是什么类型的，stateful component = 4
 // 3. 确定patchFlag，这个用于告诉未来setRenderEffect的时候，哪些是变化的部分
-// 4. 挂在children到children和dynamicChildren
+// 4. 解析children到children和dynamicChildren
 function _createVNode(
   type: VNodeTypes | ClassComponent | typeof NULL_DYNAMIC_COMPONENT,
   props: (Data & VNodeProps) | null = null,
@@ -359,7 +366,7 @@ function _createVNode(
   }
 
   // class & style normalization.
-  // vnode里面的props.class, props.style只是做了拍扁，这里是用户传入的props
+  // vnode里面的props.class, props.style只是做了拍扁(normalization)，这里是用户传入的props
   // 不同于component里面的normalizePropsOptions里面做了camelize操作, 这里是用户定义的props
   if (props) {
     // for reactive or proxy objects, we need to clone it to enable mutation.

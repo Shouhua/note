@@ -444,7 +444,7 @@ export function createStructuralDirectiveTransform(
       const { props } = node
       // structural directive transforms are not concerned with slots
       // as they are handled separately in vSlot.ts
-      // NOTICE: <template v-if="true" v-once></template>不会经过vIf.ts的transform
+      // NOTICE: <template v-once v-if="true" v-slot/>不会经过vIf.ts的transform
       if (node.tagType === ElementTypes.TEMPLATE && props.some(isVSlot)) {
         return
       }

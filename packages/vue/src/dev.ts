@@ -8,6 +8,7 @@ export function initDev() {
   setDevtoolsHook(target.__VUE_DEVTOOLS_GLOBAL_HOOK__)
 
   if (__BROWSER__) {
+    // global / esm build
     if (!__ESM_BUNDLER__) {
       console.info(
         `You are running a development build of Vue.\n` +

@@ -50,6 +50,8 @@ export type EmitFn<
  * Props validators have the same issue.
  * Both can be solved with a Babel plugin that transforms props and emits options to the Array format in production builds.
  * This way the dev only code is stripped but the runtime behavior will stay consistent.
+ * NOTICE: more specs on https://v3.vuejs.org/guide/migration/emits-option.html#migration-strategy
+ * https://v3.vuejs.org/guide/migration/v-on-native-modifier-removed.html#_3-x-syntax
  */
 export function emit(
   instance: ComponentInternalInstance,
