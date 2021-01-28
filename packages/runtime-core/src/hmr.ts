@@ -74,7 +74,7 @@ function createRecord(
     warn(
       `HMR API usage is out of date.\n` +
         `Please upgrade vue-loader/vite/rollup-plugin-vue or other relevant ` +
-        `depdendency that handles Vue SFC compilation.`
+        `dependency that handles Vue SFC compilation.`
     )
     component = {}
   }
