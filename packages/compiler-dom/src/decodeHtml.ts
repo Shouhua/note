@@ -35,6 +35,7 @@ export const decodeHtml: ParserOptions['decodeEntities'] = (
       let name = ''
       let value: string | undefined = undefined
       if (/[0-9a-z]/i.test(rawText[1])) {
+        // &amp;
         if (!maxCRNameLength) {
           maxCRNameLength = Object.keys(namedCharacterReferences).reduce(
             (max, name) => Math.max(max, name.length),

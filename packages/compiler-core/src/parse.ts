@@ -41,7 +41,7 @@ type AttributeValue =
 // the template syntax, and is only used if the custom renderer did not provide
 // a platform-specific decoder.
 // https://developer.mozilla.org/zh-CN/docs/Glossary/Entity
-// HTML entity 一些保留字符，有特殊意义，因此需要使用实体来表示他们，比如&使用'&amp;'来表示
+// HTML entity 一些保留字符，有特殊意义，因此需要使用实体来表示他们，比如&使用'&amp;'来表示(也可以使用16进制形式标识)
 // parse基本上就是html的解析过程
 const decodeRE = /&(gt|lt|amp|apos|quot);/g
 const decodeMap: Record<string, string> = {
@@ -69,13 +69,33 @@ export const defaultParserOptions: MergedParserOptions = {
 // http://bobao.360.cn/learning/detail/292.html
 // https://xz.aliyun.com/t/5863
 // 这里有三种情况可以容纳字符实体，“数据状态中的字符引用”，“RCDATA状态中的字符引用”和“属性值状态中的字符引用”
+// 这种会decode，比如&amp;,&#60;,&#62;分别会解析为&，<，>，但是属性值状态下测试没有成功？？？
+// “属性值中的字符引用”适用于href等
+// 比如<a href="&#x6a;&#x61;&#x76;&#x61;&#x73;&#x63;&#x72;&#x69;&#x70;&#x74;:%61%6c%65%72%74%28%32%29">Click me</a>
+// 首先HTML parser会解析&开头的实体字符，<a href="javascript:%61%6c%65%72%74%28%32%29">Click me</a>
+// 然后href会进入URL解析，发现是javascript:开头的js协议，于是使用JavaScript parser去执行后面的内容，后面的内容会经过URL解析, 需要注意的是，协议(包括冒号)不能使用URL编码
+// 在script中术语RAWTEXT，里面是不会解析实体字符的，但是会解析Unicode转义字符，比如：<script>\u0061\u006c\u0065\u0072\u0074(10);</script>
+// 当Unicode转义序列出现在标识符名称中时，它会被解码并解释为标识符名称的一部分，例如函数名，属性名等等
+// 当用Unicode转义序列来表示一个控制字符时，例如单引号、双引号、圆括号等等，它们将不会被解释成控制字符，而仅仅被解码并解析为标识符名称或者字符串常量
+// Unicode转义序列只有在标识符名称里不被当作字符串，也只有在标识符名称里的编码字符能够被正常的解析
+/**
+ * https://www.attacker-domain.com/2013/04/deep-dive-into-browser-parsing-and-xss.html
+ * HTML parse, URL parse, JavaScript parse
+ * HTML parse:
+ *  1. 当在数据状态时，遇到实体转义字符时会decode，但是不会再有实际含义，这也是我们可以转义用户的输入防止XSS的理论依据
+ *  2. RCDATA可以decode字符实体(&amp;)，另外，其中的<,>,&等字符不会解析，还是会当成字符显示
+ * URL parse:
+ *  1. URL schema必须时ascii字符(U+0041-U+005A || U+0061-U+007A)
+ *  2. a中的href会首先HTML parse解析里面的实体字符，然后URL parse，但是如果里面有协议，就先进行协议解析，比如javascript:alert(1)
+ * JavaScript Parse
+ */
 export const enum TextModes {
   //          | Elements | Entities | End sign              | Inside of
   DATA, //    | ✔        | ✔        | End tags of ancestors |
   RCDATA, //  | ✘        | ✔        | End tag of the parent | <textarea> <title>
   RAWTEXT, // | ✘        | ✘        | End tag of the parent | <style>,<script>
   // 在 XML 中， CDATA 可以直接包含未经转义的文本。比如 < 和 &，只要位于 CDATA 片段中，它们就不需要被转义，保持原样就可以了。
-  CDATA, // https://developer.mozilla.org/zh-CN/docs/Web/API/CDATASection, CDAT只在XML中有效
+  CDATA, // https://developer.mozilla.org/zh-CN/docs/Web/API/CDATASection, CDATA只在XML中有效
   ATTRIBUTE_VALUE
 }
 

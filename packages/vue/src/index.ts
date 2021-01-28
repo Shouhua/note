@@ -76,6 +76,18 @@ function compileToFunction(
   // with keys that cannot be mangled, and can be quite heavy size-wise.
   // In the global build we know `Vue` is available globally so we can avoid
   // the wildcard object.
+  /**
+    const _Vue = Vue
+    return function render(_ctx, _cache, $props, $setup, $data, $options) {
+      with (_ctx) {
+        const { createVNode: _createVNode, openBlock: _openBlock, createBlock: _createBlock } = _Vue
+
+        return (_openBlock(), _createBlock("div", null, "Hello World!"))
+      }
+    }
+    global：Vue是全局变量
+    非global：需要引入
+   */
   // 使用new Function是因为函数体是不确定的，所有使用这种方式
   const render = (__GLOBAL__
     ? new Function(code)()
