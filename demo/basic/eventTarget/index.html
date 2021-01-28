@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Handle Event</title>
+</head>
+<body>
+  <ul id="ul">
+    <li id="ll1">
+      <div>
+        <span>li1 children</span>
+        <button id="btn">Press Me</button>
+      </div>
+    </li>
+    <li id="ll2">li2</li>
+    <li id="ll3">li3</li>
+  </ul>
+  <script type="text/javascript">
+    const parent = document.getElementById('ul');
+    parent.addEventListener('click', (ev) => {
+      console.log(ev.target) // who triggered the event
+      console.log(ev.currentTarget) // who handle the event
+      console.log('use bubble triggered');
+    }, {
+      capture: false
+    })
+    parent.addEventListener('click', (ev) => {
+      console.log('use capture triggered');
+    }, {
+      capture: true
+    })
+  </script>
+</body>
+</html>

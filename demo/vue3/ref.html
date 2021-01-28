@@ -1,8 +1,17 @@
 <div id="app"></div>
 
-<script src="https://unpkg.com/vue@next"></script>
+<script type="text/x-template" id='player'>
+  <div v-for="item in items">{{ item.name }}</div>  
+  <div>{{ <script>alert('helo')</script> }}</div>
+</script>
+<script type="module" src="https://unpkg.com/vue@next/dist/vue.esm-browser.js"></script>
 <script>
-const { createApp, h, onMounted } = Vue
+  console.log('hello, world')
+</script>
+<!-- <script src="https://unpkg.com/vue@next"></script> -->
+<script type="module">
+// const { createApp, h, onMounted } = Vue
+import { createApp, h, onMounted } from 'https://unpkg.com/vue@next/dist/vue.esm-browser.js'
 
 const items = [
   { id: 1, name: 'Forever Kobe', rank: 1 },
@@ -11,11 +20,17 @@ const items = [
 
 const Player = {
   name: 'Player',
-  render() {
-    return items.map(item => {
-      return h('div', item.name)
-    })
-  } 
+  template: '#player',
+  setup() {
+    return {
+      items
+    }
+  }
+  // render() {
+  //   return items.map(item => {
+  //     return h('div', item.name)
+  //   })
+  // } 
 }
 
 const App = {

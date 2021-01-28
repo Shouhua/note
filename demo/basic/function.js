@@ -27,6 +27,8 @@ Bar()
 
 /**
  * new operator
+ * prototype就是{}
+ * construct就是function实例
  */
 Function.prototype.new = function() {
   var args = arguments

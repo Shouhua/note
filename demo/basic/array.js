@@ -51,4 +51,4 @@ let flatDeep = function(source) {
 console.log(flatDeep(source))
 
 // 方法2
-source.reduce()
+source.reduce((pre, current, index) => Array.prototype.concat.call(pre, current))

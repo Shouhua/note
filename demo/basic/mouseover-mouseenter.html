@@ -43,6 +43,7 @@
     document.addEventListener('DOMContentLoaded', () => {
       const app = document.createElement('div')
       app.className = 'hello world'
+      // app.setAttribute('class', 'hello world')
       app.textContent = 'helo, world!'
       // 后面必须使用分号，不然会认为'helo, world!'是一个函数，报错!!!
       ;(document.body || document.head || document.documentElement).appendChild(app)

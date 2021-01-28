@@ -18,3 +18,4 @@
  * 2. defer是在渲染完成后，DOMContentLoaded之前去执行
  * 3. script标签添加type=“module”默认使用类似defer的方式去加载脚本，但是也可以设置为async
  */
+console.log("download script");

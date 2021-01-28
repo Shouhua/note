@@ -6,12 +6,33 @@
   <title><helo&amp;world</title>
 </head>
 <body>
+  <!-- ul[id="ul"]>li[id="id$"]{li$}*4 -->
   <ul id="ul">
-    <li id="id1"><span>hello</span><span>world</span></li>
+    hello, world
+    <li id="id1"><div id="hello">hello</div><span>world</span></li>
     <li id="id2">li2</li>
+    <!-- hello -->
     <li id="id3">li3</li>
     <li id="id4">li4</li>
   </ul>
+
+  <script type="text/javascript">
+    var ul = document.getElementById('ul')
+    // document.createComment, document.createTextNode
+    const div = document.createElement('div')
+    div.textContent = 'hello, world'
+    ul.appendChild(div)
+
+    const li2 = document.querySelector('#id2')
+    li2.appendChild(div) // 移动div到li2的尾部
+    li2.insertBefore(div)
+
+    const childNodes = ul.childNodes() // NodeList
+    childNodes.forEach((item) => console.log(item)) // childNodes包含所有节点，比如comment，text等, 是dom和node层面的
+    
+    const children = ul.children() // HTMLCollection // children只包含element元素，不包含比如text node
+    Array.prototype.forEach.call(children, (item) => console.log(item.textContent))
+  </script>
  
   <!-- <script>
     var a = [1, 2, 3, 4, 5]
@@ -36,6 +57,6 @@
       once: false
     })
   </script> -->
-  <script src="./repeat.js"></script>
+  <!-- <script src="./repeat.js"></script> -->
 </body>
 </html>

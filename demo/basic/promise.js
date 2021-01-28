@@ -24,3 +24,4 @@ setTimeout(() => {
 })
 
 console.log('8');
+// 125 8 3 4670

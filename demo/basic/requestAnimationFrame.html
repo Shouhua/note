@@ -1,0 +1,18 @@
+<script>
+  // 当requestAnimationFrame() 运行在后台标签页或者隐藏的<iframe> 里时，requestAnimationFrame() 会被暂停调用以提升性能和电池寿命
+  /**
+   * 全局的轮询请求callback可以放在requestAnimationFrame中，然后再在callback中注册setTimeout
+   * let timeId =setTimeout(() => {
+   *    window.requestAnimationFrame(callback) 
+   * }, 5000)
+   * function callback() {
+   *    // do something
+   *    if(timeId) {
+   *      clearTimeout(timeId) 
+   *    }
+   *    setTimeout(() => {
+   *      callback()
+   *    })
+   * }
+   */
+</script>

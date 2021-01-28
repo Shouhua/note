@@ -6,6 +6,13 @@
   <title>CSP</title>
 </head>
 <body>
+  <div>
+    &amp;
+  </div>
+  <a href="&#x6a;&#x61;&#x76;&#x61;&#x73;&#x63;&#x72;&#x69;&#x70;&#x74;:%61%6c%65%72%74%28%32%29">Click me</a>
+  <div>
+    这是一个CDATA section: <![CDATA[  < > & ]]> 其中包含了一些没有转义的字符。
+  </div>
   <!-- <h3>hello, world</h3> -->
   <!-- <script nonce="123">
     console.log('execute ajax request')
@@ -20,6 +27,7 @@
   </script> -->
   <!-- <script src="http://localhost:3001/hello.js"></script>  -->
  <script>
+   \u0061\u006c\u0065\u0072\u0074(10);
    function showJson(msg) {
     alert(msg)
    }
