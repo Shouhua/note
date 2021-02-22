@@ -56,7 +56,6 @@ import {
   markAttrsAccessed
 } from './componentRenderUtils'
 import { startMeasure, endMeasure } from './profiling'
-import { devtoolsComponentAdded } from './devtools'
 
 export type Data = Record<string, unknown>
 
@@ -517,10 +516,6 @@ export function createComponentInstance(
   instance.root = parent ? parent.root : instance
   instance.emit = emit.bind(null, instance)
 
-  if (__DEV__ || __FEATURE_PROD_DEVTOOLS__) {
-    devtoolsComponentAdded(instance)
-  }
-
   return instance
 }
 
@@ -546,6 +541,10 @@ export function validateComponentName(name: string, config: AppConfig) {
   }
 }
 
+export function isStatefulComponent(instance: ComponentInternalInstance) {
+  return instance.vnode.shapeFlag & ShapeFlags.STATEFUL_COMPONENT
+}
+
 export let isInSSRComponentSetup = false
 
 export function setupComponent(
@@ -554,9 +553,8 @@ export function setupComponent(
 ) {
   isInSSRComponentSetup = isSSR
 
-  const { props, children, shapeFlag } = instance.vnode
-  const isStateful = shapeFlag & ShapeFlags.STATEFUL_COMPONENT
-  // support options api(extends, mixins), camerlize prop key, boolean cast, props = attrs when functional without optional prop
+  const { props, children } = instance.vnode
+  const isStateful = isStatefulComponent(instance)
   initProps(instance, props, isStateful, isSSR)
   // 设置instance.slots
   // instance.slots = {_ctx: currentComponentInstance, default: () =>{}, foo: Function, $stabel: true, __vInternal:1}

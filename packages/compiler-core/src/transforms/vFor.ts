@@ -23,7 +23,8 @@ import {
   VNodeCall,
   ForRenderListExpression,
   BlockCodegenNode,
-  ForIteratorExpression
+  ForIteratorExpression,
+  ConstantTypes
 } from '../ast'
 import { createCompilerError, ErrorCodes } from '../errors'
 import {
@@ -82,7 +83,7 @@ export const transformFor = createStructuralDirectiveTransform(
       // v-for="item in list" - unkeyed/keyed fragment and openBlock(true)
       const isStableFragment =
         forNode.source.type === NodeTypes.SIMPLE_EXPRESSION &&
-        forNode.source.constType > 0
+        forNode.source.constType > ConstantTypes.NOT_CONSTANT
       const fragmentFlag = isStableFragment
         ? PatchFlags.STABLE_FRAGMENT
         : keyProp

@@ -1012,7 +1012,7 @@ function isEnd(
   switch (mode) {
     case TextModes.DATA:
       if (startsWith(s, '</')) {
-        //TODO: probably bad performance
+        // TODO: probably bad performance
         for (let i = ancestors.length - 1; i >= 0; --i) {
           if (startsWithEndTagOpen(s, ancestors[i].tag)) {
             return true
