@@ -39,6 +39,15 @@
     {
       "type": "node",
       "request": "launch",
+      "name": "demoo",
+      "program": "${workspaceFolder}/demo.js",
+      "skipFiles": [
+        "<node_internals>/**"
+      ]
+    },
+    {
+      "type": "node",
+      "request": "launch",
       "name": "reactive",
       "program": "${workspaceFolder}/demo/vue3/dist/reactive.js",
       "skipFiles": [

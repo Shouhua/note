@@ -3,7 +3,7 @@
  * 1. 一种是内联型，即脚本直接写在script里面, 这种没有加载的请求过程，顺序执行，因此，放在header里面
  * 会阻碍dom树和render树的生成，进而影响view的渲染，可能出现白屏，卡顿等
  * 2. 需要外部加载的脚本，加入src的属性
- * 这种情况默认情况下跟第一种一种，会阻塞渲染过程去下载和加载script，这个可能受到网络的影响，
+ * 同步执行会阻塞渲染过程去下载和加载script，这个可能受到网络的影响，
  * 导致白屏，卡顿等，所以需要放在body的最后的一个元素，这个时候至少能看到dom的渲染了
  * 
  * （Chrome has a limit of 6 connections per host name, and a max of 10 connections. 

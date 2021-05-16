@@ -1,0 +1,91 @@
+<head>
+  <style>
+    body {
+      text-align: center;
+    }
+
+    button {
+      display: block;
+      padding: 0.5rem 1rem;
+      width: 100%;
+      max-width: 200px;
+      margin: auto;
+      margin-bottom: 0.25rem;
+    }
+
+    .text--green {
+      color: green;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="app"></div>
+  <!-- <script type="module" src="https://unpkg.com/vue@next/dist/vue.esm-browser.js"></script> -->
+  <script type="module">
+    import { createApp, computed, ref } from 'https://unpkg.com/vue@next/dist/vue.esm-browser.js'
+    
+    const Second = {
+      template: `
+  <slot></slot>
+`
+    }
+
+    const First = {
+      template: `<div>
+    <Second>
+      <slot v-if="true"></slot>
+    </Second>
+  </div>`,
+  components: {
+    Second,
+  }
+    }
+
+    const data = ["a", "b", "c"];
+    const App = {
+      template: ` <div class="app">
+    <First v-for="group in groups" :key="group.id">
+      <h2>Group {{ group.id }}</h2>
+      <button
+        v-for="item in group.items"
+        :key="item.id"
+        @click="selected = item.id"
+      >
+        Letter {{ item.id.toUpperCase() }}
+        <span v-if="item.selected" class="text--green">selected</span>
+      </button>
+    </First>
+  </div>`,
+      components: {
+        First,
+      },
+      setup() {
+        const selected = ref("a");
+
+        const groups = computed(() => {
+          const items = data.map((letter) => {
+            return {
+              id: letter,
+              selected: selected.value === letter,
+            };
+          });
+
+          return [
+            {
+              id: 1,
+              items,
+            },
+          ];
+        });
+
+        return {
+          groups,
+          selected,
+        };
+      },
+    }
+
+    createApp(App).mount('#app')
+  </script>
+</body>

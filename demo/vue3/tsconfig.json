@@ -4,6 +4,9 @@
     "outDir": "./dist",
     "declaration": true
   },
-  "exclude": ["./__tests__"]
+  "exclude": [
+    "./__tests__",
+    "./dist"
+  ]
 }
 // tsc -w -p ./demo/vue3

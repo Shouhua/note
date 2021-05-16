@@ -23,12 +23,11 @@
 regex.exec(s)
 regex.lastIndex // 4
 
-regex.exec(s) // null 当返回结果为null时候，重制regex.lastIndex = 0
+regex.exec(s) // null 当返回结果为null时候，重置regex.lastIndex = 0
  regex.lastIndex // 0
 
 sticky.exec(s) // null // 因为sticky只会检查lastIndex的位置的l，所以永远找不到
 regex.lastIndex // 0
-
 
 // while语句可以先尝试上面的例子后理解lastIndex, 另外需要注意string的取值赋值操作
 // var str = 'abc123hello.i123jk' // Abc123-Hello

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title><helo&amp;world</title>
+  <title><helo&gt;world</title>
 </head>
 <body>
   <!-- ul[id="ul"]>li[id="id$"]{li$}*4 -->
@@ -25,13 +25,15 @@
 
     const li2 = document.querySelector('#id2')
     li2.appendChild(div) // 移动div到li2的尾部
-    li2.insertBefore(div)
+    li2.insertBefore(div, null)
 
-    const childNodes = ul.childNodes() // NodeList
+    const childNodes = ul.childNodes // NodeList
     childNodes.forEach((item) => console.log(item)) // childNodes包含所有节点，比如comment，text等, 是dom和node层面的
+
+    console.log('--------------------------')
     
-    const children = ul.children() // HTMLCollection // children只包含element元素，不包含比如text node
-    Array.prototype.forEach.call(children, (item) => console.log(item.textContent))
+    const children = ul.children // HTMLCollection // children只包含element元素，不包含比如text node
+    Array.prototype.forEach.call(children, (item) => console.log(item))
   </script>
  
   <!-- <script>
@@ -58,5 +60,17 @@
     })
   </script> -->
   <!-- <script src="./repeat.js"></script> -->
+  <script>
+    const source = {}
+    Object.defineProperty(source, 'count', {
+      // configurable, enumerable是数据和存取描述符公共的2个属性
+      configurable: true, // 属性是否可以被删除，以及除了writable和value外是否可以被配置
+      enumerable: true, // 控制能否在for...in中
+      // get() {}, // acessor descriptor
+      // set() {}
+      writable: true, // data descriptor
+      value: 1
+    })
+  </script>
 </body>
 </html>
