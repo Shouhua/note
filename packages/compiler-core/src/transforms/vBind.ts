@@ -9,7 +9,7 @@ import { CAMELIZE } from '../runtimeHelpers'
 // *with* args.
 // 在transformElement中调用，(prop:DirectiveNode, node, context) => {props, needRuntime}
 // 主要是处理了.camel modifier，camel(arg.content)
-export const transformBind: DirectiveTransform = (dir, node, context) => {
+export const transformBind: DirectiveTransform = (dir, _node, context) => {
   const { exp, modifiers, loc } = dir
   const arg = dir.arg!
 

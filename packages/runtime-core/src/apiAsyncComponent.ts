@@ -13,6 +13,8 @@ import { defineComponent } from './apiDefineComponent'
 import { warn } from './warning'
 import { ref } from '@vue/reactivity'
 import { handleError, ErrorCodes } from './errorHandling'
+import { isKeepAlive } from './components/KeepAlive'
+import { queueJob } from './scheduler'
 
 export type AsyncComponentResolveResult<T = Component> = T | { default: T } // es modules
 
@@ -112,8 +114,14 @@ export function defineAsyncComponent<
   }
 
   return defineComponent({
-    __asyncLoader: load,
     name: 'AsyncComponentWrapper',
+
+    __asyncLoader: load,
+
+    get __asyncResolved() {
+      return resolvedComp
+    },
+
     setup() {
       const instance = currentInstance!
 
@@ -177,6 +185,11 @@ export function defineAsyncComponent<
       load()
         .then(() => {
           loaded.value = true
+          if (instance.parent && isKeepAlive(instance.parent.vnode)) {
+            // parent is keep-alive, force update so the loaded component's
+            // name is taken into account
+            queueJob(instance.parent.update)
+          }
         })
         .catch(err => {
           onError(err)

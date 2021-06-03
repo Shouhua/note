@@ -5,7 +5,9 @@ import {
   ReactiveFlags,
   Target,
   readonlyMap,
-  reactiveMap
+  reactiveMap,
+  shallowReactiveMap,
+  shallowReadonlyMap
 } from './reactive'
 import { TrackOpTypes, TriggerOpTypes } from './operations'
 import {
@@ -80,8 +82,16 @@ function createGetter(isReadonly = false, shallow = false) {
     } else if (key === ReactiveFlags.IS_READONLY) {
       return isReadonly
     } else if (
-      key === ReactiveFlags.RAW && // ReactiveFlags.RAW返回本身，前提是已经是reactive
-      receiver === (isReadonly ? readonlyMap : reactiveMap).get(target)
+      key === ReactiveFlags.RAW &&
+      receiver ===
+        (isReadonly
+          ? shallow
+            ? shallowReadonlyMap
+            : readonlyMap
+          : shallow
+            ? shallowReactiveMap
+            : reactiveMap
+        ).get(target)
     ) {
       return target
     }
@@ -97,11 +107,7 @@ function createGetter(isReadonly = false, shallow = false) {
     const res = Reflect.get(target, key, receiver)
 
     // 判断是否是内建Symbol属性，如果是就跳过track
-    if (
-      isSymbol(key)
-        ? builtInSymbols.has(key as symbol)
-        : isNonTrackableKeys(key)
-    ) {
+    if (isSymbol(key) ? builtInSymbols.has(key) : isNonTrackableKeys(key)) {
       return res
     }
 
@@ -141,9 +147,10 @@ function createSetter(shallow = false) {
     value: unknown,
     receiver: object
   ): boolean {
-    const oldValue = (target as any)[key]
+    let oldValue = (target as any)[key]
     if (!shallow) {
       value = toRaw(value)
+      oldValue = toRaw(oldValue)
       if (!isArray(target) && isRef(oldValue) && !isRef(value)) {
         oldValue.value = value
         return true
@@ -189,7 +196,7 @@ function has(target: object, key: string | symbol): boolean {
 }
 
 // Object.getOwnPropertyNames时触发ownKeys
-function ownKeys(target: object): (string | number | symbol)[] {
+function ownKeys(target: object): (string | symbol)[] {
   track(target, TrackOpTypes.ITERATE, isArray(target) ? 'length' : ITERATE_KEY)
   return Reflect.ownKeys(target)
 }

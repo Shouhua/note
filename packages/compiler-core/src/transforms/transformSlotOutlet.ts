@@ -37,6 +37,16 @@ export const transformSlotOutlet: NodeTransform = (node, context) => {
     }
 
     // renderSlot($slots, slotName, slotProps || {}, () => return children)
+    if (context.scopeId && !context.slotted) {
+      if (!slotProps) {
+        slotArgs.push(`{}`)
+      }
+      if (!children.length) {
+        slotArgs.push(`undefined`)
+      }
+      slotArgs.push(`true`)
+    }
+
     node.codegenNode = createCallExpression(
       context.helper(RENDER_SLOT),
       slotArgs,

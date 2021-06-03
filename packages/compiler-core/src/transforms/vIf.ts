@@ -31,9 +31,10 @@ import {
   CREATE_BLOCK,
   FRAGMENT,
   CREATE_COMMENT,
-  OPEN_BLOCK
+  OPEN_BLOCK,
+  CREATE_VNODE
 } from '../runtimeHelpers'
-import { injectProp, findDir, findProp } from '../utils'
+import { injectProp, findDir, findProp, isBuiltInType } from '../utils'
 import { PatchFlags, PatchFlagNames } from '@vue/shared'
 
 /**
@@ -163,7 +164,16 @@ export function processIf(
         // move the node to the if node's branches
         context.removeNode()
         const branch = createIfBranch(node, dir)
-        if (__DEV__ && comments.length) {
+        if (
+          __DEV__ &&
+          comments.length &&
+          // #3619 ignore comments if the v-if is direct child of <transition>
+          !(
+            context.parent &&
+            context.parent.type === NodeTypes.ELEMENT &&
+            isBuiltInType(context.parent.tag, 'transition')
+          )
+        ) {
           branch.children = [...comments, ...branch.children]
         }
 
@@ -254,7 +264,7 @@ function createChildrenCodegenNode(
   keyIndex: number,
   context: TransformContext
 ): BlockCodegenNode {
-  const { helper } = context
+  const { helper, removeHelper } = context
   const keyProperty = createObjectProperty(
     `key`,
     createSimpleExpression(
@@ -288,19 +298,28 @@ function createChildrenCodegenNode(
       disableTracking,
       loc}
     */
+      let patchFlag = PatchFlags.STABLE_FRAGMENT
+      let patchFlagText = PatchFlagNames[PatchFlags.STABLE_FRAGMENT]
+      // check if the fragment actually contains a single valid child with
+      // the rest being comments
+      if (
+        __DEV__ &&
+        children.filter(c => c.type !== NodeTypes.COMMENT).length === 1
+      ) {
+        patchFlag |= PatchFlags.DEV_ROOT_FRAGMENT
+        patchFlagText += `, ${PatchFlagNames[PatchFlags.DEV_ROOT_FRAGMENT]}`
+      }
+
       return createVNodeCall(
         context,
         helper(FRAGMENT), // tag
         createObjectExpression([keyProperty]), // props
         children,
-        PatchFlags.STABLE_FRAGMENT +
-          (__DEV__
-            ? ` /* ${PatchFlagNames[PatchFlags.STABLE_FRAGMENT]} */`
-            : ``), // patch flags
-        undefined, // dynamicProps
-        undefined, // directives
-        true, // isBlock
-        false, // disableTracking
+        patchFlag + (__DEV__ ? ` /* ${patchFlagText} */` : ``),
+        undefined,
+        undefined,
+        true,
+        false,
         branch.loc
       )
     }
@@ -308,7 +327,8 @@ function createChildrenCodegenNode(
     const vnodeCall = (firstChild as ElementNode) // 这个时候已经解析了
       .codegenNode as BlockCodegenNode
     // Change createVNode to createBlock.
-    if (vnodeCall.type === NodeTypes.VNODE_CALL) {
+    if (vnodeCall.type === NodeTypes.VNODE_CALL && !vnodeCall.isBlock) {
+      removeHelper(CREATE_VNODE)
       vnodeCall.isBlock = true
       helper(OPEN_BLOCK)
       helper(CREATE_BLOCK)

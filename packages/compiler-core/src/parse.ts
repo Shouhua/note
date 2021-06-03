@@ -1,6 +1,11 @@
-import { ParserOptions } from './options'
+import { ErrorHandlingOptions, ParserOptions } from './options'
 import { NO, isArray, makeMap, extend } from '@vue/shared'
-import { ErrorCodes, createCompilerError, defaultOnError } from './errors'
+import {
+  ErrorCodes,
+  createCompilerError,
+  defaultOnError,
+  defaultOnWarn
+} from './errors'
 import {
   assert,
   advancePositionWithMutation,
@@ -25,8 +30,19 @@ import {
   createRoot,
   ConstantTypes
 } from './ast'
+import {
+  checkCompatEnabled,
+  CompilerCompatOptions,
+  CompilerDeprecationTypes,
+  isCompatEnabled,
+  warnDeprecation
+} from './compat/compatConfig'
 
-type OptionalOptions = 'isNativeTag' | 'isBuiltInComponent'
+type OptionalOptions =
+  | 'whitespace'
+  | 'isNativeTag'
+  | 'isBuiltInComponent'
+  | keyof CompilerCompatOptions
 type MergedParserOptions = Omit<Required<ParserOptions>, OptionalOptions> &
   Pick<ParserOptions, OptionalOptions>
 type AttributeValue =
@@ -62,6 +78,7 @@ export const defaultParserOptions: MergedParserOptions = {
   decodeEntities: (rawText: string): string =>
     rawText.replace(decodeRE, (_, p1) => decodeMap[p1]),
   onError: defaultOnError,
+  onWarn: defaultOnWarn,
   comments: false
 }
 
@@ -108,6 +125,7 @@ export interface ParserContext {
   column: number
   inPre: boolean // HTML <pre> tag, preserve whitespaces
   inVPre: boolean // v-pre, do not process directives and interpolations
+  onWarn: NonNullable<ErrorHandlingOptions['onWarn']>
 }
 
 export function baseParse(
@@ -139,7 +157,8 @@ function createParserContext(
     originalSource: content,
     source: content,
     inPre: false,
-    inVPre: false
+    inVPre: false,
+    onWarn: options.onWarn
   }
 }
 
@@ -230,6 +249,30 @@ function parseChildren(
           }
         } else if (/[a-z]/i.test(s[1])) {
           node = parseElement(context, ancestors)
+
+          // 2.x <template> with no directive compat
+          if (
+            __COMPAT__ &&
+            isCompatEnabled(
+              CompilerDeprecationTypes.COMPILER_NATIVE_TEMPLATE,
+              context
+            ) &&
+            node &&
+            node.tag === 'template' &&
+            !node.props.some(
+              p =>
+                p.type === NodeTypes.DIRECTIVE &&
+                isSpecialTemplateDirective(p.name)
+            )
+          ) {
+            __DEV__ &&
+              warnDeprecation(
+                CompilerDeprecationTypes.COMPILER_NATIVE_TEMPLATE,
+                context,
+                node.loc
+              )
+            node = node.children
+          }
         } else if (s[1] === '?') {
           emitError(
             context,
@@ -263,38 +306,39 @@ function parseChildren(
     }
   }
 
-  // Whitespace management for more efficient output
-  // (same as v2 whitespace: 'condense')
+  // Whitespace handling strategy like v2
   let removedWhitespace = false
-  if (mode !== TextModes.RAWTEXT) {
+  if (mode !== TextModes.RAWTEXT && mode !== TextModes.RCDATA) {
+    const preserve = context.options.whitespace === 'preserve'
     for (let i = 0; i < nodes.length; i++) {
       const node = nodes[i]
       if (!context.inPre && node.type === NodeTypes.TEXT) {
         if (!/[^\t\r\n\f ]/.test(node.content)) {
           const prev = nodes[i - 1]
           const next = nodes[i + 1]
-          // If:
+          // Remove if:
           // - the whitespace is the first or last node, or:
-          // - the whitespace is adjacent to a comment, or:
-          // - the whitespace is between two elements AND contains newline
-          // Then the whitespace is ignored.
+          // - (condense mode) the whitespace is adjacent to a comment, or:
+          // - (condense mode) the whitespace is between two elements AND contains newline
           if (
             !prev ||
             !next ||
-            prev.type === NodeTypes.COMMENT ||
-            next.type === NodeTypes.COMMENT ||
-            (prev.type === NodeTypes.ELEMENT &&
-              next.type === NodeTypes.ELEMENT &&
-              /[\r\n]/.test(node.content))
+            (!preserve &&
+              (prev.type === NodeTypes.COMMENT ||
+                next.type === NodeTypes.COMMENT ||
+                (prev.type === NodeTypes.ELEMENT &&
+                  next.type === NodeTypes.ELEMENT &&
+                  /[\r\n]/.test(node.content))))
           ) {
             removedWhitespace = true
             nodes[i] = null as any
           } else {
-            // Otherwise, condensed consecutive whitespace inside the text
-            // down to a single space
+            // Otherwise, the whitespace is condensed into a single space
             node.content = ' '
           }
-        } else {
+        } else if (!preserve) {
+          // in condense mode, consecutive whitespaces in text are condensed
+          // down to a single space.
           node.content = node.content.replace(/[\t\r\n\f ]+/g, ' ')
         }
       }
@@ -452,6 +496,28 @@ function parseElement(
   const children = parseChildren(context, mode, ancestors)
   ancestors.pop() // 成为父级的任务完成，弹出
 
+  // 2.x inline-template compat
+  if (__COMPAT__) {
+    const inlineTemplateProp = element.props.find(
+      p => p.type === NodeTypes.ATTRIBUTE && p.name === 'inline-template'
+    ) as AttributeNode
+    if (
+      inlineTemplateProp &&
+      checkCompatEnabled(
+        CompilerDeprecationTypes.COMPILER_INLINE_TEMPLATE,
+        context,
+        inlineTemplateProp.loc
+      )
+    ) {
+      const loc = getSelection(context, element.loc.end)
+      inlineTemplateProp.value = {
+        type: NodeTypes.TEXT,
+        content: loc.source,
+        loc
+      }
+    }
+  }
+
   element.children = children
 
   // End tag.
@@ -493,9 +559,19 @@ const isSpecialTemplateDirective = /*#__PURE__*/ makeMap(
  */
 function parseTag(
   context: ParserContext,
+  type: TagType.Start,
+  parent: ElementNode | undefined
+): ElementNode
+function parseTag(
+  context: ParserContext,
+  type: TagType.End,
+  parent: ElementNode | undefined
+): void
+function parseTag(
+  context: ParserContext,
   type: TagType,
   parent: ElementNode | undefined
-): ElementNode {
+): ElementNode | undefined {
   __TEST__ && assert(/^<\/?[a-z]/i.test(context.source))
   __TEST__ &&
     assert(
@@ -526,6 +602,7 @@ function parseTag(
 
   // check v-pre
   if (
+    type === TagType.Start &&
     !context.inVPre &&
     props.some(p => p.type === NodeTypes.DIRECTIVE && p.name === 'pre')
   ) {
@@ -549,15 +626,68 @@ function parseTag(
     advanceBy(context, isSelfClosing ? 2 : 1)
   }
 
+  if (type === TagType.End) {
+    return
+  }
+
+  // 2.x deprecation checks
+  if (
+    __COMPAT__ &&
+    __DEV__ &&
+    isCompatEnabled(
+      CompilerDeprecationTypes.COMPILER_V_IF_V_FOR_PRECEDENCE,
+      context
+    )
+  ) {
+    let hasIf = false
+    let hasFor = false
+    for (let i = 0; i < props.length; i++) {
+      const p = props[i]
+      if (p.type === NodeTypes.DIRECTIVE) {
+        if (p.name === 'if') {
+          hasIf = true
+        } else if (p.name === 'for') {
+          hasFor = true
+        }
+      }
+      if (hasIf && hasFor) {
+        warnDeprecation(
+          CompilerDeprecationTypes.COMPILER_V_IF_V_FOR_PRECEDENCE,
+          context,
+          getSelection(context, start)
+        )
+      }
+    }
+  }
+
   let tagType = ElementTypes.ELEMENT
   const options = context.options
   if (!context.inVPre && !options.isCustomElement(tag)) {
     // 判断v-bind:is
     // 比如<component v-bind:is="currentView"></component>
     // 或者<component :is="componentId"></component>
-    const hasVIs = props.some(
-      p => p.type === NodeTypes.DIRECTIVE && p.name === 'is'
-    )
+    const hasVIs = props.some(p => {
+      if (p.name !== 'is') return
+      // v-is="xxx" (TODO: deprecate)
+      if (p.type === NodeTypes.DIRECTIVE) {
+        return true
+      }
+      // is="vue:xxx"
+      if (p.value && p.value.content.startsWith('vue:')) {
+        return true
+      }
+      // in compat mode, any is usage is considered a component
+      if (
+        __COMPAT__ &&
+        checkCompatEnabled(
+          CompilerDeprecationTypes.COMPILER_IS_ON_ELEMENT,
+          context,
+          p.loc
+        )
+      ) {
+        return true
+      }
+    })
     if (options.isNativeTag && !hasVIs) {
       if (!options.isNativeTag(tag)) tagType = ElementTypes.COMPONENT
     } else if (
@@ -574,11 +704,10 @@ function parseTag(
       tagType = ElementTypes.SLOT
     } else if (
       tag === 'template' &&
-      props.some(p => {
-        return (
+      props.some(
+        p =>
           p.type === NodeTypes.DIRECTIVE && isSpecialTemplateDirective(p.name)
-        )
-      })
+      )
     ) {
       // 注意：只有当template有special template directive（if,else,else-if,for,slot)时，tagType才能为Template
       // 测试用例里面有
@@ -697,17 +826,15 @@ function parseAttribute(
       name
     )!
 
-    // 解析命令
-    const dirName =
+    let dirName =
       match[1] ||
       (startsWith(name, ':') ? 'bind' : startsWith(name, '@') ? 'on' : 'slot')
-
     let arg: ExpressionNode | undefined
 
     if (match[2]) {
       // 如果是以:/@/#开头的命令 match[2]=click等
       const isSlot = dirName === 'slot'
-      const startOffset = name.indexOf(match[2])
+      const startOffset = name.lastIndexOf(match[2])
       const loc = getSelection(
         context,
         getNewPosition(context, start, startOffset),
@@ -760,6 +887,32 @@ function parseAttribute(
       valueLoc.source = valueLoc.source.slice(1, -1)
     }
 
+    const modifiers = match[3] ? match[3].substr(1).split('.') : []
+
+    // 2.x compat v-bind:foo.sync -> v-model:foo
+    if (__COMPAT__ && dirName === 'bind' && arg) {
+      if (
+        modifiers.includes('sync') &&
+        checkCompatEnabled(
+          CompilerDeprecationTypes.COMPILER_V_BIND_SYNC,
+          context,
+          loc,
+          arg.loc.source
+        )
+      ) {
+        dirName = 'model'
+        modifiers.splice(modifiers.indexOf('sync'), 1)
+      }
+
+      if (__DEV__ && modifiers.includes('prop')) {
+        checkCompatEnabled(
+          CompilerDeprecationTypes.COMPILER_V_BIND_PROP,
+          context,
+          loc
+        )
+      }
+    }
+
     return {
       type: NodeTypes.DIRECTIVE,
       name: dirName,
@@ -773,7 +926,7 @@ function parseAttribute(
         loc: value.loc
       },
       arg,
-      modifiers: match[3] ? match[3].substr(1).split('.') : [], //modifiers比如事件的一些.stop, .native等
+      modifiers, //modifiers比如事件的一些.stop, .native等
       loc
     }
   }
