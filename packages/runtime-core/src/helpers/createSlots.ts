@@ -8,6 +8,12 @@ interface CompiledSlotDescriptor {
 
 /**
  * Compiler runtime helper for creating dynamic slots object
+ * 主要是由于v-if和v-slot同时使用的时候，导致slot的结构不稳定
+ * <Comp><template v-slot v-if></template></Comp>
+ * 和
+ * <Comp><template v-if></template></Comp>
+ * 以上2中是不一样的，前者的slot default是动态的，所以是dynamic slot，后者是肯定有slot default
+ * 所以是stable slot，不用显示的去调用createSlots helper
  * createSlots({_:2}, [(_ctx.showIf)
       ? {
           name: "default",

@@ -775,7 +775,7 @@ function baseCreateRenderer(
        * 这个例子中还有个注意点，就是vue的运行机制是拦截，之所以用户change后会在下个promise触发update，是因为onModelValue中改变了value的值
        */
       if (dirs) {
-        // dirs里面包括用户自定义的事件，还包括系统vmodel里面的事件, 详见runtime-dom/src/directives/vModel.ts
+        // 系统vmodel里面的事件, 详见runtime-dom/src/directives/vModel.ts
         invokeDirectiveHook(vnode, null, parentComponent, 'created')
       }
       // props
@@ -1279,7 +1279,7 @@ function baseCreateRenderer(
     isSVG,
     optimized
   ) => {
-    // instance, 主要是从VNode里面拿信息, instanceof instance.type === instanceof vnode.type
+    // instance, 主要是从VNode里面拿信息, instanceof instance.type === instanceof vnode.type (ComponentOptions)
     const instance: ComponentInternalInstance = (initialVNode.component = createComponentInstance(
       initialVNode,
       parentComponent,
@@ -1417,7 +1417,7 @@ function baseCreateRenderer(
         // 这个函数主要是运行render函数，所以需要currentRenderingInstance(=componentInternalInstance)
         // currentRenderingInstance主要是使用在这个里面，用于resolveComponent, resolveDirectives等
         // 运行编译器返回的render函数，确定falloutThrough, 最终返回VNode
-        // 目前处于使用component的环境中，subTree指的是component里面的内容代码，
+        // 目前处于使用component的环境中，subTree指的是component里面的内容代码，即component的template对应的VNode
         const subTree = (instance.subTree = renderComponentRoot(instance))
         if (__DEV__) {
           endMeasure(instance, `render`)

@@ -63,7 +63,7 @@ const directiveImportMap = new WeakMap<DirectiveNode, symbol>()
 // generate a JavaScript AST for this element's codegen
 // 主要是生成vnode，vnode需要的属性等
 // directive和prop的区别，directive是没有相应的transform，会使用withDirective, 比如v-focus，还有内置的v-show
-// @focus -> v-on:focus -> {type: directive, name: 'on', arg: undefined, exp: undefined}
+// @focus -> v-on:focus -> {type: directive, name: 'on', arg: focus, exp: undefined}
 // v-focus -> {type: directive, name: focus, arg: undefined, exp: undefined}
 export const transformElement: NodeTransform = (node, context) => {
   if (

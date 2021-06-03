@@ -121,6 +121,7 @@ export const initSlots = (
       // make compiler marker non-enumerable
       def(children as InternalSlots, '_', type)
     } else {
+      // children肯定是object了，只不过有可能不是compiled slots
       normalizeObjectSlots(children as RawSlots, (instance.slots = {}))
     }
   } else {

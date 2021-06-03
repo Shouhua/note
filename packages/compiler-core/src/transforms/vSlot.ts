@@ -47,6 +47,7 @@ const defaultFallback = createSimpleExpression(`undefined`, false)
 export const trackSlotScopes: NodeTransform = (node, context) => {
   if (
     // v-slot命令只能应用在<template>或者<Component>
+    // https://v3.cn.vuejs.org/guide/component-slots.html#独占默认插槽的缩写语法
     node.type === NodeTypes.ELEMENT &&
     (node.tagType === ElementTypes.COMPONENT ||
       node.tagType === ElementTypes.TEMPLATE)
@@ -149,7 +150,7 @@ export function buildSlots(
 
   // 1. Check for slot with slotProps on component itself.
   //    <Comp v-slot="{ prop }"/>
-  // 和以下生成一样的render
+  // v-slot直接使用在Comp上
   // <Comp><template v-slot="{prop}"/></Comp>
   const onComponentSlot = findDir(node, 'slot', true)
   if (onComponentSlot) {

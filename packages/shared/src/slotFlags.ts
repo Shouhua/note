@@ -10,6 +10,7 @@ export const enum SlotFlags {
    * has conditional structure (v-if, v-for). The parent will need to force
    * the child to update because the slot does not fully capture its dependencies.
    */
+  // 总结来看就是说slot内容结构是不稳定的
   DYNAMIC = 2,
   /**
    * `<slot/>` being forwarded into a child component. Whether the parent needs

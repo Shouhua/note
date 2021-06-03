@@ -79,6 +79,8 @@ export const enum PatchFlags {
    * directives (onVnodeXXX hooks). since every patched vnode checks for refs
    * and onVnodeXXX hooks, it simply marks the vnode so that a parent block
    * will track it.
+   * 比如ref,vnode hooks，这些代码执行是在patch中了，所有会设置need patch放入到block中，即使什么都不diff，她们的代码还是会执行，
+   * 总的来说就是这些她们必须要被执行(必须被block收集)
    */
   NEED_PATCH = 1 << 9,
 

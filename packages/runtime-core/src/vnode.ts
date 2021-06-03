@@ -84,6 +84,9 @@ export type VNodeHook =
   | VNodeUpdateHook[]
 
 // https://github.com/microsoft/TypeScript/issues/33099
+/**
+ * vnode hooks后面会合并到instance的props中
+ */
 export type VNodeProps = {
   key?: string | number
   ref?: VNodeRef
@@ -165,6 +168,7 @@ export interface VNode<
   dynamicChildren: VNode[] | null
 
   // application root node only
+  // 但是ComponentInternalInstance，每个实例都会有appContext
   appContext: AppContext | null
 }
 
