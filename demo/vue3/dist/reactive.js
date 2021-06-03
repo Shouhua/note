@@ -1,10 +1,7 @@
-"use strict";
 /**
  * Map.prototype.forEach((value, key, source) => {})
  * Set.prototype.forEach((value, index, source) => {})
  */
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.watch = exports.computed = exports.effect = exports.ref = exports.reactive = exports.isReactive = void 0;
 let activeEffect;
 let shouldTrack = false; // track里面在set的时候会先取值，所有需要区分
 // target -> (key -> fn)
@@ -58,7 +55,7 @@ function getSymbolByKey(target, key) {
     }
     return keySymbol;
 }
-exports.isReactive = function (target) {
+export const isReactive = function (target) {
     return !!target["_v_isReactive" /* IS_REACTIVE */];
 };
 function baseGetter(target, key, receiver) {
@@ -178,7 +175,6 @@ const reactive = function (raw) {
     }
     return new Proxy(raw, targetType === 1 /* COMMON */ ? baseHanlders : collectionHandlers);
 };
-exports.reactive = reactive;
 const isRef = (source) => {
     return !!source._isRef;
 };
@@ -199,7 +195,6 @@ const ref = function (raw) {
     };
     return r;
 };
-exports.ref = ref;
 // mainly track and trigger
 let uid = 0;
 let effectStack = [];
@@ -233,7 +228,6 @@ const effect = function (callback, options = {}) {
     }
     return runner;
 };
-exports.effect = effect;
 // computed(() => {return a + b})
 // 1. 类似于一个取值函数，但是每次取值的时候，如果值没有改变就会从缓存取值
 // 2. 依赖改变自动更新
@@ -267,7 +261,6 @@ const computed = function (callback) {
         }
     };
 };
-exports.computed = computed;
 const isArray = Array.isArray;
 const getRawType = (source) => String.prototype.slice.call(source, 8, -1);
 const isFunction = (source) => typeof source === 'function';
@@ -317,7 +310,7 @@ const watch = (source, cb, { immediate, deep, flush, onTrack, onTrigger } = EMPT
     if (isRef(source)) {
         getter = () => source.value;
     }
-    else if (exports.isReactive(source)) {
+    else if (isReactive(source)) {
         getter = () => traverse(source);
         deep = true;
     }
@@ -326,7 +319,7 @@ const watch = (source, cb, { immediate, deep, flush, onTrack, onTrigger } = EMPT
             if (isRef(s)) {
                 return s.value;
             }
-            else if (exports.isReactive(s)) {
+            else if (isReactive(s)) {
                 return traverse(s);
             }
             else if (isFunction(s)) {
@@ -376,5 +369,5 @@ const watch = (source, cb, { immediate, deep, flush, onTrack, onTrigger } = EMPT
         stop(runner);
     };
 };
-exports.watch = watch;
+export { reactive, ref, effect, computed, watch };
 //# sourceMappingURL=reactive.js.map

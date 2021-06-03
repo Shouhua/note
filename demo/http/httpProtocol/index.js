@@ -28,6 +28,7 @@
 
 
 性能优化：
+雅虎军规(https://github.com/creeperyang/blog/issues/1)
 1. 外部链接部署到CDN上，比如各种库，不经常变动的css，js等, 压缩gzip
 2. 接着是浏览器阻塞，我们的大量请求能不能发出去，下面使一些优化，但是最好的还是http2的server push
   1）浏览器阻塞(stalled), 代码中可以使用Promise.all()，不用等每个请求处理完毕后在去请求

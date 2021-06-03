@@ -2,11 +2,13 @@
   "extends": "../../tsconfig.json",
   "compilerOptions": {
     "outDir": "./dist",
-    "declaration": true
+    "declaration": true,
+    "module": "ES6"
   },
   "exclude": [
     "./__tests__",
-    "./dist"
+    "./dist",
+    "./reactive1.ts"
   ]
 }
 // tsc -w -p ./demo/vue3
