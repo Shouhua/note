@@ -10,7 +10,8 @@ import {
   assert,
   advancePositionWithMutation,
   advancePositionWithClone,
-  isCoreComponent
+  isCoreComponent,
+  isBindKey
 } from './utils'
 import {
   Namespaces,
@@ -661,57 +662,20 @@ function parseTag(
   }
 
   let tagType = ElementTypes.ELEMENT
-  const options = context.options
-  if (!context.inVPre && !options.isCustomElement(tag)) {
-    // 判断v-bind:is
-    // 比如<component v-bind:is="currentView"></component>
-    // 或者<component :is="componentId"></component>
-    const hasVIs = props.some(p => {
-      if (p.name !== 'is') return
-      // v-is="xxx" (TODO: deprecate)
-      if (p.type === NodeTypes.DIRECTIVE) {
-        return true
-      }
-      // is="vue:xxx"
-      if (p.value && p.value.content.startsWith('vue:')) {
-        return true
-      }
-      // in compat mode, any is usage is considered a component
-      if (
-        __COMPAT__ &&
-        checkCompatEnabled(
-          CompilerDeprecationTypes.COMPILER_IS_ON_ELEMENT,
-          context,
-          p.loc
-        )
-      ) {
-        return true
-      }
-    })
-    if (options.isNativeTag && !hasVIs) {
-      if (!options.isNativeTag(tag)) tagType = ElementTypes.COMPONENT
-    } else if (
-      hasVIs || // 有:is或者v-is='comp'不管tag是什么，tag type直接就是Component
-      isCoreComponent(tag) ||
-      (options.isBuiltInComponent && options.isBuiltInComponent(tag)) ||
-      /^[A-Z]/.test(tag) || // 或者tag以大写开头，tag type也是Componenet
-      tag === 'component'
-    ) {
-      tagType = ElementTypes.COMPONENT
-    }
-
+  if (!context.inVPre) {
     if (tag === 'slot') {
       tagType = ElementTypes.SLOT
-    } else if (
-      tag === 'template' &&
-      props.some(
-        p =>
-          p.type === NodeTypes.DIRECTIVE && isSpecialTemplateDirective(p.name)
-      )
-    ) {
-      // 注意：只有当template有special template directive（if,else,else-if,for,slot)时，tagType才能为Template
-      // 测试用例里面有
-      tagType = ElementTypes.TEMPLATE
+    } else if (tag === 'template') {
+      if (
+        props.some(
+          p =>
+            p.type === NodeTypes.DIRECTIVE && isSpecialTemplateDirective(p.name)
+        )
+      ) {
+        tagType = ElementTypes.TEMPLATE
+      }
+    } else if (isComponent(tag, props, context)) {
+      tagType = ElementTypes.COMPONENT
     }
   }
 
@@ -725,6 +689,65 @@ function parseTag(
     children: [],
     loc: getSelection(context, start),
     codegenNode: undefined // to be created during transform phase
+  }
+}
+
+function isComponent(
+  tag: string,
+  props: (AttributeNode | DirectiveNode)[],
+  context: ParserContext
+) {
+  const options = context.options
+  if (options.isCustomElement(tag)) {
+    return false
+  }
+  if (
+    tag === 'component' ||
+    /^[A-Z]/.test(tag) ||
+    isCoreComponent(tag) ||
+    (options.isBuiltInComponent && options.isBuiltInComponent(tag)) ||
+    (options.isNativeTag && !options.isNativeTag(tag))
+  ) {
+    return true
+  }
+  // at this point the tag should be a native tag, but check for potential "is"
+  // casting
+  for (let i = 0; i < props.length; i++) {
+    const p = props[i]
+    if (p.type === NodeTypes.ATTRIBUTE) {
+      if (p.name === 'is' && p.value) {
+        if (p.value.content.startsWith('vue:')) {
+          return true
+        } else if (
+          __COMPAT__ &&
+          checkCompatEnabled(
+            CompilerDeprecationTypes.COMPILER_IS_ON_ELEMENT,
+            context,
+            p.loc
+          )
+        ) {
+          return true
+        }
+      }
+    } else {
+      // directive
+      // v-is (TODO Deprecate)
+      if (p.name === 'is') {
+        return true
+      } else if (
+        // :is on plain element - only treat as component in compat mode
+        p.name === 'bind' &&
+        isBindKey(p.arg, 'is') &&
+        __COMPAT__ &&
+        checkCompatEnabled(
+          CompilerDeprecationTypes.COMPILER_IS_ON_ELEMENT,
+          context,
+          p.loc
+        )
+      ) {
+        return true
+      }
+    }
   }
 }
 
