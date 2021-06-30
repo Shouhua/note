@@ -201,7 +201,7 @@ export function trigger(
     return
   }
 
-  const effects = new Set<ReactiveEffect>() // NOTICE: watch进入schedule后cleanup后在运行不用产生死循环了
+  const effects = new Set<ReactiveEffect>() // NOTICE: watch进入schedule, 然后cleanup后再运行不用产生死循环了
   // 当需要触发其他类型的effect时候使用，比如add或者delete需要触发length收集到的effect
   const add = (effectsToAdd: Set<ReactiveEffect> | undefined) => {
     if (effectsToAdd) {
@@ -237,7 +237,7 @@ export function trigger(
     switch (type) {
       case TriggerOpTypes.ADD:
         if (!isArray(target)) {
-          add(depsMap.get(ITERATE_KEY))
+          add(depsMap.get(ITERATE_KEY)) // add会修改map或set的lenght，length对应的是ITERATE_KEY，所以要添加effect
           if (isMap(target)) {
             add(depsMap.get(MAP_KEY_ITERATE_KEY))
           }

@@ -36,6 +36,7 @@ export const patchProp: DOMRendererOptions['patchProp'] = (
       if (isOn(key)) {
         // ignore v-model listeners
         if (!isModelListener(key)) {
+          // onUpdate:custom
           patchEvent(el, key, prevValue, nextValue, parentComponent)
         }
       } else if (shouldSetAsProp(el, key, nextValue, isSVG)) {

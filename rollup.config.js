@@ -8,6 +8,8 @@ if (!process.env.TARGET) {
   throw new Error('TARGET package must be specified via --environment flag.')
 }
 
+console.log(`11111111111111: ${process.env.FORMATS}`)
+
 const masterVersion = require('./package.json').version
 const packagesDir = path.resolve(__dirname, 'packages')
 const packageDir = path.resolve(packagesDir, process.env.TARGET)
@@ -76,6 +78,7 @@ if (process.env.NODE_ENV === 'production') {
 export default packageConfigs
 
 function createConfig(format, output, plugins = []) {
+  // cjs, dist/*
   if (!output) {
     console.log(require('chalk').yellow(`invalid format: "${format}"`))
     process.exit(1)

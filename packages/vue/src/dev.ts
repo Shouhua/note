@@ -2,7 +2,7 @@ import { initCustomFormatter } from '@vue/runtime-dom'
 
 export function initDev() {
   if (__BROWSER__) {
-    // global / esm build
+    // global / esm build(esm-bundler, esm-browser)
     if (!__ESM_BUNDLER__) {
       console.info(
         `You are running a development build of Vue.\n` +

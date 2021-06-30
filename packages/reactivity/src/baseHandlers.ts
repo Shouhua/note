@@ -50,6 +50,9 @@ const arrayInstrumentations: Record<string, Function> = {}
   const method = Array.prototype[key] as any
   arrayInstrumentations[key] = function(this: unknown[], ...args: unknown[]) {
     const arr = toRaw(this)
+    // includes, indexOf, lastIndexOf将所有的array的key和lenght加入targetMap中的depsMap
+    // 比如数组["helo", 1], depsMap中key会增加"0"， "1"， "lenght"
+    // effect(() => { a.includes('abc')}) 当后面a.push('world')时候会触发effect
     for (let i = 0, l = this.length; i < l; i++) {
       track(arr, TrackOpTypes.GET, i + '')
     }

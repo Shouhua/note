@@ -22,6 +22,16 @@ const { gzipSync } = require('zlib')
 const { compress } = require('brotli')
 const { targets: allTargets, fuzzyMatchTarget } = require('./utils')
 
+/**
+ * target 默认参数
+ * formats formats || f
+ * devOnly devOnly || d
+ * prodOnly prodOnly || d
+ * sourceMap sourcemap || s
+ * isRelease release
+ * buildTypes t || types || isRealease
+ * buildAllMactching all || a
+ */
 const args = require('minimist')(process.argv.slice(2))
 const targets = args._
 const formats = args.formats || args.f
@@ -88,6 +98,7 @@ async function build(target) {
   const env =
     (pkg.buildOptions && pkg.buildOptions.env) ||
     (devOnly ? 'development' : 'production')
+  console.log(`11111111111 formats: ${formats}`)
   await execa(
     'rollup',
     [

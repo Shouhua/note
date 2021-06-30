@@ -181,7 +181,7 @@ interface IterationResult {
   done: boolean
 }
 
-function createIterableMethod(
+function createIterableMethod( // keys, values, entries, Symbol.iterator均返回的是Iterator对象
   method: string | symbol,
   isReadonly: boolean,
   isShallow: boolean
@@ -196,7 +196,7 @@ function createIterableMethod(
     const isPair =
       method === 'entries' || (method === Symbol.iterator && targetIsMap)
     const isKeyOnly = method === 'keys' && targetIsMap
-    const innerIterator = target[method](...args)
+    const innerIterator = target[method](...args) // 原生返回的是Iterator对象
     const wrap = isShallow ? toShallow : isReadonly ? toReadonly : toReactive
     !isReadonly &&
       track(

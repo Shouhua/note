@@ -876,6 +876,7 @@ function baseCreateRenderer(
     }
   }
 
+  // https://github.com/vuejs/vue-next/pull/3374
   const setScopeId = (
     el: RendererElement,
     vnode: VNode,
