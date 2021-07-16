@@ -427,6 +427,8 @@ function hasPropsChanged(
   }
   for (let i = 0; i < nextKeys.length; i++) {
     const key = nextKeys[i]
+    // should not update Component if only changed props are declared emit listeners #2072
+    // 可以参见测试用例
     if (
       nextProps[key] !== prevProps[key] &&
       !isEmitListener(emitsOptions, key)

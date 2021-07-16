@@ -462,11 +462,7 @@ export function createComponentInstance(
 ) {
   const type = vnode.type as ConcreteComponent
   // inherit parent app context - or - if root, adopt from root vnode
-  /**
-   * 因为component先得到vnode，然后在mount component时候才开始创建comp instance赋给vnode.component(ComponentInternalInstance),
-   * 需要区分的是vnode.type如果是component就会是vnode.type(ComponentOptions)
-   * 没毛病，root comp没有parent，可以从root vnode中获得，此处传递特意在vnode中添加了个appContext, 而且只给root vnode使用, 可见apiCreateApp.ts中的mount
-   */
+  // component instance都会有appContext属性，但是只有root vnode才有appContext，只是为了传递给root component
   const appContext =
     (parent ? parent.appContext : vnode.appContext) || emptyAppContext
 

@@ -49,6 +49,7 @@ export interface CssVarsPluginOptions {
   isProd: boolean
 }
 
+// postcss plugin
 export const cssVarsPlugin: PluginCreator<CssVarsPluginOptions> = opts => {
   const { id, isProd } = opts!
   return {

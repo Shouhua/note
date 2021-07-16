@@ -51,6 +51,7 @@ export function injectHook(
   } else if (__DEV__) {
     const apiName = toHandlerKey(ErrorTypeStrings[type].replace(/ hook$/, ''))
     warn(
+      // async setup issue(https://github.com/vuejs/rfcs/discussions/234)
       `${apiName} is called when there is no active component instance to be ` +
         `associated with. ` +
         `Lifecycle injection APIs can only be used during execution of setup().` +

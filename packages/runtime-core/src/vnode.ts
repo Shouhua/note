@@ -381,6 +381,7 @@ function _createVNode(
     // createVNode receiving an existing vnode. This happens in cases like
     // <component :is="vnode"/>
     // #2078 make sure to merge refs during the clone instead of overwriting it
+    // 还有情况比如[v1, v1, v1], 这种情况也会clone vnode, 详见renderComponent.spec.ts的测试用例
     const cloned = cloneVNode(type, props, true /* mergeRef: true */)
     if (children) {
       normalizeChildren(cloned, children)

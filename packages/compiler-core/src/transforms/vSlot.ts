@@ -76,7 +76,7 @@ export const trackSlotScopes: NodeTransform = (node, context) => {
 export const trackVForSlotScopes: NodeTransform = (node, context) => {
   let vFor
   if (
-    // <template v-for="item in list" v-slot/>
+    // <Comp><template v-for="item in list" v-slot></template></Comp>
     isTemplateNode(node) &&
     node.props.some(isVSlot) &&
     (vFor = findDir(node, 'for'))

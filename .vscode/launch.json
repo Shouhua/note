@@ -26,5 +26,12 @@
       "program": "${workspaceFolder}/node_modules/jest/bin/jest",
       "outputCapture": "std"
     },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "environment",
+      // "runtimeArgs": ["-r", "esm"],
+      "program": "${workspaceFolder}/scripts/environment.js"
+    },
   ]
 }

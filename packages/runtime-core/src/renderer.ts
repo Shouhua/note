@@ -1614,6 +1614,11 @@ function baseCreateRenderer(
         // updateComponent
         // This is triggered by mutation of component's own state (next: null)
         // OR parent calling processComponent (next: VNode)
+        /**
+         * 2种情况：
+         * 1. 比如自身属性变化了，这时next = null
+         * 2. 父组件更新时候，会去判断自组件是否需要更新，调用shouldUpdateComponent, 如果需要更新就设置instance.next = newVNode
+         */
         let { next, bu, u, parent, vnode } = instance
         let originNext = next
         let vnodeHook: VNodeHook | null | undefined
@@ -1678,6 +1683,8 @@ function baseCreateRenderer(
           // self-triggered update. In case of HOC, update parent component
           // vnode el. HOC is indicated by parent instance's subTree pointing
           // to child component's vnode
+          // 当parent组件的subTree指向child组件的vnode时候，需要修改parent组件的element
+          // 见测试用例renderComponent.spec.ts
           updateHOCHostEl(instance, nextTree.el)
         }
         // updated hook

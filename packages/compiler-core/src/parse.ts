@@ -180,7 +180,6 @@ function parseChildren(
     if (mode === TextModes.DATA || mode === TextModes.RCDATA) {
       // 正常的标签div，textarea，title等
       if (!context.inVPre && startsWith(s, context.options.delimiters[0])) {
-        // '{{'
         /**
          * {
             type: NodeTypes.INTERPOLATION,
@@ -315,6 +314,7 @@ function parseChildren(
       const node = nodes[i]
       if (!context.inPre && node.type === NodeTypes.TEXT) {
         if (!/[^\t\r\n\f ]/.test(node.content)) {
+          // \f 换页, 如果全是这些字符组成的
           const prev = nodes[i - 1]
           const next = nodes[i + 1]
           // Remove if:
@@ -358,7 +358,7 @@ function parseChildren(
       // https://html.spec.whatwg.org/multipage/grouping-content.html#the-pre-element
       const first = nodes[0]
       if (first && first.type === NodeTypes.TEXT) {
-        first.content = first.content.replace(/^\r?\n/, '')
+        first.content = first.content.replace(/^\r?\n/, '') // windows: \r\n, linux/mac: \n
       }
     }
   }
@@ -849,6 +849,7 @@ function parseAttribute(
       name
     )!
 
+    // v-bind, v-on, v-slot
     let dirName =
       match[1] ||
       (startsWith(name, ':') ? 'bind' : startsWith(name, '@') ? 'on' : 'slot')
