@@ -824,6 +824,18 @@ const emit = defineEmits(['a', 'b'])
       expect(content).toMatch(`emit: ((e: 'foo' | 'bar') => void),`)
       expect(content).toMatch(`emits: ["foo", "bar"] as unknown as undefined`)
     })
+
+    test('runtime Enum', () => {
+      const { content, bindings } = compile(
+        `<script setup lang="ts">
+        enum Foo { A = 123 }
+        </script>`
+      )
+      assertCode(content)
+      expect(bindings).toStrictEqual({
+        Foo: BindingTypes.SETUP_CONST
+      })
+    })
   })
 
   describe('async/await detection', () => {
@@ -835,6 +847,9 @@ const emit = defineEmits(['a', 'b'])
       const { content } = compile(`<script setup>${code}</script>`, {
         refSugar: true
       })
+      if (shouldAsync) {
+        expect(content).toMatch(`let __temp, __restore`)
+      }
       expect(content).toMatch(`${shouldAsync ? `async ` : ``}setup(`)
       if (typeof expected === 'string') {
         expect(content).toMatch(expected)
@@ -844,28 +859,35 @@ const emit = defineEmits(['a', 'b'])
     }
 
     test('expression statement', () => {
-      assertAwaitDetection(`await foo`, `await _withAsyncContext(foo)`)
+      assertAwaitDetection(
+        `await foo`,
+        `;(([__temp,__restore]=_withAsyncContext(()=>(foo))),__temp=await __temp,__restore())`
+      )
     })
 
     test('variable', () => {
       assertAwaitDetection(
         `const a = 1 + (await foo)`,
-        `1 + (await _withAsyncContext(foo))`
+        `1 + ((([__temp,__restore]=_withAsyncContext(()=>(foo))),__temp=await __temp,__restore(),__temp))`
       )
     })
 
     test('ref', () => {
       assertAwaitDetection(
         `ref: a = 1 + (await foo)`,
-        `1 + (await _withAsyncContext(foo))`
+        `1 + ((([__temp,__restore]=_withAsyncContext(()=>(foo))),__temp=await __temp,__restore(),__temp))`
       )
     })
 
     test('nested statements', () => {
       assertAwaitDetection(`if (ok) { await foo } else { await bar }`, code => {
         return (
-          code.includes(`await _withAsyncContext(foo)`) &&
-          code.includes(`await _withAsyncContext(bar)`)
+          code.includes(
+            `;(([__temp,__restore]=_withAsyncContext(()=>(foo))),__temp=await __temp,__restore())`
+          ) &&
+          code.includes(
+            `;(([__temp,__restore]=_withAsyncContext(()=>(bar))),__temp=await __temp,__restore())`
+          )
         )
       })
     })

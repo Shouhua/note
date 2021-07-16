@@ -156,9 +156,8 @@ export interface RendererOptions<
     content: string,
     parent: HostElement,
     anchor: HostNode | null,
-    isSVG: boolean,
-    cached?: [HostNode, HostNode | null] | null
-  ): HostElement[]
+    isSVG: boolean
+  ): [HostNode, HostNode]
 }
 
 // Renderer Node can technically be any object in the context of core renderer
@@ -513,7 +512,7 @@ function baseCreateRenderer(
     parentSuspense = null,
     isSVG = false,
     slotScopeIds = null,
-    optimized = false
+    optimized = __DEV__ && isHmrUpdating ? false : !!n2.dynamicChildren
   ) => {
     // patching & not same type, unmount old tree
     // 不是相同的，直接先干掉old tree
@@ -668,11 +667,7 @@ function baseCreateRenderer(
       n2.children as string,
       container,
       anchor,
-      isSVG,
-      // pass cached nodes if the static node is being mounted multiple times
-      // so that runtime-dom can simply cloneNode() instead of inserting new
-      // HTML
-      n2.el && [n2.el, n2.anchor]
+      isSVG
     )
   }
 
@@ -808,7 +803,7 @@ function baseCreateRenderer(
           parentSuspense,
           isSVG && type !== 'foreignObject',
           slotScopeIds,
-          optimized || !!vnode.dynamicChildren
+          optimized
         )
       }
 

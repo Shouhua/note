@@ -58,7 +58,9 @@ export {
   withAsyncContext,
   // deprecated
   defineEmit,
-  useContext
+  useContext,
+  useAttrs,
+  useSlots
 } from './apiSetupHelpers'
 
 // Advanced API ----------------------------------------------------------------
@@ -200,7 +202,8 @@ export {
 export { EmitsOptions, ObjectEmitsOptions } from './componentEmits'
 export {
   ComponentPublicInstance,
-  ComponentCustomProperties
+  ComponentCustomProperties,
+  CreateComponentPublicInstance
 } from './componentPublicInstance'
 export {
   Renderer,

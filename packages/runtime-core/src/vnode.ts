@@ -177,7 +177,7 @@ export interface VNode<
   anchor: HostNode | null // fragment anchor
   target: HostElement | null // teleport target
   targetAnchor: HostNode | null // teleport target anchor
-  staticCount: number // number of elements contained in a static vnode
+  staticCount?: number // number of elements contained in a static vnode
 
   // suspense
   suspense: SuspenseBoundary | null
@@ -469,7 +469,6 @@ function _createVNode(
     anchor: null,
     target: null,
     targetAnchor: null,
-    staticCount: 0,
     shapeFlag,
     patchFlag,
     dynamicProps,

@@ -1,5 +1,10 @@
 import MagicString from 'magic-string'
-import { BindingMetadata, BindingTypes, UNREF } from '@vue/compiler-core'
+import {
+  BindingMetadata,
+  BindingTypes,
+  locStub,
+  UNREF
+} from '@vue/compiler-core'
 import {
   ScriptSetupTextRanges,
   SFCDescriptor,
@@ -27,7 +32,8 @@ import {
   LabeledStatement,
   CallExpression,
   RestElement,
-  TSInterfaceBody
+  TSInterfaceBody,
+  AwaitExpression
 } from '@babel/types'
 import { walk } from 'estree-walker'
 import { RawSourceMap } from 'source-map'
@@ -126,7 +132,7 @@ export function compileScript(
       type: 'script',
       content: '',
       attrs: {},
-      loc: null as any
+      loc: locStub
     }
   }
 
@@ -145,7 +151,7 @@ export function compileScript(
   // TODO remove on 3.2
   if (sfc.template && sfc.template.attrs['inherit-attrs'] === 'false') {
     warnOnce(
-      `experimetnal support for <template inherit-attrs="false"> support has ` +
+      `Experimental support for <template inherit-attrs="false"> support has ` +
         `been removed. Use a <script> block with \`export default\` to ` +
         `declare options.`
     )
@@ -160,7 +166,10 @@ export function compileScript(
     scriptLang === 'tsx' ||
     scriptSetupLang === 'ts' ||
     scriptSetupLang === 'tsx'
-  const plugins: ParserPlugin[] = [...babelParserDefaultPlugins, 'jsx']
+  const plugins: ParserPlugin[] = [...babelParserDefaultPlugins]
+  if (!isTS || scriptLang === 'tsx' || scriptSetupLang === 'tsx') {
+    plugins.push('jsx')
+  }
   if (options.babelParserPlugins) plugins.push(...options.babelParserPlugins)
   if (isTS) plugins.push('typescript', 'decorators-legacy')
 
@@ -480,6 +489,25 @@ export function compileScript(
         )
       }
     })
+  }
+
+  /**
+   * await foo()
+   * -->
+   * (([__temp, __restore] = withAsyncContext(() => foo())),__temp=await __temp,__restore(),__temp)
+   */
+  function processAwait(node: AwaitExpression, isStatement: boolean) {
+    s.overwrite(
+      node.start! + startOffset,
+      node.argument.start! + startOffset,
+      `${isStatement ? `;` : ``}(([__temp,__restore]=${helper(
+        `withAsyncContext`
+      )}(()=>(`
+    )
+    s.appendLeft(
+      node.end! + startOffset,
+      `))),__temp=await __temp,__restore()${isStatement ? `` : `,__temp`})`
+    )
   }
 
   function processRefExpression(exp: Expression, statement: LabeledStatement) {
@@ -937,20 +965,6 @@ export function compileScript(
       walkDeclaration(node, setupBindings, userImportAlias)
     }
 
-    // Type declarations
-    if (node.type === 'VariableDeclaration' && node.declare) {
-      s.remove(start, end)
-    }
-
-    // move all type declarations to outer scope
-    if (
-      node.type.startsWith('TS') ||
-      (node.type === 'ExportNamedDeclaration' && node.exportKind === 'type')
-    ) {
-      recordType(node, declaredTypes)
-      s.move(start, end, 0)
-    }
-
     // walk statements & named exports / variable declarations for top level
     // await
     if (
@@ -958,17 +972,13 @@ export function compileScript(
       node.type.endsWith('Statement')
     ) {
       ;(walk as any)(node, {
-        enter(node: Node) {
-          if (isFunction(node)) {
+        enter(child: Node, parent: Node) {
+          if (isFunction(child)) {
             this.skip()
           }
-          if (node.type === 'AwaitExpression') {
+          if (child.type === 'AwaitExpression') {
             hasAwait = true
-            s.prependRight(
-              node.argument.start! + startOffset,
-              helper(`withAsyncContext`) + `(`
-            )
-            s.appendLeft(node.argument.end! + startOffset, `)`)
+            processAwait(child, parent.type === 'ExpressionStatement')
           }
         }
       })
@@ -985,6 +995,24 @@ export function compileScript(
           `consult the updated RFC at https://github.com/vuejs/rfcs/pull/227.`,
         node
       )
+    }
+
+    if (isTS) {
+      // runtime enum
+      if (node.type === 'TSEnumDeclaration' && !node.const) {
+        registerBinding(setupBindings, node.id, BindingTypes.SETUP_CONST)
+      }
+
+      // move all Type declarations to outer scope
+      if (
+        node.type.startsWith('TS') ||
+        (node.type === 'ExportNamedDeclaration' &&
+          node.exportKind === 'type') ||
+        (node.type === 'VariableDeclaration' && node.declare)
+      ) {
+        recordType(node, declaredTypes)
+        s.move(start, end, 0)
+      }
     }
   }
 
@@ -1141,6 +1169,11 @@ export function compileScript(
   // can use it directly
   if (propsIdentifier) {
     s.prependRight(startOffset, `\nconst ${propsIdentifier} = __props`)
+  }
+  // inject temp variables for async context preservation
+  if (hasAwait) {
+    const any = isTS ? `:any` : ``
+    s.prependRight(startOffset, `\nlet __temp${any}, __restore${any}\n`)
   }
 
   const destructureElements =
@@ -1699,6 +1732,9 @@ export function walkIdentifiers(
   ;(walk as any)(root, {
     enter(node: Node & { scopeIds?: Set<string> }, parent: Node | undefined) {
       parent && parentStack.push(parent)
+      if (node.type.startsWith('TS')) {
+        return this.skip()
+      }
       if (node.type === 'Identifier') {
         if (
           !knownIds[node.name] &&
