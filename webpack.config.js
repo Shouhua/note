@@ -9,10 +9,11 @@ module.exports = {
     path: path.resolve(__dirname, 'dist'),
     filename: '[name].[hash:8].js'
   },
-  devtool: 'cheap-module-eval-source-map',
+  devtool: 'cheap-module-source-map',
   devServer: {
     stats: 'minimal',
     contentBase: path.resolve(__dirname, 'dist'),
+    port: 9000
   },
   resolve: {
     extensions: ['.vue', '.js']
@@ -21,15 +22,21 @@ module.exports = {
     rules: [
       {
         test: /\.vue$/,
+        exclude: /node_modules|vue-next|demo/,
         loader: 'vue-loader'
       },
       {
-        test: /\.ts$/,
-        loader: 'ts-loader'
-      }
+        test: /\.js$/,
+        exclude: /node_modules|vue-next|demo/,
+        loader: 'babel-loader'
+      },
+      // {
+      //   test: /\.ts$/,
+      //   loader: 'ts-loader'
+      // },
       {
         test: /\.css$/,
-        use: ['style-loader', 'css-loader']
+        use: ['style-loader', 'css-loader', 'sass-loader', 'postcss-loader']
       }
     ]
   },

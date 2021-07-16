@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Document</title>
+</head>
+<body>
+	<div id="app"></div>
+	<script src="https://unpkg.com/vue@next"></script>
+	<script>
+		const { createApp, ref, h, Fragment } = Vue
+		const Hello = {
+			props: {
+				greet: {
+					type: Number,
+					default: 100
+				}
+			},
+			setup(props, {slots, attrs, emit}) {
+				return () => h('div', props.greet)
+			}
+		}
+
+		const App = {
+			setup(props, {slots, attrs, emit}) {
+				let greet = ref(1)
+				const handleClick = () => greet.value += 1
+				return () => {
+					return h(Fragment, null, [
+						h('button', {onClick: handleClick}, 'Change Greet'),
+						h(Hello, { greet: ref(greet.value) })
+					])
+				}
+			}
+		}
+
+		const app = createApp(App)
+		app.config.performance = true
+		app.config.warnHandler = (msg, instance, trace) => {
+			console.log(`[Custom Warn Handler]: ${msg}`)
+			console.log(`[Custom Warn Handler]: ${instance}`)
+			console.log(`[Custom Warn Handler]: ${trace}`)
+		}
+		console.log('App:');
+		console.log(app);
+		app.mount('#app')
+	</script>
+</body>
+</html>
