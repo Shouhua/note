@@ -9,16 +9,14 @@ const seen = new WeakSet()
 
 export const transformOnce: NodeTransform = (node, context) => {
   if (node.type === NodeTypes.ELEMENT && findDir(node, 'once', true)) {
-    if (seen.has(node)) {
-      // 嵌套v-once，子代中跳过
+    if (seen.has(node) || context.inVOnce) {
       return
     }
     seen.add(node)
-    // TODO： 这行是不是是可以放在有codegenNode下面，有种情况<template v-once v-if="true" v-slot/>
-    // 这个时候是不会走vIf.ts的transfrom的，所以回来的时候也不会生成js_cache_expression，但是还是会有set_block_tracking的heler，
-    // 在生成的render中还是会”import setBlockTracking as _setBlockTracking“
+    context.inVOnce = true
     context.helper(SET_BLOCK_TRACKING)
     return () => {
+      context.inVOnce = false
       const cur = context.currentNode as ElementNode | IfNode | ForNode
       if (cur.codegenNode) {
         cur.codegenNode = context.cache(cur.codegenNode, true /* isVNode */)

@@ -66,9 +66,10 @@ export const vModelText: ModelDirective<
 > = {
   created(el, { modifiers: { lazy, trim, number } }, vnode) {
     el._assign = getModelAssigner(vnode)
-    const castToNumber = number || el.type === 'number'
     // https://developer.mozilla.org/zh-CN/docs/Web/Events/change
     // input的change事件是元素的值发生改变并且提交的时候(比如按enter健)才会触发
+    const castToNumber =
+      number || (vnode.props && vnode.props.type === 'number')
     addEventListener(el, lazy ? 'change' : 'input', e => {
       if ((e.target as any).composing) return
       let domValue: string | number = el.value
@@ -118,6 +119,8 @@ export const vModelText: ModelDirective<
 }
 
 export const vModelCheckbox: ModelDirective<HTMLInputElement> = {
+  // #4096 array checkboxes need to be deep traversed
+  deep: true,
   created(el, _, vnode) {
     el._assign = getModelAssigner(vnode)
     addEventListener(el, 'change', () => {
@@ -191,14 +194,15 @@ export const vModelRadio: ModelDirective<HTMLInputElement> = {
 }
 
 export const vModelSelect: ModelDirective<HTMLSelectElement> = {
+  // <select multiple> value need to be deep traversed
+  deep: true,
   created(el, { value, modifiers: { number } }, vnode) {
     const isSetModel = isSet(value)
     addEventListener(el, 'change', () => {
       const selectedVal = Array.prototype.filter
         .call(el.options, (o: HTMLOptionElement) => o.selected)
-        .map(
-          (o: HTMLOptionElement) =>
-            number ? toNumber(getValue(o)) : getValue(o)
+        .map((o: HTMLOptionElement) =>
+          number ? toNumber(getValue(o)) : getValue(o)
         )
       el._assign(
         el.multiple

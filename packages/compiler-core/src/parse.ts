@@ -80,7 +80,7 @@ export const defaultParserOptions: MergedParserOptions = {
     rawText.replace(decodeRE, (_, p1) => decodeMap[p1]),
   onError: defaultOnError,
   onWarn: defaultOnWarn,
-  comments: false
+  comments: __DEV__
 }
 
 // https://www.hackersb.cn/hacker/85.html
@@ -146,9 +146,14 @@ function createParserContext(
   rawOptions: ParserOptions
 ): ParserContext {
   const options = extend({}, defaultParserOptions)
-  for (const key in rawOptions) {
+
+  let key: keyof ParserOptions
+  for (key in rawOptions) {
     // @ts-ignore
-    options[key] = rawOptions[key] || defaultParserOptions[key]
+    options[key] =
+      rawOptions[key] === undefined
+        ? defaultParserOptions[key]
+        : rawOptions[key]
   }
   return {
     options,
@@ -309,7 +314,7 @@ function parseChildren(
   // Whitespace handling strategy like v2
   let removedWhitespace = false
   if (mode !== TextModes.RAWTEXT && mode !== TextModes.RCDATA) {
-    const preserve = context.options.whitespace === 'preserve'
+    const shouldCondense = context.options.whitespace !== 'preserve'
     for (let i = 0; i < nodes.length; i++) {
       const node = nodes[i]
       if (!context.inPre && node.type === NodeTypes.TEXT) {
@@ -324,7 +329,7 @@ function parseChildren(
           if (
             !prev ||
             !next ||
-            (!preserve &&
+            (shouldCondense &&
               (prev.type === NodeTypes.COMMENT ||
                 next.type === NodeTypes.COMMENT ||
                 (prev.type === NodeTypes.ELEMENT &&
@@ -337,18 +342,14 @@ function parseChildren(
             // Otherwise, the whitespace is condensed into a single space
             node.content = ' '
           }
-        } else if (!preserve) {
+        } else if (shouldCondense) {
           // in condense mode, consecutive whitespaces in text are condensed
           // down to a single space.
           node.content = node.content.replace(/[\t\r\n\f ]+/g, ' ')
         }
       }
-      // also remove comment nodes in prod by default
-      if (
-        !__DEV__ &&
-        node.type === NodeTypes.COMMENT &&
-        !context.options.comments
-      ) {
+      // Remove comment nodes if desired by configuration.
+      else if (node.type === NodeTypes.COMMENT && !context.options.comments) {
         removedWhitespace = true
         nodes[i] = null as any
       }
@@ -488,6 +489,13 @@ function parseElement(
 
   // 如果是self closing，就没有必要去parse children和end tag了
   if (element.isSelfClosing || context.options.isVoidTag(element.tag)) {
+    // #4030 self-closing <pre> tag
+    if (isPreBoundary) {
+      context.inPre = false
+    }
+    if (isVPreBoundary) {
+      context.inVPre = false
+    }
     return element
   }
 
@@ -593,13 +601,13 @@ function parseTag(
   const cursor = getCursor(context)
   const currentSource = context.source
 
-  // Attributes.
-  let props = parseAttributes(context, type)
-
   // check <pre> tag
   if (context.options.isPreTag(tag)) {
     context.inPre = true
   }
+
+  // Attributes.
+  let props = parseAttributes(context, type)
 
   // check v-pre
   if (
@@ -844,15 +852,20 @@ function parseAttribute(
    * v-on:[event] 动态事件名
    * <Comp v-slot:named="{ foo }">{{ foo }}{{ bar }}</Comp>
    */
-  if (!context.inVPre && /^(v-|:|@|#)/.test(name)) {
-    const match = /(?:^v-([a-z0-9-]+))?(?:(?::|^@|^#)(\[[^\]]+\]|[^\.]+))?(.+)?$/i.exec(
-      name
-    )!
+  if (!context.inVPre && /^(v-|:|\.|@|#)/.test(name)) {
+    const match =
+      /(?:^v-([a-z0-9-]+))?(?:(?::|^\.|^@|^#)(\[[^\]]+\]|[^\.]+))?(.+)?$/i.exec(
+        name
+      )!
 
-    // v-bind, v-on, v-slot
+    let isPropShorthand = startsWith(name, '.')
     let dirName =
       match[1] ||
-      (startsWith(name, ':') ? 'bind' : startsWith(name, '@') ? 'on' : 'slot')
+      (isPropShorthand || startsWith(name, ':')
+        ? 'bind'
+        : startsWith(name, '@')
+        ? 'on'
+        : 'slot')
     let arg: ExpressionNode | undefined
 
     if (match[2]) {
@@ -912,6 +925,7 @@ function parseAttribute(
     }
 
     const modifiers = match[3] ? match[3].substr(1).split('.') : []
+    if (isPropShorthand) modifiers.push('prop')
 
     // 2.x compat v-bind:foo.sync -> v-model:foo
     if (__COMPAT__ && dirName === 'bind' && arg) {

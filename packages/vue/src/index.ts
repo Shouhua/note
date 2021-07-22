@@ -89,9 +89,9 @@ function compileToFunction(
     非global：需要引入
    */
   // 使用new Function是因为函数体是不确定的，所有使用这种方式
-  const render = (__GLOBAL__
-    ? new Function(code)()
-    : new Function('Vue', code)(runtimeDom)) as RenderFunction
+  const render = (
+    __GLOBAL__ ? new Function(code)() : new Function('Vue', code)(runtimeDom)
+  ) as RenderFunction
 
   // mark the function as runtime compiled
   ;(render as InternalRenderFunction)._rc = true

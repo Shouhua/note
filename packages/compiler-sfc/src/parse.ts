@@ -18,6 +18,7 @@ export interface SFCParseOptions {
   sourceMap?: boolean
   sourceRoot?: string
   pad?: boolean | 'line' | 'space'
+  ignoreEmpty?: boolean
   compiler?: TemplateCompiler
 }
 
@@ -104,6 +105,7 @@ export function parse(
     filename = 'anonymous.vue',
     sourceRoot = '',
     pad = false,
+    ignoreEmpty = true,
     compiler = CompilerDOM
   }: SFCParseOptions = {}
 ): SFCParseResult {
@@ -162,7 +164,13 @@ export function parse(
     if (node.type !== NodeTypes.ELEMENT) {
       return
     }
-    if (!node.children.length && !hasSrc(node) && node.tag !== 'template') {
+    // we only want to keep the nodes that are not empty (when the tag is not a template)
+    if (
+      ignoreEmpty &&
+      node.tag !== 'template' &&
+      isEmpty(node) &&
+      !hasSrc(node)
+    ) {
       return
     }
     switch (node.tag) {
@@ -306,6 +314,16 @@ function createBlock(
     start = node.children[0].loc.start
     end = node.children[node.children.length - 1].loc.end
     content = source.slice(start.offset, end.offset)
+  } else {
+    const offset = node.loc.source.indexOf(`</`)
+    if (offset > -1) {
+      start = {
+        line: start.line,
+        column: start.column + offset,
+        offset: start.offset + offset
+      }
+    }
+    end = { ...start }
   }
   const loc = {
     source: content,
@@ -405,4 +423,16 @@ function hasSrc(node: ElementNode) {
     }
     return p.name === 'src'
   })
+}
+
+/**
+ * Returns true if the node has no children
+ * once the empty text nodes (trimmed content) have been filtered out.
+ */
+function isEmpty(node: ElementNode) {
+  return (
+    node.children.filter(
+      child => child.type !== NodeTypes.TEXT || child.content.trim() !== ''
+    ).length === 0
+  )
 }

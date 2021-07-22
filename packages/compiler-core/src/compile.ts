@@ -17,6 +17,7 @@ import { transformOnce } from './transforms/vOnce'
 import { transformModel } from './transforms/vModel'
 import { transformFilter } from './compat/transformFilter'
 import { defaultOnError, createCompilerError, ErrorCodes } from './errors'
+import { transformMemo } from './transforms/vMemo'
 
 export type TransformPreset = [
   NodeTransform[],
@@ -35,6 +36,7 @@ export function getBaseTransformPreset(
     [
       transformOnce,
       transformIf,
+      transformMemo,
       transformFor,
       ...(__COMPAT__ ? [transformFilter] : []),
       ...(!__BROWSER__ && prefixIdentifiers
@@ -44,9 +46,9 @@ export function getBaseTransformPreset(
             transformExpression
           ]
         : __BROWSER__ && __DEV__
-          ? [transformExpression]
-          : []),
-      transformSlotOutlet, // <slot></slot>
+        ? [transformExpression]
+        : []),
+      transformSlotOutlet,
       transformElement,
       trackSlotScopes,
       transformText
@@ -88,9 +90,8 @@ export function baseCompile(
 
   // 处理template，html->ast（tag，tagType，interpolation，directive等）
   const ast = isString(template) ? baseParse(template, options) : template
-  const [nodeTransforms, directiveTransforms] = getBaseTransformPreset(
-    prefixIdentifiers
-  )
+  const [nodeTransforms, directiveTransforms] =
+    getBaseTransformPreset(prefixIdentifiers)
   transform(
     ast,
     extend({}, options, {

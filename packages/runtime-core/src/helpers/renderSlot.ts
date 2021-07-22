@@ -1,6 +1,9 @@
 import { Data } from '../component'
 import { Slots, RawSlots } from '../componentSlots'
-import { ContextualRenderFn } from '../componentRenderContext'
+import {
+  ContextualRenderFn,
+  currentRenderingInstance
+} from '../componentRenderContext'
 import { Comment, isVNode } from '../vnode'
 import {
   VNodeArrayChildren,
@@ -11,6 +14,7 @@ import {
 } from '../vnode'
 import { PatchFlags, SlotFlags } from '@vue/shared'
 import { warn } from '../warning'
+import { createVNode } from '@vue/runtime-core'
 
 /**
  * <slot>fallback content</slot>
@@ -26,7 +30,15 @@ export function renderSlot(
   fallback?: () => VNodeArrayChildren,
   noSlotted?: boolean
 ): VNode {
-  let slot = slots[name] // NOTICE: slot总是返回一个函数, (props) => []
+  if (currentRenderingInstance!.isCE) {
+    return createVNode(
+      'slot',
+      name === 'default' ? null : { name },
+      fallback && fallback()
+    )
+  }
+
+  let slot = slots[name]
 
   if (__DEV__ && slot && slot.length > 1) {
     warn(

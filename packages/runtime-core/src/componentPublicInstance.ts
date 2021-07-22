@@ -1,6 +1,7 @@
 import {
   ComponentInternalInstance,
   Data,
+  getExposeProxy,
   isStatefulComponent
 } from './component'
 import { nextTick, queueJob } from './scheduler'
@@ -71,7 +72,9 @@ import { installCompatInstanceProperties } from './compat/instance'
 export interface ComponentCustomProperties {}
 
 type IsDefaultMixinComponent<T> = T extends ComponentOptionsMixin
-  ? ComponentOptionsMixin extends T ? true : false
+  ? ComponentOptionsMixin extends T
+    ? true
+    : false
   : false
 
 type MixinToOptionTypes<T> = T extends ComponentOptionsBase<
@@ -217,11 +220,11 @@ const getPublicInstance = (
   i: ComponentInternalInstance | null
 ): ComponentPublicInstance | ComponentInternalInstance['exposed'] | null => {
   if (!i) return null
-  if (isStatefulComponent(i)) return i.exposed ? i.exposed : i.proxy
+  if (isStatefulComponent(i)) return getExposeProxy(i) || i.proxy
   return getPublicInstance(i.parent)
 }
 
-export const publicPropertiesMap: PublicPropertiesMap = extend(
+export const publicPropertiesMap: PublicPropertiesMap = /*#__PURE__*/ extend(
   Object.create(null),
   {
     $: i => i,
@@ -264,15 +267,8 @@ export interface ComponentRenderContext {
 // 这里定义了proxyHandlers，也是为什么我们可以直接使用拿key，因为会搜索instance里面几乎所有的对象属性
 export const PublicInstanceProxyHandlers: ProxyHandler<any> = {
   get({ _: instance }: ComponentRenderContext, key: string) {
-    const {
-      ctx,
-      setupState,
-      data,
-      props,
-      accessCache,
-      type,
-      appContext
-    } = instance
+    const { ctx, setupState, data, props, accessCache, type, appContext } =
+      instance
 
     // for internal formatters to know that this is a Vue instance
     if (__DEV__ && key === '__isVue') {
@@ -478,7 +474,7 @@ if (__DEV__ && !__TEST__) {
   }
 }
 
-export const RuntimeCompiledPublicInstanceProxyHandlers = extend(
+export const RuntimeCompiledPublicInstanceProxyHandlers = /*#__PURE__*/ extend(
   {},
   PublicInstanceProxyHandlers,
   {

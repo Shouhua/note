@@ -13,7 +13,7 @@ import {
   compatUtils
 } from '@vue/runtime-core'
 import { nodeOps } from './nodeOps'
-import { patchProp, forcePatchProp } from './patchProp'
+import { patchProp } from './patchProp'
 // Importing from the compiler, will be tree-shaken in prod
 import { isFunction, isString, isHTMLTag, isSVGTag, extend } from '@vue/shared'
 
@@ -24,18 +24,21 @@ declare module '@vue/reactivity' {
   }
 }
 
-const rendererOptions = extend({ patchProp, forcePatchProp }, nodeOps)
+const rendererOptions = extend({ patchProp }, nodeOps)
 
 // lazy create the renderer - this makes core renderer logic tree-shakable
 // in case the user only imports reactivity utilities from Vue.
-let renderer: Renderer<Element> | HydrationRenderer
+let renderer: Renderer<Element | ShadowRoot> | HydrationRenderer
 
 let enabledHydration = false
 
 // 延时创建渲染器，当用户只依赖响应式包的时候，可以通过tree-shaking移除核心渲染逻辑相关的代码
 // 因为render里面有dom的操作，所以需要将dom相关的操作放在runtime-dom中，然后传递生成render
 function ensureRenderer() {
-  return renderer || (renderer = createRenderer<Node, Element>(rendererOptions))
+  return (
+    renderer ||
+    (renderer = createRenderer<Node, Element | ShadowRoot>(rendererOptions))
+  )
 }
 
 function ensureHydrationRenderer() {
@@ -49,7 +52,7 @@ function ensureHydrationRenderer() {
 // use explicit type casts here to avoid import() calls in rolled-up d.ts
 export const render = ((...args) => {
   ensureRenderer().render(...args)
-}) as RootRenderFunction<Element>
+}) as RootRenderFunction<Element | ShadowRoot>
 
 export const hydrate = ((...args) => {
   ensureHydrationRenderer().hydrate(...args)
@@ -196,6 +199,13 @@ function normalizeContainer(
   }
   return container as any
 }
+
+// Custom element support
+export {
+  defineCustomElement,
+  defineSSRCustomElement,
+  VueElement
+} from './apiCustomElement'
 
 // SFC CSS utilities
 export { useCssModule } from './helpers/useCssModule'
