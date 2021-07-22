@@ -358,6 +358,8 @@ function setFullProps(
           ;(rawCastValues || (rawCastValues = {}))[camelKey] = value
         }
       } else if (!isEmitListener(instance.emitsOptions, key)) {
+        // https://v3.cn.vuejs.org/guide/migration/emits-option.html#%E7%A4%BA%E4%BE%8B
+        // click会触发2次的异常情况, 如果不在emit中声明的话，vue2中的.native去除了
         // https://github.com/vuejs/rfcs/blob/49de6decac4dc99840410d082e3bd7c98b580193/active-rfcs/0031-attr-fallthrough.md
         // 在Component.emits中声明的events不会放到$attrs中
         // Any non-declared (either as a prop or an emitted event) props are put
