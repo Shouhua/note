@@ -21,6 +21,7 @@ describe('with object props', () => {
     b: string
     e?: Function
     h: boolean
+    j: undefined | (() => string | undefined)
     bb: string
     bbb: string
     bbbb: string | undefined
@@ -41,6 +42,9 @@ describe('with object props', () => {
     kkk?: any
     validated?: string
     date?: Date
+    l?: Date
+    ll?: Date | number
+    lll?: string | number
   }
 
   type GT = string & { __brand: unknown }
@@ -55,6 +59,7 @@ describe('with object props', () => {
       },
       e: Function,
       h: Boolean,
+      j: Function as PropType<undefined | (() => string | undefined)>,
       // default value should infer type and make it non-void
       bb: {
         default: 'hello'
@@ -129,7 +134,10 @@ describe('with object props', () => {
         // validator requires explicit annotation
         validator: (val: unknown) => val !== ''
       },
-      date: Date
+      date: Date,
+      l: [Date],
+      ll: [Date, Number],
+      lll: [String, Number]
     },
     setup(props) {
       // type assertion. See https://github.com/SamVerschueren/tsd
@@ -137,6 +145,7 @@ describe('with object props', () => {
       expectType<ExpectedProps['b']>(props.b)
       expectType<ExpectedProps['e']>(props.e)
       expectType<ExpectedProps['h']>(props.h)
+      expectType<ExpectedProps['j']>(props.j)
       expectType<ExpectedProps['bb']>(props.bb)
       expectType<ExpectedProps['bbb']>(props.bbb)
       expectType<ExpectedProps['bbbb']>(props.bbbb)
@@ -161,6 +170,9 @@ describe('with object props', () => {
       expectType<ExpectedProps['kkk']>(props.kkk)
       expectType<ExpectedProps['validated']>(props.validated)
       expectType<ExpectedProps['date']>(props.date)
+      expectType<ExpectedProps['l']>(props.l)
+      expectType<ExpectedProps['ll']>(props.ll)
+      expectType<ExpectedProps['lll']>(props.lll)
 
       // @ts-expect-error props should be readonly
       expectError((props.a = 1))
@@ -396,12 +408,12 @@ describe('type inference w/ options API', () => {
       }
     },
     computed: {
-      d(): number {
+      d() {
         expectType<number>(this.b)
         return this.b + 1
       },
       e: {
-        get(): number {
+        get() {
           expectType<number>(this.b)
           expectType<number>(this.d)
 
@@ -514,10 +526,10 @@ describe('with mixins', () => {
       expectType<string>(props.aP1)
     },
     computed: {
-      dC1(): number {
+      dC1() {
         return this.d + this.a
       },
-      dC2(): string {
+      dC2() {
         return this.aP1 + 'dC2'
       }
     }
@@ -963,6 +975,33 @@ describe('emits', () => {
       this.$emit('bar')
       //  @ts-expect-error
       expectError(this.$emit('nope'))
+    }
+  })
+
+  // with tsx
+  const Component = defineComponent({
+    emits: {
+      click: (n: number) => typeof n === 'number'
+    },
+    setup(props, { emit }) {
+      expectType<((n: number) => any) | undefined>(props.onClick)
+      emit('click', 1)
+      //  @ts-expect-error
+      expectError(emit('click'))
+      //  @ts-expect-error
+      expectError(emit('click', 'foo'))
+    }
+  })
+
+  defineComponent({
+    render() {
+      return (
+        <Component
+          onClick={(n: number) => {
+            return n + 1
+          }}
+        />
+      )
     }
   })
 

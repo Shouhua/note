@@ -209,7 +209,7 @@ export function defineAsyncComponent<
         }
       }
     }
-  }) as any
+  }) as T
 }
 
 function createInnerComp(

@@ -12,7 +12,7 @@ import {
 import {
   ComponentPublicInstance,
   PublicInstanceProxyHandlers,
-  createRenderContext,
+  createDevRenderContext,
   exposePropsOnRenderContext,
   exposeSetupStateOnRenderContext,
   ComponentPublicInstanceConstructor,
@@ -314,6 +314,10 @@ export interface ComponentInternalInstance {
    * is custom element?
    */
   isCE?: boolean
+  /**
+   * custom element specific HMR method
+   */
+  ceReload?: (newStyles?: string[]) => void
 
   // the rest are only for stateful components ---------------------------------
 
@@ -482,7 +486,7 @@ export function createComponentInstance(
     next: null,
     subTree: null!, // will be set synchronously right after creation
     update: null!, // will be set synchronously right after creation
-    scope: new EffectScope(),
+    scope: new EffectScope(true /* detached */),
     render: null,
     proxy: null,
     exposed: null,
@@ -501,7 +505,7 @@ export function createComponentInstance(
     emitsOptions: normalizeEmitsOptions(type, appContext),
 
     // emit
-    emit: null as any, // to be set immediately
+    emit: null!, // to be set immediately
     emitted: null,
 
     // props default value
@@ -549,7 +553,7 @@ export function createComponentInstance(
   if (__DEV__) {
     // renderContext就是render(ctx, ...args)中使用this的上下文，直接将instance的大部分东西一股脑全部双向绑定给ctx, 后面instance.proxy=proxy(instance.ctx)
     // instance.ctx = {_: instance, $开头的信息，$nextTick,$forceUpdate等, 还有最初appConfig.config.globalProperties的信息}
-    instance.ctx = createRenderContext(instance)
+    instance.ctx = createDevRenderContext(instance)
   } else {
     instance.ctx = { _: instance }
   }

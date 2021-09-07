@@ -133,11 +133,27 @@ function reload(id: string, newComp: ComponentOptions | ClassComponent) {
   }
 
   Array.from(instances).forEach(instance => {
-    if (instance.parent) {
+    // invalidate options resolution cache
+    instance.appContext.optionsCache.delete(instance.type as any)
+
+    if (instance.ceReload) {
+      // custom element
+      hmrDirtyComponents.add(component)
+      instance.ceReload((newComp as any).styles)
+      hmrDirtyComponents.delete(component)
+    } else if (instance.parent) {
       // 4. Force the parent instance to re-render. This will cause all updated
       // components to be unmounted and re-mounted. Queue the update so that we
       // don't end up forcing the same parent to re-render multiple times.
       queueJob(instance.parent.update)
+      // instance is the inner component of an async custom element
+      // invoke to reset styles
+      if (
+        (instance.parent.type as ComponentOptions).__asyncLoader &&
+        instance.parent.ceReload
+      ) {
+        instance.parent.ceReload((newComp as any).styles)
+      }
     } else if (instance.appContext.reload) {
       // root instance mounted via createApp() has a reload method
       instance.appContext.reload()
@@ -156,7 +172,7 @@ function tryWrap(fn: (id: string, arg: any) => any): Function {
   return (id: string, arg: any) => {
     try {
       return fn(id, arg)
-    } catch (e) {
+    } catch (e: any) {
       console.error(e)
       console.warn(
         `[HMR] Something went wrong during Vue component hot-reload. ` +

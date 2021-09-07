@@ -84,7 +84,7 @@ function createConfig(format, output, plugins = []) {
     process.exit(1)
   }
 
-  output.exports = 'auto'
+  output.exports = 'named'
   output.sourcemap = !!process.env.SOURCE_MAP
   output.externalLiveBindings = false
 
@@ -234,6 +234,15 @@ function createReplacePlugin(
     __ESM_BROWSER__: isBrowserESMBuild,
     // is targeting Node (SSR)?
     __NODE_JS__: isNodeBuild,
+
+    // for compiler-sfc browser build inlined deps
+    ...(isBrowserESMBuild
+      ? {
+          'process.env': '({})',
+          'process.platform': '""',
+          'process.stdout': 'null'
+        }
+      : {}),
 
     // 2.x compat build
     __COMPAT__: isCompatBuild,

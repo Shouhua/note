@@ -11,7 +11,7 @@ import { RawSourceMap, SourceMapGenerator } from 'source-map'
 import { TemplateCompiler } from './compileTemplate'
 import { Statement } from '@babel/types'
 import { parseCssVars } from './cssVars'
-import { warnExperimental } from './warn'
+import { createCache } from './cache'
 
 export interface SFCParseOptions {
   filename?: string
@@ -43,27 +43,7 @@ export interface SFCScriptBlock extends SFCBlock {
   bindings?: BindingMetadata
   scriptAst?: Statement[]
   scriptSetupAst?: Statement[]
-  ranges?: ScriptSetupTextRanges
 }
-
-/**
- * Text range data for IDE support
- */
-export interface ScriptSetupTextRanges {
-  scriptBindings: TextRange[]
-  scriptSetupBindings: TextRange[]
-  propsTypeArg?: TextRange
-  propsRuntimeArg?: TextRange
-  emitsTypeArg?: TextRange
-  emitsRuntimeArg?: TextRange
-  withDefaultsArg?: TextRange
-}
-
-export interface TextRange {
-  start: number
-  end: number
-}
-
 export interface SFCStyleBlock extends SFCBlock {
   type: 'style'
   scoped?: boolean
@@ -89,14 +69,7 @@ export interface SFCParseResult {
   errors: (CompilerError | SyntaxError)[]
 }
 
-const SFC_CACHE_MAX_SIZE = 500
-const sourceToSFC =
-  __GLOBAL__ || __ESM_BROWSER__
-    ? new Map<string, SFCParseResult>()
-    : (new (require('lru-cache'))(SFC_CACHE_MAX_SIZE) as Map<
-        string,
-        SFCParseResult
-      >)
+const sourceToSFC = createCache<SFCParseResult>()
 
 export function parse(
   source: string,
@@ -271,9 +244,6 @@ export function parse(
   // parse CSS vars
   // 获得所有的v-bind中的变量
   descriptor.cssVars = parseCssVars(descriptor)
-  if (descriptor.cssVars.length) {
-    warnExperimental(`v-bind() CSS variable injection`, 231)
-  }
 
   // check if the SFC uses :slotted
   const slottedRE = /(?:::v-|:)slotted\(/

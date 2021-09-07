@@ -93,7 +93,7 @@ export type VNodeHook =
  * vnode hooks后面会合并到instance的props中
  */
 export type VNodeProps = {
-  key?: string | number
+  key?: string | number | symbol
   ref?: VNodeRef
 
   // vnode hooks
@@ -141,7 +141,7 @@ export interface VNode<
 
   type: VNodeTypes
   props: (VNodeProps & ExtraProps) | null
-  key: string | number | null
+  key: string | number | symbol | null
   ref: VNodeNormalizedRef | null
   /**
    * SFC only. This is assigned on vnode creation using currentScopeId
@@ -299,7 +299,7 @@ function setupBlock(vnode: VNode) {
  * @private
  */
 export function createElementBlock(
-  type: string,
+  type: string | typeof Fragment,
   props?: Record<string, any> | null,
   children?: any,
   patchFlag?: number,
@@ -760,7 +760,7 @@ export function normalizeChildren(vnode: VNode, children: unknown) {
   } else if (isArray(children)) {
     type = ShapeFlags.ARRAY_CHILDREN
   } else if (typeof children === 'object') {
-    if (shapeFlag & ShapeFlags.ELEMENT || shapeFlag & ShapeFlags.TELEPORT) {
+    if (shapeFlag & (ShapeFlags.ELEMENT | ShapeFlags.TELEPORT)) {
       // Normalize slot to plain children for plain element and Teleport
       const slot = (children as any).default
       if (slot) {

@@ -4,15 +4,18 @@ import { isFunction, NOOP } from '@vue/shared'
 import { ReactiveFlags, toRaw } from './reactive'
 import { Dep } from './dep'
 
+declare const ComoutedRefSymbol: unique symbol
+
 export interface ComputedRef<T = any> extends WritableComputedRef<T> {
   readonly value: T
+  [ComoutedRefSymbol]: true
 }
 
 export interface WritableComputedRef<T> extends Ref<T> {
   readonly effect: ReactiveEffect<T>
 }
 
-export type ComputedGetter<T> = (ctx?: any) => T
+export type ComputedGetter<T> = (...args: any[]) => T
 export type ComputedSetter<T> = (v: T) => void
 
 export interface WritableComputedOptions<T> {

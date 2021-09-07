@@ -24,6 +24,7 @@ import {
   openBlock,
   closeBlock,
   currentBlock,
+  Comment,
   createVNode
 } from '../vnode'
 import { isFunction, isArray, ShapeFlags, toNumber } from '@vue/shared'
@@ -769,7 +770,7 @@ function normalizeSuspenseSlot(s: any) {
     s = singleChild
   }
   s = normalizeVNode(s)
-  if (block) {
+  if (block && !s.dynamicChildren) {
     s.dynamicChildren = block.filter(c => c !== s)
   }
   return s

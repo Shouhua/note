@@ -1,4 +1,9 @@
-import { isSpecialBooleanAttr, makeMap, NOOP } from '@vue/shared'
+import {
+  includeBooleanAttr,
+  isSpecialBooleanAttr,
+  makeMap,
+  NOOP
+} from '@vue/shared'
 import {
   compatUtils,
   ComponentInternalInstance,
@@ -29,7 +34,7 @@ export function patchAttr(
     // corresponding dom prop of the same name here.
     const isBoolean = isSpecialBooleanAttr(key)
     // 当attribute的值为null，或者false的时候，直接删除attribute
-    if (value == null || (isBoolean && value === false)) {
+    if (value == null || (isBoolean && !includeBooleanAttr(value))) {
       el.removeAttribute(key)
     } else {
       el.setAttribute(key, isBoolean ? '' : value)

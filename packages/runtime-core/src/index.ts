@@ -147,17 +147,19 @@ declare module '@vue/reactivity' {
 }
 
 export {
+  Ref,
+  ToRef,
+  ToRefs,
   ReactiveEffectOptions,
   DebuggerEvent,
+  DebuggerOptions,
   TrackOpTypes,
   TriggerOpTypes,
-  Ref,
   ComputedRef,
   WritableComputedRef,
   UnwrapRef,
   ShallowUnwrapRef,
   WritableComputedOptions,
-  ToRefs,
   DeepReadonly
 } from '@vue/reactivity'
 export {
@@ -313,7 +315,9 @@ const _ssrUtils = {
  * SSR utils for \@vue/server-renderer. Only exposed in cjs builds.
  * @internal
  */
-export const ssrUtils = (__NODE_JS__ ? _ssrUtils : null) as typeof _ssrUtils
+export const ssrUtils = (
+  __NODE_JS__ || __ESM_BUNDLER__ ? _ssrUtils : null
+) as typeof _ssrUtils
 
 // 2.x COMPAT ------------------------------------------------------------------
 
@@ -349,7 +353,3 @@ const _compatUtils = {
 export const compatUtils = (
   __COMPAT__ ? _compatUtils : null
 ) as typeof _compatUtils
-
-// Ref macros ------------------------------------------------------------------
-// for dts generation only
-export { $ref, $computed, $raw, $fromRefs } from './helpers/refMacros'

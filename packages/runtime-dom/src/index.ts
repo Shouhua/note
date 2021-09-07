@@ -190,6 +190,7 @@ function normalizeContainer(
   }
   if (
     __DEV__ &&
+    window.ShadowRoot &&
     container instanceof window.ShadowRoot &&
     container.mode === 'closed'
   ) {
@@ -204,7 +205,8 @@ function normalizeContainer(
 export {
   defineCustomElement,
   defineSSRCustomElement,
-  VueElement
+  VueElement,
+  VueElementConstructor
 } from './apiCustomElement'
 
 // SFC CSS utilities

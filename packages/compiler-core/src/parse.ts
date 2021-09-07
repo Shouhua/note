@@ -852,7 +852,7 @@ function parseAttribute(
    * v-on:[event] 动态事件名
    * <Comp v-slot:named="{ foo }">{{ foo }}{{ bar }}</Comp>
    */
-  if (!context.inVPre && /^(v-|:|\.|@|#)/.test(name)) {
+  if (!context.inVPre && /^(v-[A-Za-z0-9-]|:|\.|@|#)/.test(name)) {
     const match =
       /(?:^v-([a-z0-9-]+))?(?:(?::|^\.|^@|^#)(\[[^\]]+\]|[^\.]+))?(.+)?$/i.exec(
         name
@@ -969,6 +969,11 @@ function parseAttribute(
     }
   }
 
+  // missing directive name or illegal directive name
+  if (!context.inVPre && startsWith(name, 'v-')) {
+    emitError(context, ErrorCodes.X_MISSING_DIRECTIVE_NAME)
+  }
+
   return {
     type: NodeTypes.ATTRIBUTE,
     name,
@@ -1071,10 +1076,8 @@ function parseText(context: ParserContext, mode: TextModes): TextNode {
   __TEST__ && assert(context.source.length > 0)
 
   // 寻找text截止的字符'<', '{{'
-  const endTokens = ['<', context.options.delimiters[0]]
-  if (mode === TextModes.CDATA) {
-    endTokens.push(']]>')
-  }
+  const endTokens =
+    mode === TextModes.CDATA ? [']]>'] : ['<', context.options.delimiters[0]]
 
   let endIndex = context.source.length
   for (let i = 0; i < endTokens.length; i++) {

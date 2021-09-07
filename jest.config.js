@@ -1,4 +1,5 @@
 module.exports = {
+  testEnvironment: 'jsdom',
   preset: 'ts-jest',
   setupFilesAfterEnv: ['./scripts/setupJestEnv.ts'],
   globals: {
@@ -16,7 +17,8 @@ module.exports = {
     __COMPAT__: true,
     'ts-jest': {
       tsconfig: {
-        target: 'esnext'
+        target: 'esnext',
+        sourceMap: true
       }
     }
   },
