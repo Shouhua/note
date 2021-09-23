@@ -94,7 +94,7 @@ export const enum BindingTypes {
    */
   DATA = 'data',
   /**
-   * decalred as a prop
+   * declared as a prop
    */
   PROPS = 'props',
   /**
@@ -145,7 +145,7 @@ interface SharedTransformCodegenOptions {
    * When compiler generates code for SSR's fallback branch, we need to set it to false:
    *  - context.ssr = false
    *
-   * see `subTransform` in `ssrTransformCompoent.ts`
+   * see `subTransform` in `ssrTransformComponent.ts`
    */
   ssr?: boolean
   /**

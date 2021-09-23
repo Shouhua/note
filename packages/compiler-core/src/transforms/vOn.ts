@@ -17,7 +17,8 @@ import { hasScopeRef, isMemberExpression } from '../utils'
 import { TO_HANDLER_KEY } from '../runtimeHelpers'
 
 // 匹配箭头函数和传统函数
-const fnExpRE = /^\s*([\w$_]+|\([^)]*?\))\s*=>|^\s*function(?:\s+[\w$]+)?\s*\(/
+const fnExpRE =
+  /^\s*([\w$_]+|(async\s*)?\([^)]*?\))\s*=>|^\s*(async\s+)?function(?:\s+[\w$]+)?\s*\(/
 
 /**
  * 支持动态args，比如v-on:[eventArgs]="eventExpression"
@@ -93,7 +94,7 @@ export const transformOn: DirectiveTransform = (
   }
   let shouldCache: boolean = context.cacheHandlers && !exp && !context.inVOnce
   if (exp) {
-    const isMemberExp = isMemberExpression(exp.content)
+    const isMemberExp = isMemberExpression(exp.content, context)
     const isInlineStatement = !(isMemberExp || fnExpRE.test(exp.content))
     const hasMultipleStatements = exp.content.includes(`;`)
 

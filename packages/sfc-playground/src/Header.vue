@@ -1,6 +1,10 @@
 <script setup lang="ts">
 import { downloadProject } from './download/download'
 import { ref, onMounted } from 'vue'
+import Sun from './icons/Sun.vue'
+import Moon from './icons/Moon.vue'
+import Share from './icons/Share.vue'
+import Download from './icons/Download.vue'
 
 // @ts-ignore
 const { store } = defineProps(['store'])
@@ -33,6 +37,15 @@ function resetVueVersion() {
 async function copyLink() {
   await navigator.clipboard.writeText(location.href)
   alert('Sharable URL has been copied to clipboard.')
+}
+
+function toggleDark() {
+  const cls = document.documentElement.classList
+  cls.toggle('dark')
+  localStorage.setItem(
+    'vue-sfc-playground-prefer-dark',
+    String(cls.contains('dark'))
+  )
 }
 
 onMounted(async () => {
@@ -98,51 +111,19 @@ async function fetchVersions(): Promise<string[]> {
           </li>
         </ul>
       </div>
-      <button class="share" @click="copyLink">
-        <svg width="1.4em" height="1.4em" viewBox="0 0 24 24">
-          <g
-            fill="none"
-            stroke="#626262"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <circle cx="18" cy="5" r="3" />
-            <circle cx="6" cy="12" r="3" />
-            <circle cx="18" cy="19" r="3" />
-            <path d="M8.59 13.51l6.83 3.98" />
-            <path d="M15.41 6.51l-6.82 3.98" />
-          </g>
-        </svg>
+      <button title="Toggle dark mode" class="toggle-dark" @click="toggleDark">
+        <Sun class="light" />
+        <Moon class="dark" />
       </button>
-      <button class="download" @click="downloadProject(store)">
-        <svg width="1.7em" height="1.7em" viewBox="0 0 24 24">
-          <g fill="#626262">
-            <rect x="4" y="18" width="16" height="2" rx="1" ry="1" />
-            <rect
-              x="3"
-              y="17"
-              width="4"
-              height="2"
-              rx="1"
-              ry="1"
-              transform="rotate(-90 5 18)"
-            />
-            <rect
-              x="17"
-              y="17"
-              width="4"
-              height="2"
-              rx="1"
-              ry="1"
-              transform="rotate(-90 19 18)"
-            />
-            <path
-              d="M12 15a1 1 0 0 1-.58-.18l-4-2.82a1 1 0 0 1-.24-1.39a1 1 0 0 1 1.4-.24L12 12.76l3.4-2.56a1 1 0 0 1 1.2 1.6l-4 3a1 1 0 0 1-.6.2z"
-            />
-            <path d="M12 13a1 1 0 0 1-1-1V4a1 1 0 0 1 2 0v8a1 1 0 0 1-1 1z" />
-          </g>
-        </svg>
+      <button title="Copy sharable URL" class="share" @click="copyLink">
+        <Share />
+      </button>
+      <button
+        title="Download project files"
+        class="download"
+        @click="downloadProject(store)"
+      >
+        <Download />
       </button>
     </div>
   </nav>
@@ -150,15 +131,30 @@ async function fetchVersions(): Promise<string[]> {
 
 <style>
 nav {
+  --bg: #fff;
+  --bg-light: #fff;
+  --border: #ddd;
+
+  color: var(--base);
   height: var(--nav-height);
   box-sizing: border-box;
   padding: 0 1em;
-  background-color: #fff;
+  background-color: var(--bg);
   box-shadow: 0 0 4px rgba(0, 0, 0, 0.33);
   position: relative;
   z-index: 999;
   display: flex;
   justify-content: space-between;
+}
+
+.dark nav {
+  --base: #ddd;
+  --bg: #1a1a1a;
+  --bg-light: #242424;
+  --border: #383838;
+
+  box-shadow: none;
+  border-bottom: 1px solid var(--border);
 }
 
 h1 {
@@ -175,6 +171,12 @@ h1 img {
   margin-right: 10px;
   position: relative;
   top: -2px;
+}
+
+@media (max-width: 560px) {
+  h1 span {
+    font-size: 0.9em;
+  }
 }
 
 @media (max-width: 480px) {
@@ -214,8 +216,27 @@ h1 img {
   top: 22px;
 }
 
+.toggle-dark svg {
+  width: 18px;
+  height: 18px;
+  fill: #666;
+}
+
+.toggle-dark .dark,
+.dark .toggle-dark .light {
+  display: none;
+}
+
+.dark .toggle-dark .dark {
+  display: inline-block;
+}
+
 .version:hover .active-version:after {
   border-top-color: var(--base);
+}
+
+.dark .version:hover .active-version:after {
+  border-top-color: #fff;
 }
 
 .versions {
@@ -223,8 +244,8 @@ h1 img {
   position: absolute;
   left: 0;
   top: 40px;
-  background-color: white;
-  border: 1px solid #ddd;
+  background-color: var(--bg-light);
+  border: 1px solid var(--border);
   border-radius: 4px;
   list-style-type: none;
   padding: 8px;

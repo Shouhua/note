@@ -88,7 +88,8 @@ export function computed<T>(
   let setter: ComputedSetter<T>
 
   // 标准化参数
-  if (isFunction(getterOrOptions)) {
+  const onlyGetter = isFunction(getterOrOptions)
+  if (onlyGetter) {
     getter = getterOrOptions
     setter = __DEV__
       ? () => {
@@ -100,11 +101,7 @@ export function computed<T>(
     setter = getterOrOptions.set
   }
 
-  const cRef = new ComputedRefImpl(
-    getter,
-    setter,
-    isFunction(getterOrOptions) || !getterOrOptions.set
-  )
+  const cRef = new ComputedRefImpl(getter, setter, onlyGetter || !setter)
 
   if (__DEV__ && debugOptions) {
     cRef.effect.onTrack = debugOptions.onTrack
