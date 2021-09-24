@@ -95,6 +95,7 @@ function createCodegenContext(
     optimizeImports = false,
     runtimeGlobalName = `Vue`,
     runtimeModuleName = `vue`,
+    ssrRuntimeModuleName = 'vue/server-renderer',
     ssr = false,
     isTS = false,
     inSSR = false
@@ -109,6 +110,7 @@ function createCodegenContext(
     optimizeImports,
     runtimeGlobalName,
     runtimeModuleName,
+    ssrRuntimeModuleName,
     ssr,
     isTS,
     inSSR,
@@ -320,7 +322,8 @@ function genFunctionPreamble(ast: RootNode, context: CodegenContext) {
     push,
     newline,
     runtimeModuleName,
-    runtimeGlobalName // Vue
+    runtimeGlobalName,
+    ssrRuntimeModuleName
   } = context
   const VueBinding =
     !__BROWSER__ && ssr
@@ -364,7 +367,7 @@ function genFunctionPreamble(ast: RootNode, context: CodegenContext) {
     push(
       `const { ${ast.ssrHelpers
         .map(aliasHelper)
-        .join(', ')} } = require("vue/server-renderer")\n`
+        .join(', ')} } = require("${ssrRuntimeModuleName}")\n`
     )
   }
   genHoists(ast.hoists, context)
@@ -378,7 +381,13 @@ function genModulePreamble(
   genScopeId: boolean,
   inline?: boolean
 ) {
-  const { push, newline, optimizeImports, runtimeModuleName } = context
+  const {
+    push,
+    newline,
+    optimizeImports,
+    runtimeModuleName,
+    ssrRuntimeModuleName
+  } = context
 
   if (genScopeId && ast.hoists.length) {
     ast.helpers.push(PUSH_SCOPE_ID, POP_SCOPE_ID)
@@ -415,7 +424,7 @@ function genModulePreamble(
     push(
       `import { ${ast.ssrHelpers
         .map(s => `${helperNameMap[s]} as _${helperNameMap[s]}`)
-        .join(', ')} } from "@vue/server-renderer"\n`
+        .join(', ')} } from "${ssrRuntimeModuleName}"\n`
     )
   }
 
