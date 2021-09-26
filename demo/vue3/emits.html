@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Document</title>
+</head>
+<body>
+	<div id="app"></div>	
+	<script src="https://unpkg.com/vue@next"></script>
+	<script>
+		// https://v3.cn.vuejs.org/guide/migration/emits-option.html#%E7%A4%BA%E4%BE%8B
+		// 2次触发，可以在emits中声明，或者直接inheritAttrs设置为false, 后者比较极端
+		const { createApp, ref, reactive } = Vue
+		const Comp = {
+			inheritAttrs: false,
+			template: `<button @click="$emit('click', $event)">OK</button>`,
+			// emits: ['click'],
+		}
+		const App = {
+			components: { Comp },
+			template: `<Comp @click="handleClick"></Comp>`,
+			setup(props, {slots, attrs, emit, expose}) {
+				const handleClick = () => console.log('click triggered');
+				return {
+					handleClick 
+				}
+			}
+		}
+		createApp(App).mount('#app')
+	</script>
+</body>
+</html>

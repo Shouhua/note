@@ -1,4 +1,5 @@
 // node --expose-gc *.js
+// https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Global_Objects/WeakMap
 
 function usageSize() {
   const used = process.memoryUsage().heapUsed;
@@ -23,4 +24,6 @@ arr = null
 global.gc()
 console.log(usageSize())
 
+
+const m = new Map()
 

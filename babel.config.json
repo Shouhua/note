@@ -1,0 +1,21 @@
+{
+	"comments": false,
+	"presets": [
+		[
+			"@babel/env",
+			{
+				"useBuiltIns": "usage",
+				"corejs": 3,
+				// "debug": true
+			}
+		]
+	],
+	"plugins": [
+		[
+			"@vue/babel-plugin-jsx"
+		],
+		// [
+		// 	"@babel/plugin-transform-runtime" // useBuiltIns和这个插件选用一种 https://zhuanlan.zhihu.com/p/147083132 详见评论区
+		// ]
+	]
+}

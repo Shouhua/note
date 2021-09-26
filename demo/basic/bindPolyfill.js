@@ -1,4 +1,4 @@
-// 特别注意类似于对象的对象，比如arguments，dom对象等，他们有length，有Symbol.iterator，但是没有其他属性
+// 特别注意类似于对象的对象，比如arguments，HTMLCollection()等，他们有length，有Symbol.iterator(可以使用for...of...)，但是没有其他属性
 // 这里可以使用Array.prototype.slice.call(arguments, 1)将他们转化成数组
 // 最后使用apply执行函数
 Function.prototype.bind = function() {

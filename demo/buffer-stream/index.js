@@ -2,6 +2,7 @@
  * buffer可以认为是一块内存区域，可以将字符串编码(utf8, base64)后放在buffer中，然后可以解码读取
  * stream可以认为是一种内存操作的封装，比如使用buffer需要读取完文件后才能进行传输，但是流是可以连续的读取传输的
  * 另外，stream还具有可组合性
+ * stream可以认为就是像个管道（hose），它不占用内存，可以发起去读流，但是需要提前分配好buffer(内存空间), 就像发起指令一样，读，查长度等
  */
 
 // const fs = require('fs')
@@ -30,6 +31,7 @@ const server = http.createServer((req, res) => {
   let body = ''
   req.setEncoding('utf8')
   req.on('data', (chunk) => {
+    debugger;
     body += chunk
   })
 

@@ -39,6 +39,15 @@
     {
       "type": "node",
       "request": "launch",
+      "name": "demoo",
+      "program": "${workspaceFolder}/demo.js",
+      "skipFiles": [
+        "<node_internals>/**"
+      ]
+    },
+    {
+      "type": "node",
+      "request": "launch",
       "name": "reactive",
       "program": "${workspaceFolder}/demo/vue3/dist/reactive.js",
       "skipFiles": [
@@ -76,11 +85,11 @@
       "type": "node",
       "request": "launch",
       "name": "baseParse",
-      "program": "${workspaceFolder}/demo/vue3/dist/baseParse.js",
+      "program": "${workspaceFolder}/demo/vue3/baseParse.js",
       "skipFiles": [
         "<node_internals>/**"
       ],
-      // "outputCapture": "console"
+      "outputCapture": "console",
       // "runtimeArgs": ["-r", "esm"]
       // "preLaunchTask": "tsc: watch - tsconfig.json"
     },
@@ -151,6 +160,26 @@
       ],
       "runtimeArgs": ["-r", "esm"],
       "program": "${workspaceFolder}/demo/customEffect.js"
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "buffer-stream",
+      "skipFiles": [
+        "<node_internals>/**"
+      ],
+      // "runtimeArgs": ["-r", "esm"],
+      "program": "${workspaceFolder}/demo/buffer-stream/index.js"
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "ref",
+      "skipFiles": [
+        "<node_internals>/**"
+      ],
+      "runtimeArgs": ["-r", "esm"],
+      "program": "${workspaceFolder}/demo/vue3/ref.js"
     }
   ]
 }

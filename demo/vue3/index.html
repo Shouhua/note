@@ -1,9 +1,48 @@
 <div id="app"></div>
-
+<style>
+  body {
+    padding: 20px 0 0 20px;
+  }
+  h2 {
+    color: red;
+  }
+  button {
+    font-size: 18px;
+  }
+</style>
+<script src="https://unpkg.com/vue@next"></script>
 <script>
-  let v1 = h('div', {class: 'v1'}, ['hello, world'])
+  // let v1 = h('div', {class: 'v1'}, ['hello, world'])
 
-  mount(v1, '#app')
+  // mount(v1, '#app')
 
-  patch(v1, v2)
+  // patch(v1, v2)
+  const { createApp, ref, h, Fragment } = Vue
+  createApp({
+    // template: `
+    //   <button @click="handleClick">Inc</button>
+    //   <h2>{{ count }}</h2>
+    // `,
+    template: `
+      <div v-if="isShow">v-if</div> 
+      <button @click="handleClick">Toggle</button>
+    `,
+    setup(props, { slots, attrs, emit }) {
+      // let count = ref(1)
+      // const handleClick = () => count.value += 1
+      let isShow = ref(true)
+      const handleClick = () => isShow.value = !isShow.value
+      return {
+        handleClick,
+        // count,
+        isShow
+      }
+      // return () => {
+      //   return h(Fragment, null, [
+      //     h('button', { onClick: handleClick }, 'Inc'),
+      //     h('h2', null, count.value)
+      //   ])
+      // }
+    }
+  }).mount('#app')
 </script>

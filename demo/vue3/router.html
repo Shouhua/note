@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+<body>
+  <div id="app"> </div>
+  <script type="module">
+    import { reactive, createApp, h, ref, computed, createVNode, watch, inject, toRaw, markRaw, shallowRef } from 'https://unpkg.com/vue@3.0.11/dist/vue.esm-browser.js'
+    class Router {
+      constructor(options) {
+        this.routeMap = []
+        options.routes.forEach((item) => {
+          this.routeMap[item.name] = item.component
+        })
+        this.current = ref(window.location.hash.slice(1) || '/')
+        window.addEventListener('hashchange', function(){
+          this.current.value = window.location.hash.slice(1) || '/'
+        }.bind(this))
+      }
+      install(app, router) {
+        app.component('router-link', {
+          props: {
+            to: {
+              type: String,
+              required: true,
+            }
+          },
+          setup(props, { slots }) {
+            return () => {
+              return h('a', { href: `#${props.to}`}, [slots.default()])
+            }
+          }
+        })
+        app.component('router-view', {
+          setup(props, { slots }) {
+            return () => {
+              const r = inject('router')
+              const comp = r.routeMap[r.current.value]
+              return h('div', comp ? h(comp) : '')
+            }
+          }
+        })
+        app.provide('router', this)
+        app.config.globalProperties.$router = this
+      }
+    }
+    const app = createApp({
+      template: `<h2>Router</h2>
+        <router-link to="dashboard">Dashboard</router-link>
+        <router-link to="about">About</router-link>
+        <router-view>helo</router-view>`
+    })
+    const Dashboard = {
+      name: 'Dashboard',
+      template: `route for dashboard`
+    }
+    const About = {
+      name: 'About',
+      template: `route for about`
+    }
+    const routes = [
+      { name: 'about',
+      component: About
+      },
+      { name: 'dashboard',
+        component: Dashboard
+      }
+    ]
+    const router = new Router({routes})
+    app.use(router)
+    app.mount('#app')
+  </script>
+</body>
+</html>

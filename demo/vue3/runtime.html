@@ -8,7 +8,8 @@
 </style>
 <div id="app"></div>
 
-<script>
+<!-- <script type="module" src="./dist/reactive.js"></script> -->
+<script type="module">
   function h(tag, props, children) {
     return {
       tag,
@@ -28,7 +29,7 @@
       }
     }
     if(vnode.children) {
-      if(typeof vnode.children === 'string') {
+      if(typeof vnode.children === 'string' || typeof vnode.children === 'number') {
         el.textContent = vnode.children
       } else {
         vnode.children.forEach(child => {
@@ -38,12 +39,6 @@
     }
     container.appendChild(el)
   }
-
-  const vdom = h('div', { class: 'red' }, [
-    h('span', null, 'hello')
-  ])
-
-  mount(vdom, document.getElementById('app'))
 
   function patch(n1, n2) {
     if(n1.tag === n2.tag) {
@@ -67,8 +62,8 @@
       //children
       const oldChildren = n1.children
       const newChildren = n2.children
-      if(typeof newChildren === 'string') {
-        if(typeof oldChildren === 'string') {
+      if(typeof newChildren === 'string' || typeof newChildren === 'number') {
+        if(typeof oldChildren === 'string' || typeof oldChildren === 'nunber') {
           if(oldChildren !== newChildren) {
             el.textContent = newChildren
           }
@@ -76,11 +71,15 @@
           el.textContent = newChildren
         }
       } else {
-        if(typeof oldChildren === 'string') {
+        if(typeof oldChildren === 'string' || typeof oldChildren === 'number') {
           el.innerHTML = ''
-          newChildren.forEach(child => {
-            mount(child, el)
-          })
+          if(!Array.isArray(newChildren)) {
+            mount(newChildren, el)
+          } else {
+            newChildren.forEach(child => {
+              mount(child, el)
+            })
+          }
         } else {
           const commonLength = Math.min(oldChildren.length, newChildren.length)
           for(let i = 0; i < commonLength; i++) {
@@ -102,10 +101,28 @@
     }
   }
 
-  const vdom2 = h('div', { class: 'green' }, [
-    h('span', null, 'changed!')
+  import { reactive, effect } from './dist/reactive.js'
+
+  let context = reactive({count: 0})
+
+  const vdom = h('div', { class: 'red' }, [
+    h('span', null, 'hello')
   ])
 
-  patch(vdom, vdom2)
+  mount(vdom, document.getElementById('app'))
 
+  const vdom2 = () => {
+    return h('div', { class: 'green' }, [
+      h('span', null, context.count)
+    ])
+  }
+
+  setInterval(() => {
+    context.count++
+  }, 1000)
+
+  // patch(vdom, vdom2)
+  effect(() => {
+    patch(vdom, vdom2())
+  })
 </script>
