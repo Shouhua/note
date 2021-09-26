@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+<body>
+  <div id="app"></div>
+  <script src="https://unpkg.com/vue@3.0.0-rc.5"></script>
+  <script type="text/x-template" id="appTemplate">
+    <button @click="showAtTop = !showAtTop">Toggle</button>
+    <div v-if="showAtTop">
+      <input ref="inputEl">
+    </div>
+    <hr>
+    <div v-if="!showAtTop">
+      <input ref="inputEl">
+    </div>
+  </script>
+  <script>
+    const { getCurrentInstance, createApp, reactive, ref, onMounted, onUpdated } = Vue
+    const App = {
+      template: '#appTemplate',
+      setup(props, { attrs, emit, slots }) {
+
+        const logRefs = function($refs) {
+          console.log('$refs.inputEl', type($refs.inputEl))
+          
+          function type (v) {
+            return ({}).toString.call(v).slice(8, -1)
+          }
+        }
+        onMounted(() => {
+          const { refs:$refs } = getCurrentInstance()
+          logRefs($refs)
+        })
+        onUpdated(() => {
+          const { refs:$refs } = getCurrentInstance() 
+          logRefs($refs)
+        })
+        return {
+          showAtTop: ref(false),
+        }
+      }
+    }
+    const app = Vue.createApp(App)
+    app.mount(document.getElementById('app'))
+  </script>
+</body>
+</html>

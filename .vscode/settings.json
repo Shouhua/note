@@ -1,4 +1,8 @@
 {
+<<<<<<< Updated upstream
   "typescript.tsdk": "node_modules/typescript/lib",
   "liveServer.settings.port": 5501
+=======
+  "typescript.tsdk": "node_modules/typescript/lib"
+>>>>>>> Stashed changes
 }

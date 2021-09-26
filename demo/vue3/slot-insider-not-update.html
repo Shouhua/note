@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Example</title>
+    <script src="https://unpkg.com/vue@3.0.0-rc.9/dist/vue.global.js"></script>
+  </head>
+  <body>
+    <!-- https://github.com/vuejs/vue-next/issues/1980  -->
+    <div id="app">
+      foo value outside of slot: {{foo}}
+      <item-component>{{foo}}</item-component>
+    </div>
+    
+    <script type="text/x-template" id="item-template">
+      <component :is="'div'">
+         foo value inside of slot: <slot/>
+      </component>
+    </script>
+    
+    <script>
+    const ItemComponent = {
+      template: '#item-template',
+    }
+    Vue.createApp({
+      components: {
+        ItemComponent
+      },
+      setup() {
+        const foo = Vue.ref(false)
+        setInterval(() => { foo.value = !foo.value }, 1000)
+        return {foo}
+      }
+    }).mount('#app')
+    </script>
+  </body>
+</html>

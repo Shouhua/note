@@ -105,3 +105,48 @@ tailwindcss:
 ### vue 3相关的基础库
 (element-plus)[https://github.com/element-plus/element-plus]  
 (jsx-next)[https://github.com/vuejs/jsx-next]  
+
+## Jest
+### Matchers
+1. Common Matchers
+- toBe: 使用Object.is(value1, value2)进行比较, 比如expect(i)[.not].toBe(3)
+- toEqual: 比较对象和数组，比如：expect(o).isEqual({a: 1, b: 2}) 
+2. Truthiness
+- toBeNull
+- toBeUndefined
+- toBeDefined
+- toBeTruchy
+- toBeFalsy
+3. Numbers
+- toBeGreaterThan
+- toBeGreaterThanOrEqual
+- toBe
+- toEqual
+4. Strings
+- toMatch(regex)
+5. Array and iterables
+- toContain
+6. Exceptions
+- toThrow(Error | string | regex)
+### Mock functions
+1. .mock property
+const myMock = jest.fn()
+myMock.mock.calls.length
+myMock.mock.calls[0][0].toBe('first arg')
+myMock.mock.results[0].value.toBe('return value')
+myMock.mock.instances.length.toBe(2)
+myMock.mock.instances[0].name.toEual('test')
+2. Mock return value
+const myMock = jest.fn()
+myMock() // undefined
+myMock.mockReturnValueOnce(10).mockReturnValueOnce('x').mockReturnValue(true)
+console.log(myMock(), myMock(), myMock(), myMock()) // 10, x, true, true
+3. custom matchers
+expect(mockFunc).toHaveBeenCalled()
+expect(mockFunc).toHaveBeeanCalledWith(arg1, arg2)
+expect(mockFunc).toMatchSnapshot()
+
+## vue3 scheduler内部job执行
+instance.update是effect，使用scheduler，scheduler将添加job到queue(not pre and not post)
+setRef会将set ref的操作放在post job中，但是优先级是最高的，设置了id=-1
+watch也会如果设置了flush也会flush job，flush=pre会使用queuePreFlushCb, flush=post会使用queuePostFlushCb,这个会在setRef之后执行(https://github.com/vuejs/vue-next/issues/1852)
