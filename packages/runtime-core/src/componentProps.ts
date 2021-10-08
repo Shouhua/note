@@ -181,7 +181,7 @@ export function initProps(
   } else {
     if (!instance.type.props) {
       // functional w/ optional props, props = props
-      // NOTICE: functional without optional props, props = attrs
+      // NOTICE: functional without optional props, props包含所有的传递属性
       instance.props = attrs
     } else {
       // functional w/ declared props
@@ -354,9 +354,10 @@ function setFullProps(
       const value = rawProps[key]
       // prop option names are camelized during normalization, so to support
       // kebab -> camel conversion here we need to camelize the key.
-      // 用户输入的kebab props key可能经过camerlized
+      // 业务代码的的props key(kebab, camel等)统一经过camerlized
       let camelKey
       if (options && hasOwn(options, (camelKey = camelize(key)))) {
+        // 有Boolean的type或者有default
         if (!needCastKeys || !needCastKeys.includes(camelKey)) {
           // 寻找所有在props声明的props, 没有声明的可能包括attrs和event handler
           props[camelKey] = value
@@ -530,10 +531,13 @@ export function normalizePropsOptions(
         const prop: NormalizedProp = (normalized[normalizedKey] =
           isArray(opt) || isFunction(opt) ? { type: opt } : opt)
         if (prop) {
-          const booleanIndex = getTypeIndex(Boolean, prop.type) // type可以是Array，Function，String等
+          // https://v3.cn.vuejs.org/guide/component-props.html#prop-%E9%AA%8C%E8%AF%81
+          // type: [Boolean, String, Number], 如果有boolean需要转化默认值等
+          const booleanIndex = getTypeIndex(Boolean, prop.type)
           const stringIndex = getTypeIndex(String, prop.type)
           prop[BooleanFlags.shouldCast] = booleanIndex > -1 // 如果有boolean，就需要转化
-          prop[BooleanFlags.shouldCastTrue] = // 主要是处理为Boolean的时候，用户只输入key，比如<div hello-world />中，hello-world就属于这种
+          // 主要是处理为Boolean的时候，用户只输入key，比如<div hello-world />中，hello-world就属于这种
+          prop[BooleanFlags.shouldCastTrue] =
             stringIndex < 0 || booleanIndex < stringIndex
           // if the prop needs boolean casting or default value
           if (booleanIndex > -1 || hasOwn(prop, 'default')) {

@@ -115,7 +115,8 @@ export function renderComponentRoot(
                   }
                 : { attrs, slots, emit }
             )
-          : render(props, null as any /* we know it doesn't need it */)
+          : // props包括所有的传入，比如class, style, v-on listeners, props等，所以不需要其他传入
+            render(props, null as any /* we know it doesn't need it */)
       )
       /**
        *  When a functional component is leveraging optional props declaration, there is only implicit fallthrough for class,
