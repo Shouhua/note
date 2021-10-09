@@ -368,7 +368,8 @@ const hasChanged = function(newVal: any, oldVal: any) {
   return newVal !== oldVal && (newVal === newVal || oldVal === oldVal)
 }
 
-interface WatchOptionsBase {
+// watchEffect's options
+interface WatchOptionsBase { 
   flush?: 'pre' | 'sync' | 'post',
   onTrack?: Function,
   onTrigger?: Function
@@ -380,13 +381,15 @@ interface WatchOptions extends WatchOptionsBase {
 const EMPTY_OBJ : {readonly[key: string]: any} = {}
 const warnLabel = 'Only support ref, reactive, function type'
 const watch = (source, cb, { immediate, deep, flush, onTrack, onTrigger }: WatchOptions = EMPTY_OBJ) => {
+  // normalize source
   let getter = () => {}
   const isRefSource = isRef(source)
   if(isRef(source)) {
     getter = () => source.value
   } else if(isReactive(source)) {
     getter = () => traverse(source)
-    deep = true
+    // NOTICE: 对于对象类型(比如数组，或者对象)变化后，不能通过比较对象是否变化，需要flag标识是否变化了
+    deep = true 
   } else if(isArray(source)) {
     getter = () => source.map(s => {
       if(isRef(s)) {

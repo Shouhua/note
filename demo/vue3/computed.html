@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+<body>
+  
+  <script type="module">
+    import { ref, computed, effect } from 'https://unpkg.com/vue@next/dist/vue.esm-browser.js'
+    /**
+     * 结果是：1 3 3
+     * 解释为什么执行activeEffect时候要先执行computed
+     */
+    // import { ref, computed } from 'vue'
+    // import { effect } from '@vue/reactivity'
+
+    const count = ref(0)
+    const plusOne = computed(() => {
+      return count.value + 1
+    })
+
+    // 相当于view
+    effect(() => {
+      console.log(plusOne.value + count.value)
+    })
+
+    function plus() {
+      count.value++
+    }
+
+    plus()
+    debugger
+    console.log(plusOne.id)
+  </script>
+</body>
+</html>

@@ -15,15 +15,26 @@
 		const { createApp, ref, reactive } = Vue
 		const Comp = {
 			inheritAttrs: false,
-			template: `<button @click="$emit('click', $event)">OK</button>`,
+			template: `<div>
+				<button @click="handleClick">OK</button>
+				</div>`,
+			setup(props, {attrs, emit, slots, expose}) {
+				const handleClick = () => {
+					console.log('click', attrs)
+				}
+				return {
+					handleClick
+				}
+			}
 			// emits: ['click'],
 		}
 		const App = {
 			components: { Comp },
-			template: `<Comp @click="handleClick"></Comp>`,
+			template: `<Comp :class="{helo: isHelo}" @click="handleClick"></Comp>`,
 			setup(props, {slots, attrs, emit, expose}) {
 				const handleClick = () => console.log('click triggered');
 				return {
+					isHelo: true,
 					handleClick 
 				}
 			}

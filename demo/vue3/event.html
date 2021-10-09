@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Document</title>
+</head>
+<body>
+	<div id="app"></div>
+	<script src="https://unpkg.com/vue"></script>
+	<script>
+		const Comp = {
+			// inheritAttrs: false,
+			// <button @click="handleClick">OK</button>
+			template: `
+			<div>
+					<button onclick="console.log('click')">OK</button>
+					</div>
+			`,
+			methods: {
+				handleClick() {
+					console.log('click', this.$listeners)
+					this.$emit('click')
+				}
+			}
+		}
+		const app = new Vue({
+			el: '#app',
+			components: { Comp },
+			data() {
+				return {
+					isHelo: true
+				}
+			},
+			// 只是注册在组件根元素上注册了自定义事件click, 所以如果需要监听onclick原生事件时，
+			// 需要使用native的modifier
+			template: `
+				<Comp :class="{helo: isHelo}" v-on:click="handleClick" />	
+			`,
+			methods: {
+				handleClick() {
+					console.log('button clicked')
+				}
+			}
+		})
+	</script>
+</body>
+</html>

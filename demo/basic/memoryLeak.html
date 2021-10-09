@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+  </head>
+  <body>
+    <div id="app">
+      <button id="run">运行</button>
+      <button id="stop">停止</button>
+    </div>
+    <script>
+      const arr = []
+      for (let i = 0; i < 200000; i++) {
+        arr.push(i)
+      }
+      let newArr = []
+
+      function run() {
+        newArr = newArr.concat(arr)
+      }
+
+      let clearRun
+
+      document.querySelector('#run').onclick = function() {
+        clearRun = setInterval(() => {
+          run()
+        }, 1000)
+      }
+
+      document.querySelector('#stop').onclick = function() {
+        clearInterval(clearRun)
+      }
+			// https://juejin.cn/post/6844903917986267143
+			// https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Memory_Management
+			// 标记-清除算法
+    </script>
+  </body>
+</html>

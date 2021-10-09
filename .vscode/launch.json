@@ -180,6 +180,18 @@
       ],
       "runtimeArgs": ["-r", "esm"],
       "program": "${workspaceFolder}/demo/vue3/ref.js"
-    }
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "computed",
+      "program": "${workspaceFolder}/demo/vue3/computed.js",
+      "skipFiles": [
+        "<node_internals>/**"
+      ],
+      // "outputCapture": "console",
+      "runtimeArgs": ["-r", "esm"]
+      // "preLaunchTask": "tsc: watch - tsconfig.json"
+    },
   ]
 }

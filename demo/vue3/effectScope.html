@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Document</title>
+</head>
+<body>
+	<script type="module">
+		import { effectScope, computed, watch, watchEffect, ref } from 'https://unpkg.com/vue@next/dist/vue.esm-browser.js'
+		// effect, computed, watch, watchEffect created inside the scope will be collected
+		const counter = ref(0)
+
+		const scope = effectScope()
+
+		scope.run(() => {
+			const doubled = computed(() => counter.value * 2)
+
+			watch(doubled, () => console.log(doubled.value))
+
+			watchEffect(() => console.log('Count: ', doubled.value))
+		})
+
+		// to dispose all effects in the scope
+scope.stop()
+	</script>
+</body>
+</html>

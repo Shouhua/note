@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Document</title>
+</head>
+<body>
+	<div id="app"></div>
+	<script src="https://unpkg.com/vue@next"></script>
+	<script>
+		/* functional component在3.x里面基本上跟stateful component没有性能上的差别
+		** 前者仅用于简写，前者现在使用上有2个注意点，主要是有无props的options api导致的：
+													有props options api             		没有props options api
+		函数传参props包含信息   正常props信息													所有传递信息都在props上	
+		落在根元素上的属性			正常的attrs(props之外)								class/style/v-on
+		具体实现参见https://github.com/vuejs/rfcs/blob/master/active-rfcs/0031-attr-fallthrough.md
+		*/
+		const { createApp, mount, h } = Vue
+		const funcComp = (props, { attrs }) => h('div', attrs.msg)
+		// funcComp.props = {}
+		const App = {
+			components: { funcComp},
+			template: `<func-comp class="bg-red" @click="handleClick" msg="helo"/>`,
+			setup() {
+				const handleClick = () => { console.log('clicked'); }
+				return {
+					handleClick
+				}
+			}
+		}
+		createApp(App).mount('#app')
+	</script>
+</body>
+</html>
