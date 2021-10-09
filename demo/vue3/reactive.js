@@ -10,11 +10,25 @@
 
 // obj.foo = 2 // 有效
 
-let s = new Set()
-const fn = function() {
-  s.delete(fn)
-  s.add(fn)
-  console.log('in fn')
-}
-s.add(fn)
-s.forEach(fn => fn())
+// let s = new Set()
+// const fn = function() {
+//   s.delete(fn)
+//   s.add(fn)
+//   console.log('in fn')
+// }
+// s.add(fn)
+// s.forEach(fn => fn())
+
+import { reactive, effect, computed } from '@vue-mini/reactivity'
+
+let r = reactive({count: 0})
+effect(() => {
+  console.log(r.count);
+})
+
+computed(() => {
+  console.log('computed');
+  return r.count
+})
+
+r.count++
