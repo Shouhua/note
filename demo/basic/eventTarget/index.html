@@ -18,16 +18,23 @@
   </ul>
   <script type="text/javascript">
     const parent = document.getElementById('ul');
-    parent.addEventListener('click', (ev) => {
+    const hanldeEvent = function(ev, index) {
+      console.log('use capture triggered ', ev, index)
+    }
+    const handleEventCaptureFalse = function(ev) {
+      console.log(ev) 
       console.log(ev.target) // who triggered the event
       console.log(ev.currentTarget) // who handle the event
       console.log('use bubble triggered');
-    }, {
+    }
+    parent.addEventListener('click', handleEventCaptureFalse, {
       capture: false
     })
-    parent.addEventListener('click', (ev) => {
-      console.log('use capture triggered');
-    }, {
+    // 相同的函数&&相同的capture配置，如果handle function一样会只注册一次
+    parent.addEventListener('click', hanldeEvent, {
+      capture: true
+    })
+    parent.addEventListener('click', hanldeEvent, {
       capture: true
     })
   </script>
