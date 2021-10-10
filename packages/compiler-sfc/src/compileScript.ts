@@ -575,7 +575,7 @@ export function compileScript(
         error(
           `\`${method}()\` in <script setup> cannot reference locally ` +
             `declared variables because it will be hoisted outside of the ` +
-            `setup() function. If your component options requires initialization ` +
+            `setup() function. If your component options require initialization ` +
             `in the module scope, use a separate normal <script> to export ` +
             `the options instead.`,
           id
@@ -834,7 +834,8 @@ export function compileScript(
       } else if (
         (node.type === 'VariableDeclaration' ||
           node.type === 'FunctionDeclaration' ||
-          node.type === 'ClassDeclaration') &&
+          node.type === 'ClassDeclaration' ||
+          node.type === 'TSEnumDeclaration') &&
         !node.declare
       ) {
         walkDeclaration(node, scriptBindings, userImportAlias)
@@ -1204,25 +1205,25 @@ export function compileScript(
   // we use a default __props so that template expressions referencing props
   // can use it directly
   if (propsIdentifier) {
-    s.prependRight(
+    s.prependLeft(
       startOffset,
       `\nconst ${propsIdentifier} = __props${
         propsTypeDecl ? ` as ${genSetupPropsType(propsTypeDecl)}` : ``
-      }`
+      }\n`
     )
   }
   if (propsDestructureRestId) {
-    s.prependRight(
+    s.prependLeft(
       startOffset,
       `\nconst ${propsDestructureRestId} = ${helper(
         `createPropsRestProxy`
-      )}(__props, ${JSON.stringify(Object.keys(propsDestructuredBindings))})`
+      )}(__props, ${JSON.stringify(Object.keys(propsDestructuredBindings))})\n`
     )
   }
   // inject temp variables for async context preservation
   if (hasAwait) {
     const any = isTS ? `: any` : ``
-    s.prependRight(startOffset, `\nlet __temp${any}, __restore${any}\n`)
+    s.prependLeft(startOffset, `\nlet __temp${any}, __restore${any}\n`)
   }
 
   const destructureElements =
@@ -1504,6 +1505,7 @@ function walkDeclaration(
       }
     }
   } else if (
+    node.type === 'TSEnumDeclaration' ||
     node.type === 'FunctionDeclaration' ||
     node.type === 'ClassDeclaration'
   ) {
