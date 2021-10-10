@@ -98,6 +98,11 @@ export const enum BindingTypes {
    */
   PROPS = 'props',
   /**
+   * a local alias of a `<script setup>` destructured prop.
+   * the original is stored in __propsAliases of the bindingMetadata object.
+   */
+  PROPS_ALIASED = 'props-aliased',
+  /**
    * a let binding (may or may not be a ref)
    */
   SETUP_LET = 'setup-let',
@@ -125,6 +130,7 @@ export type BindingMetadata = {
   [key: string]: BindingTypes | undefined
 } & {
   __isScriptSetup?: boolean
+  __propsAliases?: Record<string, string>
 }
 
 interface SharedTransformCodegenOptions {
