@@ -68,7 +68,7 @@ window.memory可以查看浏览器的内存使用情况(only chrome)
   <input type="text">
 </template>
 ```
-3. 以下情况下传统的template就有点吃力
+4. 对于比较细粒度控制dom渲染，传统的template方式就吃力了，但是这种情况比较少见，一般在一些封装库中出现，所以在一些UI库中会有使用render函数，甚至有的使用jsx，都是处于这个原因，但是不建议所有的组件都使用。以下情况下传统的template就有点吃力
 ```html
 <Stack size=4>
   <div>hello</div>
@@ -96,11 +96,29 @@ to
   </div>
 </div>
 ```
-
-tailwindcss:
-1. font-size使用rem，border使用px，其他使用em
-2. rem是相对于根元素html的font-size而言, 伪元素:root代表html, font-size默认是16px
-
+使用render函数如下:
+```js
+export default {
+  name: 'Stack',
+  setup(props, {slots}) {
+    const slot = slots.default ? slots.default() : []
+    return () => h('div', {class: 'stack'}, slot.map(child) => h('div', {class: `mt-${props.size}`}, child))
+  }
+}
+```
+5. async setup问题。解决方法可以参考https://antfu.me/posts/async-with-composition-api。主要是由于setup方法里面使用了异步方法后会可能丢失instance，对于依赖instance的
+lifecycle api等不会执行，另外computed、watch在组件销毁的时候不能跟着销毁因为没有注册到instance的effects中。在3.2版本中引入了effectScope，相当于将runtime实现的收集effect，放在了底层reactivity(响应式系统)中，也可以认为是应用实现放到了语言层面。
+6. slot整条线。首先slot必须存在于component的children中。
+  - compiler阶段会编译生成类型为Object的对象
+  - runtime时生成vnode，createVNode -> normalizeChildren -> set shapeFlag(slot_array)和patch flag
+  - runtime时根据vnode生成component instance时，setupComponent->initSlots，会将children转化为instance.slots = {...}
+  - setup运行的时候上下文context中的slots就是上述的slots对象
+  - **renderSlot在组件使用slot tag时候调用，slot默认渲染是不使用优化的，但是在renderSlot是只给编译器调用，可以增加优化，添加openBlock, 详细可见renderSlot.ts** 
+  - **compiler中有使用withCtx的helper表示这个slot在编译阶段已经编译过了，3.2改版后在componentRenderContext.ts文件中，这个里面有说，因为用户自己使用slots去写render函数，所以统一默认不使用优化block；有个情况例外，就是使用renderSlot时候表示一定是编译器结果代码在使用，所以在rendeSlot里面有强制添加开启优化block, 整个过程就是在renderSlot时，调用slot，此时slot为withCtx((args)=>fn)，会触发里面的_c和_d的判断**
+  - **slots对象中_是编译器传递出来的slotFlag，而_c, _d, _n, _ns等是运行时变量**
+7. update component操作。updateComponent中有2中情况：
+  - parent component update，这种情况会生成新的component vnode，所以next(vnode) is not null，同时由于parent component更新有可能更新了传递进来的props和依赖自己组件scope的slots，所以会调用updateProps和updateSlots
+  - 自身变化，这个时候不会生成新的vnode，即next is null，这个时候只会运行instance.update，外部依赖没有变化，**slot在parent component中，虽然变量作用域来自于自身component，但是影响slot结构的变量还是来自于parent component的，所以自身变化的时候不需要更新slots**
 
 ### vue 3相关的基础库
 (element-plus)[https://github.com/element-plus/element-plus]  
@@ -150,3 +168,8 @@ expect(mockFunc).toMatchSnapshot()
 instance.update是effect，使用scheduler，scheduler将添加job到queue(not pre and not post)
 setRef会将set ref的操作放在post job中，但是优先级是最高的，设置了id=-1
 watch也会如果设置了flush也会flush job，flush=pre会使用queuePreFlushCb, flush=post会使用queuePostFlushCb,这个会在setRef之后执行(https://github.com/vuejs/vue-next/issues/1852)
+
+### tailwindcss:
+1. font-size使用rem，border使用px，其他使用em
+2. rem是相对于根元素html的font-size而言, 伪元素:root代表html, font-size默认是16px
+

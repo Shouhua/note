@@ -8,27 +8,33 @@
 </head>
 <body>
 	<div id="app"></div>
-	<script src="https://unpkg.com/vue@next"></script>
-	<script>
-		const { createApp, ref, watch, onMounted, onUnmounted, h, getCurrentInstance, defineAsyncComponent } = Vue
+	<!-- <script src="https://unpkg.com/vue@next"></script> -->
+	<script type="module">
+		// const { createApp, ref, watch, onMounted, onUnmounted, h, getCurrentInstance, defineAsyncComponent } = Vue
+		import { createApp, ref, watch, onMounted, onUnmounted, h, getCurrentInstance, defineAsyncComponent } from 'https://unpkg.com/vue@next/dist/vue.esm-browser.js'
 
 		const Child = {
 			// render() {
 			// 	return () => h('div', 'hello')
 			// },
 			template: `<div>helo</div>`,
+			/*
+			* 异步setup里面的异步操作后再调用时候，有可能component instance已经返回了，出现错误
+			* https://antfu.me/posts/async-with-composition-api
+			*/
 			async setup() {
 				const counter = ref(0)
-				const instance = getCurrentInstance()
+				// const instance = getCurrentInstance()
 				// setInterval(() => counter.value++, 5000)
 				// watch(counter, () => console.log(`watch before: ${counter.value}`))
 				// OK!
 				console.log(counter.value)
-				onMounted(() => console.log('Mounted before'), instance)
+				// onMounted(() => console.log('Mounted before'), instance)
+				onMounted(() => console.log('Mounted before'))
 				// the await statement
 				await Promise.resolve('helo, world!')
 				// onMounted(() => console.log('Mounted after'), instance)
-				onMounted(() => console.log('Mounted after'), instance)
+				onMounted(() => console.log('Mounted after'))
 				// does NOT work!
 				// onUnmounted(() => console.log('Unmounted'))
 				// still works, but does not auto-dispose 
