@@ -22,7 +22,7 @@ module.exports = {
     rules: [
       {
         test: /\.vue$/,
-        exclude: /node_modules|vue-next|demo/,
+        exclude: /node_modules/,
         loader: 'vue-loader'
       },
       {
@@ -36,7 +36,16 @@ module.exports = {
       // },
       {
         test: /\.css$/,
-        use: ['style-loader', 'css-loader', 'sass-loader', 'postcss-loader']
+        use: ['vue-style-loader', {
+          loader: 'css-loader',
+          options: {
+            // 开启 CSS Modules
+            modules: {
+              // 自定义生成的类名
+              localIdentName: '[local]_[hash:base64:8]'
+            }
+          }
+        }]
       }
     ]
   },
@@ -44,6 +53,10 @@ module.exports = {
     new VueLoader.VueLoaderPlugin(),
     new HtmlWebpackPlugin({
       template: 'index.html'
-    })
+    }),
+    new webpack.DefinePlugin({
+      __VUE_OPTIONS_API__: false,
+      __VUE_PROD_DEVTOOLS__: false,
+    }),
   ]
 }

@@ -1,6 +1,6 @@
 import {createApp, computed} from 'vue'
 import App from './App'
-import './index.css'
+// import './index.css'
 // import { VueRouter } from '../demo/cumstomRouter.js'
 // import Order from './components/order.vue'
 // import About from './components/about.vue'

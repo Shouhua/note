@@ -1,6 +1,9 @@
 <template>
   <!-- <h2>Vue3 Demo</h2> -->
   <div class="test">helo, app</div>
+  <p :class="helo.red">
+    This should be red
+  </p>
   <!-- <css-vars/> -->
   <!-- <router-link to="/">home</router-link>
   <router-link to="order">to order</router-link>
@@ -22,16 +25,16 @@
   </Teleport> -->
 </template>
 <script>
-import Greet from './modules/greet';
-import Count from './modules/count';
-import { reactive, ref } from 'vue';
-import CssVars from './modules/CssVars.vue';
+// import Greet from './modules/greet';
+// import Count from './modules/count';
+import { reactive, ref, useCssModule } from 'vue';
+// import CssVars from './modules/CssVars.vue';
 
 export default {
   components: {
-    Greet,
-    Count,
-    CssVars,
+    // Greet,
+    // Count,
+    // CssVars,
   },
   setup() {
     const state = reactive({
@@ -44,10 +47,13 @@ export default {
       console.log(disabled.value)
     }
     const color = ref('red')
-			const font = reactive({
-				size: '2em'
-			})
+    const font = reactive({
+      size: '2em'
+    })
+    let helo = useCssModule()
+    console.log(helo)
     return {
+      helo,
       greetText,
       state,
       handleGreetClick: () => console.log('handle greet click'),
@@ -64,13 +70,17 @@ export default {
   }  
 }
 </script>
+<style module>
+.red {
+  color: red;
+}
+</style>
 <style>
 /* ::v-slotted(.slot-parent) {
   color: blue;
 } */
 .test {
   color: v-bind(color);
-
     /* expressions (wrap in quotes) */
     font-size: v-bind('font.size');
 }

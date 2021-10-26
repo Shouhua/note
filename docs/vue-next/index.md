@@ -119,6 +119,7 @@ lifecycle api等不会执行，另外computed、watch在组件销毁的时候不
 7. update component操作。updateComponent中有2中情况：
   - parent component update，这种情况会生成新的component vnode，所以next(vnode) is not null，同时由于parent component更新有可能更新了传递进来的props和依赖自己组件scope的slots，所以会调用updateProps和updateSlots
   - 自身变化，这个时候不会生成新的vnode，即next is null，这个时候只会运行instance.update，外部依赖没有变化，**slot在parent component中，虽然变量作用域来自于自身component，但是影响slot结构的变量还是来自于parent component的，所以自身变化的时候不需要更新slots**
+8. rollup-plugin-vue可以了解整个编译过程，特别是可以讲编译器串联起来，比如传入options.id = scopeId，还有理解slot scope id
 
 ### vue 3相关的基础库
 (element-plus)[https://github.com/element-plus/element-plus]  
@@ -172,4 +173,9 @@ watch也会如果设置了flush也会flush job，flush=pre会使用queuePreFlush
 ### tailwindcss:
 1. font-size使用rem，border使用px，其他使用em
 2. rem是相对于根元素html的font-size而言, 伪元素:root代表html, font-size默认是16px
+
+### [webpack5升级注意点](https://segmentfault.com/a/1190000040846550)
+1. devServer里面的stats没有了，使用root对象相面的stats或者devServer.devMiddleware.stats代替
+2. devServer.contentBase使用devServer.static.directory代替
+3. 启动dev server，使用webpack-cli里面的webpack serve，不使用原来的webpack-dev-server
 
