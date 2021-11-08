@@ -170,12 +170,27 @@ instance.update是effect，使用scheduler，scheduler将添加job到queue(not p
 setRef会将set ref的操作放在post job中，但是优先级是最高的，设置了id=-1
 watch也会如果设置了flush也会flush job，flush=pre会使用queuePreFlushCb, flush=post会使用queuePostFlushCb,这个会在setRef之后执行(https://github.com/vuejs/vue-next/issues/1852)
 
-### tailwindcss:
+## tailwindcss:
 1. font-size使用rem，border使用px，其他使用em
 2. rem是相对于根元素html的font-size而言, 伪元素:root代表html, font-size默认是16px
 
-### [webpack5升级注意点](https://segmentfault.com/a/1190000040846550)
+## [webpack5升级注意点](https://segmentfault.com/a/1190000040846550)
 1. devServer里面的stats没有了，使用root对象相面的stats或者devServer.devMiddleware.stats代替
 2. devServer.contentBase使用devServer.static.directory代替
 3. 启动dev server，使用webpack-cli里面的webpack serve，不使用原来的webpack-dev-server
+
+## fork工程更新
+[github fork如何更新](https://docs.github.com/en/github/collaborating-with-issues-and-pull-requests/syncing-a-fork)
+``` shell
+git remote add upstream git@github.com:vuejs/vue-next.git
+git fetch upstream
+git switch master
+git merge upstream/master
+git push orgin master
+```
+## ls-lint
+文件和目录名称校验
+
+## tsd
+typescript类型测试
 

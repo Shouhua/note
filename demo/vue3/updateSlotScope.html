@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Example</title>
+    <script src="https://unpkg.com/vue@3.0.0/dist/vue.global.js"></script>
+  </head>
+  <body>
+    <div id="app">
+      <item-component>
+				<template v-slot="{count}">
+					<div>child slot count: {{ count }}</div>	
+				</template>
+			</item-component>
+    </div>
+    
+    <script type="text/x-template" id="item-template">
+			<div>
+        child count: {{count}} <slot :count="count"/>
+				<button @click="count++">Inc</button>
+			</div>
+    </script>
+    
+    <script type="module">
+		import { createApp, ref } from 'https://unpkg.com/vue@next/dist/vue.esm-browser.js'
+    const ItemComponent = {
+      template: '#item-template',
+      setup() {
+        const count = ref(0)
+        return { 
+					count
+				}
+      }
+    }
+    createApp({
+      components: {
+        ItemComponent
+      },
+    }).mount('#app')
+    </script>
+  </body>
+</html>

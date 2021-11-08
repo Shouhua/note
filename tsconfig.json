@@ -1,10 +1,10 @@
 {
   "compilerOptions": {
-    "module": "CommonJS", // 设计模块引用层面的，在最终的产出文件中，commonjs使用require
+    "module": "CommonJS", // 编译结果模块系统
     // "module": "ESNext",
-    "target": "ESNext", // 设计语言层面的的，es6以前最好使用commonjs的module
+    "target": "es6", // language 编译结果语言语法层面，比如尖头函数在es5中就会转化成function
     "moduleResolution": "node", // 模块寻找方式
-    "lib": ["ESNext", "DOM", "ScriptHost"],
+    "lib": ["ESNext", "DOM", "ScriptHost"], // 与target有关，可能需要提供相关的声明
     "esModuleInterop": true, // 支持使用import d from 'cjs'的方式引入commonjs包
     "sourceMap": true,
     // "noImplicitAny": true,

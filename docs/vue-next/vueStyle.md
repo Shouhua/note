@@ -391,7 +391,7 @@ export default script;
 可以在源代码中调试，里面有example文件夹
 3. 不同点
 二者的相同点不想记录了，都是编译sfc文件，但是rollup-plugin-vue可能更加倾向于production环境的编译，更加简练。
-**css module的支持导致看了很多资料和文档，这里要重点记录。首先跳跃的说下，所有的编译包都是利用[@vue/compiler-sfc](https://github.com/vuejs/vue-next/tree/master/packages/compiler-sfc)提供的编译能力，额外说明的是vue3.2+后，vue包开始暴露compiler-sfc，所以使用只需要引入vue/compiler-sfc。他提供的parse功能解析出descriptor，其中style部分就包括style.scope, style.module, style.lang等attribute, 根据这些属性设置不同的import url**
+**css module的支持导致看了很多资料和文档，这里要重点记录。首先跳跃的说下，所有的编译包都是利用[@vue/compiler-sfc](https://github.com/vuejs/vue-next/tree/master/packages/compiler-sfc)提供的编译能力，额外说明的是vue3.2+后，vue包直接开始暴露compiler-sfc，所以使用只需要引入vue/compiler-sfc。他提供的parse功能解析出descriptor，其中style部分就包括style.scope, style.module, style.lang等attribute, 根据这些属性设置不同的import url**
 支持css mdoule的能力最底层都是通过包[postcss-modules](https://github.com/madyankin/postcss-modules)提供的，但是提供给终端有些不同，首先@vue/compiler-sfc中提供的compileStyle或者compileStyleAsync接口有提供是否是css module的传参:
 ```js
 export function compileStyleAsync(
@@ -517,3 +517,23 @@ script.__cssModules = cssModules
 还是生成类似的编译文件，后面就跟rollup-plugin-vue一个套路了
 vue官方文档中关于style功能可以参见: https://v3.cn.vuejs.org/api/sfc-style.html
 里面通过pseudo提供了很多功能，这些就是在vue解析style中通过postcss提供的插件实现的，其中里面的:global(class_name)应该是借鉴了css modules里面的global伪类
+**@vue/compiler-sfc提供了全部的编译功能，比如css module，甚至preprocessLang(sass, scss, stylus, less, styl), 但是要在compileStyle提供preprocessLang， preprocessLangOptions，比如提供了是'scss',前提是用户提前安装了对应的包，比如sass包，目前vue-loader是没有提供这个功能的，需要用户自己在webpack中配置**
+
+### vue-loader:
+1. vue-loader首次转换.vue文件协议：
+```js
+// template
+import { render } from './app.vue?vue&&type=template&&id=123&&scoped=true'
+//script
+import script from './app.vue?vue&&type=script&&id=123&&lang=js'
+export * from './app.vue?vue&&type=script&&id=123&&lang=js'
+// style有module可能稍微复杂点，会有cssModules的导出
+import "./App.vue?vue&type=style&index=1&id=7ba5bd90&lang=css"
+import "./App.vue?vue&type=style&index=2&id=7ba5bd90&lang=scss"
+import "./App.vue?vue&type=style&index=3&id=7ba5bd90&scoped=true&lang=scss"
+// css modules
+const cssModules = {}
+import style0 from "./App.vue?vue&type=style&index=0&id=7ba5bd90&module=true&lang=css"
+cssModules["$style"] = style0
+```
+2. plugin主要作用是在compiler中根据用户的webpack loader设置重新设置好loaders，包括根据不同的type设置添加loader的请求链接，比如```export * from '-!css-loader!stylePostLoader!postcss-loader!style.css'```等；在pitch.js文件中将style文件变成```export default from loaderRequestUrl```，然后应用style的loaders，最终被vue-loader首次转换.vue的文件调用，如上面代码的style部分
