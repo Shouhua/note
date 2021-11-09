@@ -86,3 +86,10 @@ foo value outside of slot: {{foo}}
 
 ## [slot scope id变化](https://github.com/vuejs/vue-next/pull/3374)
 主要是在runtime里面判断slot scope id变成了在编译阶段生成vnode的slotScopeId
+### scopeId
+在sfc中，首先解析出来后，比如script.__scopeId=123, import这个component后，component.__scopeId=123(同样__hmrId等，可以参见component.ts里面的ComponentInternalOptions), 接着生成componentInstance, 接着使用renderComponentRoot渲染component的subTree, 里面就有setCurrentComponent, 同样这个函数里面有setCurrentScopeId=instance.type.scopeId, 接着在renderComponentRoot生成vnode，vnode.scopeId = currentScopeId, 最后在mountElement中setScopeId(vnode.scopeId)完成过程(```<div data-v-123><div>```)。
+### slotScopeId
+slotScopeId稍微复杂点，她只需要在renderSlot中设置slot vnode的slotScopeIds。  
+在编译过程中添加context.slotted的判断，在解析style的时候会根据style.scoped && style.content has ':slotted'然后设置runtime helper function **renderSlot**的第5个参数为null，这样在renderSlot运行的时候，判断后根据当前所在的currentScopeId设置相应的```slotScopeIds=[scopeId+'-s']```
+
+综上所述，以前的scopeId设置比较麻烦，手写render函数，需要自己设置scopeId的context，现在可以直接不用关心这方面的问题；版本中以前的withScopeId/pushScopeId/popScopeId都仅仅作为兼容性考虑接口了(componentRenderContext.ts), 相关的讨论：https://github.com/vuejs/vue-next/issues/2246

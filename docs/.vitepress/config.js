@@ -12,6 +12,8 @@ module.exports = {
     sidebar: {
       '/vue-next/': [
         { text: '大纲', link: '/vue-next/' },
+        { text: 'slot', link: '/vue-next/vueSlot' },
+        { text: 'style', link: '/vue-next/vueStyle' },
         { text: 'compiler', link: '/vue-next/compiler'},
         { text: 'Getting Started', link: '/vue-next/runtime' },
       ],

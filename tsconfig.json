@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "module": "CommonJS", // 编译结果模块系统
+    "module": "CommonJS", // 编译结果使用的模块系统, 比如commonjs的require, es6的import
     // "module": "ESNext",
     "target": "es6", // language 编译结果语言语法层面，比如尖头函数在es5中就会转化成function
     "moduleResolution": "node", // 模块寻找方式

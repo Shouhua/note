@@ -32,6 +32,7 @@
       "request": "launch",
       "name": "parse",
       "program": "${workspaceFolder}/demo/vue3/dist/parse.js",
+      "runtimeArgs": ["-r", "esm"],
       "skipFiles": [
         "<node_internals>/**"
       ]

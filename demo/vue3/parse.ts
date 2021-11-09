@@ -1,11 +1,19 @@
-import { CompilerOptions, baseParse as parse } from '@vue/compiler-core'
+// import { baseParse as parse } from '@vue/compiler-core'
+const { baseParse: parse } = require('@vue/compiler-core')
 
-const dom = `<hello>
-<template #="slotProps">
-  {{ helo.greet}}
-  {{slotProps.greet}}
-</template>
-</hello>`
+const dom = `
+  <template>
+  helo,world
+  </template>
+  <script>
+  console.log('')
+  </script>
+  <style>
+  .red {
+    color: red
+  }
+  </style>
+`
 
 const result = parse(dom)
 

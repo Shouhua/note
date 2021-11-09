@@ -305,6 +305,7 @@ const hasChanged = function (newVal, oldVal) {
 const EMPTY_OBJ = {};
 const warnLabel = 'Only support ref, reactive, function type';
 const watch = (source, cb, { immediate, deep, flush, onTrack, onTrigger } = EMPTY_OBJ) => {
+    // normalize source
     let getter = () => { };
     const isRefSource = isRef(source);
     if (isRef(source)) {
@@ -312,6 +313,7 @@ const watch = (source, cb, { immediate, deep, flush, onTrack, onTrigger } = EMPT
     }
     else if (isReactive(source)) {
         getter = () => traverse(source);
+        // NOTICE: 对于对象类型(比如数组，或者对象)变化后，不能通过比较对象是否变化，需要flag标识是否变化了
         deep = true;
     }
     else if (isArray(source)) {
