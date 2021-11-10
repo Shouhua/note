@@ -3,6 +3,8 @@ import { resolve } from 'path'
 import { parse } from '@babel/parser'
 import MagicString from 'magic-string'
 
+const debug = require('debug')('fakeVite:rewrite')
+
 export function rewrite(source, asSFCScript) {
 	const ast = parse(source, {
     sourceType: 'module',
@@ -11,6 +13,7 @@ export function rewrite(source, asSFCScript) {
   const s = new MagicString(source)
   ast.forEach((node) => {
     if (node.type === 'ImportDeclaration') {
+      debug(`rewrite debug: ${node.source.value}`)
       if (/^[^\.\/]/.test(node.source.value)) {
         s.overwrite( node.source.start, node.source.end, `"/@module/${node.source.value}"`
         )

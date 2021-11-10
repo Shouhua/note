@@ -14,13 +14,8 @@ export default function vueMiddleware(ctx, next) {
   if(parsed.pathname.endsWith('.vue')) {
     const vuePath = resolve(ctx.cwd, ctx.path.slice(1))
     let content = getContent(vuePath)
-    let descriptor
-    if(!cache.has(vuePath)) {
-      descriptor = parseMainSFC(content, vuePath)[0]
-      cache.set(vuePath, descriptor)
-    } else {
-      descriptor = cache.get(vuePath)
-    }
+    let descriptor = parseMainSFC(content, vuePath)[0]
+    cache.set(vuePath, descriptor)
     const query = parsed.query
     let code = ''
     if(!query.type) {

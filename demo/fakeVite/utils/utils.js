@@ -1,4 +1,5 @@
 const fs = require('fs-extra')
+const debug = require('debug')('fakeVite:cache')
 
 const cacheMap = new Map()
 function getFromCache(key) {
@@ -21,6 +22,7 @@ function deleteCache(key) {
 
 function getContent(file) {
 	if(!getFromCache(file)) {
+		debug(`没有命中: ${file}`)
 		let content = fs.readFileSync(file, 'utf-8')
 		cacheMap.set(file, content)
 	}

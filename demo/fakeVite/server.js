@@ -3,18 +3,19 @@ import rewriteMiddleware from './middleware/rewrite'
 import moduleMiddleware from './middleware/module'
 import http from 'http'
 import path from 'path'
-import { getFromCache, setCache, getContent } from './utils/utils'
+import { getFromCache, setCache, getContent, deleteCache } from './utils/utils'
 const Koa = require('koa')
 const fs = require('fs-extra')
 const WebSocket = require('ws')
 const chokidar = require('chokidar')
+
 const debug = require('debug')('fakeVite:server')
 
 function createServer(
   cwd = process.cwd()
 ) {
   const watcher = chokidar.watch(cwd, {
-    ignored: [/\bnode_modules\b/, /\b\.git\b/, /\bsrc\b/, /\b__tests__\b/]
+    ignored: [/\bnode_modules\b/, /\b\.git\b/, /\b__tests__\b/]
   })
 
   const app = new Koa()
@@ -72,9 +73,9 @@ function createServer(
   })
 
   watcher.on('change', (file) => {
+    deleteCache(file)
     debug(`watch on change: ${file}`)
     if (file.endsWith('.html')) {
-      deleteCache(file)
       ws.clients.forEach((client) => {
         if (client.readyState === WebSocket.OPEN) {
           client.send(JSON.stringify({
