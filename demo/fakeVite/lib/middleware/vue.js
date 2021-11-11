@@ -1,18 +1,17 @@
-import { getContent, setCache } from '../utils/utils'
-import { resolve } from 'path'
-import path from 'path'
-import { compileScript, compileStyle, compileTemplate, parse } from '@vue/compiler-sfc'
-import url from 'url'
-import { rewrite } from './rewrite'
-import hash from 'hash-sum'
+const { getContent, setCache } = require('../utils/utils')
+const path = require('path')
+const { compileScript, compileStyle, compileTemplate, parse } = require('@vue/compiler-sfc')
+const url = require('url')
+const { rewrite } = require('./rewrite')
+const hash = require('hash-sum')
 
 const cache = new Map()
 const debug = require('debug')('fakeVite:vue')
 
-export default function vueMiddleware(ctx, next) {
+function vueMiddleware(ctx, next) {
   const parsed = url.parse(ctx.url, true)
   if(parsed.pathname.endsWith('.vue')) {
-    const vuePath = resolve(ctx.cwd, ctx.path.slice(1))
+    const vuePath = path.resolve(ctx.cwd, ctx.path.slice(1))
     let content = getContent(vuePath)
     let descriptor = parseMainSFC(content, vuePath)[0]
     cache.set(vuePath, descriptor)
@@ -72,21 +71,29 @@ style.textContent = ${JSON.stringify(code)}
 	return next()
 }
 
-export function parseMainSFC(content, filename) {
+function parseMainSFC(content, filename) {
   const descriptor = parse(content, {
     filename
   }).descriptor
   return [descriptor, cache.get(filename)]
 }
 
-export function parseScript() {
+function parseScript() {
 
 }
 
-export function parseTemplate() {
+function parseTemplate() {
 
 }
 
-export function parseStyle() {
+function parseStyle() {
 
+}
+
+module.exports = {
+  vueMiddleware,
+  parseMainSFC,
+  parseScript,
+  parseTemplate,
+  parseStyle
 }

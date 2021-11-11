@@ -29,7 +29,7 @@ function getContent(file) {
 	return getFromCache(file)
 }
 
-export {
+module.exports = {
 	getFromCache,
 	setCache,
 	deleteCache,

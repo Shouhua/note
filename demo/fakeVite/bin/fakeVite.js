@@ -1,5 +1,5 @@
 #! /usr/bin/env node
-const { createServer } = require('../dist/server')
+const { createServer } = require('../lib/server')
 // const argv = require('minimist')(process.argv.slice(2))
 
 // if (argv._.length) {

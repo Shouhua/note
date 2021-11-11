@@ -1,9 +1,9 @@
-import vueMiddleware from './middleware/vue'
-import rewriteMiddleware from './middleware/rewrite'
-import moduleMiddleware from './middleware/module'
-import http from 'http'
-import path from 'path'
-import { getFromCache, setCache, getContent, deleteCache } from './utils/utils'
+const { vueMiddleware } = require('./middleware/vue')
+const {rewriteMiddleware} = require('./middleware/rewrite')
+const moduleMiddleware = require('./middleware/module')
+const http = require('http')
+const path = require('path')
+const { getFromCache, setCache, getContent, deleteCache } = require('./utils/utils')
 const Koa = require('koa')
 const fs = require('fs-extra')
 const WebSocket = require('ws')
@@ -123,6 +123,6 @@ function createServer(
   })
 }
 
-export {
+module.exports = {
   createServer
 }

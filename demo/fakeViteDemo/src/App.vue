@@ -6,14 +6,14 @@
 
 <script>
 import {ref} from 'vue'
-import { debounce } from 'lodash-es'
+import { debounce, throttle } from 'lodash-es'
 
 export default {
 	setup() {
 		let count = ref(0)
 		return {
 			count,
-			handleClick: debounce(() => count.value += 1, 500)
+			handleClick: throttle(() => count.value += 1, 500)
 		}
 	}
 }

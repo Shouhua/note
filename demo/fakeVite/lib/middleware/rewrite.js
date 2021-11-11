@@ -1,11 +1,11 @@
-import { getContent, setCache } from '../utils/utils'
-import { resolve } from 'path'
-import { parse } from '@babel/parser'
-import MagicString from 'magic-string'
+const { getContent, setCache } = require('../utils/utils')
+const { resolve } = require('path')
+const { parse } = require('@babel/parser')
+const MagicString = require('magic-string')
 
 const debug = require('debug')('fakeVite:rewrite')
 
-export function rewrite(source, asSFCScript) {
+function rewrite(source, asSFCScript) {
 	const ast = parse(source, {
     sourceType: 'module',
   }).program.body
@@ -30,7 +30,7 @@ export function rewrite(source, asSFCScript) {
   return s.toString()
 }
 
-export default function rewriteMiddleware(ctx, next) {
+function rewriteMiddleware(ctx, next) {
 	const debug = require('debug')('fakeVite:rewrite')
 	debug(`rewrite: ${ctx.path}`)
 	if(ctx.path.endsWith('.js')) {
@@ -40,4 +40,9 @@ export default function rewriteMiddleware(ctx, next) {
 		ctx.response.type = 'application/javascript'
 	}
 	return next()
+}
+
+module.exports = {
+  rewrite,
+  rewriteMiddleware
 }
