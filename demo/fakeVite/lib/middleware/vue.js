@@ -13,23 +13,26 @@ function vueMiddleware(ctx, next) {
   if(parsed.pathname.endsWith('.vue')) {
     const vuePath = path.resolve(ctx.cwd, ctx.path.slice(1))
     let content = getContent(vuePath)
-    let descriptor = parseMainSFC(content, vuePath)[0]
+    let [descriptor, prev] = parseMainSFC(content, vuePath)
     cache.set(vuePath, descriptor)
     const query = parsed.query
-    let code = ''
+    let code = 'import {updateStyle} from "/fakeVite/hmr"'
     if(!query.type) {
       if(descriptor.script) {
         code += rewrite(descriptor.script.content, true)
       }
       if(descriptor.styles) {
         descriptor.styles.forEach((s, i) => {
-          code += `\nimport "${parsed.pathname}?vue&type=style&index=${i}"`
+          // code += `\nimport "${parsed.pathname}?vue&type=style&index=${i}"`
+          code += `updateStyle("${hash(parsed.pathname)}-${i}", "${parsed.pathname}?vue&type=style&index=${i}")`
         })
       }
       if(descriptor.template) {
         code += `\nimport { render as __render } from "${parsed.pathname}?vue&type=template"`
         code += `\n__script.render = __render;`
       }
+      code += `\n__script.__hmrId = ${JSON.stringify(parsed.pathname)}`
+      code += `\n__script.__file = ${JSON.stringify(vuePath)}`
       ctx.body = code.trim()
       ctx.response.type = 'application/javascript'
       return;
@@ -55,16 +58,20 @@ function vueMiddleware(ctx, next) {
         scoped: descriptor.styles[query.index].scoped
       }).code
 
-      ctx.body = `
-const id = "vue-style-${id}-${query.index}"
-let style = document.getElementById(id)
-if(!style) {
-  style = document.createElement('style')
-  style.id = id
-  document.head.appendChild(style)
-}
-style.textContent = ${JSON.stringify(code)}
-      `.trim()
+      ctx.body = `${code}`
+      ctx.response.type = 'text/css'
+      return
+
+//       ctx.body = `
+// const id = "vue-style-${id}-${query.index}"
+// let style = document.getElementById(id)
+// if(!style) {
+//   style = document.createElement('style')
+//   style.id = id
+//   document.head.appendChild(style)
+// }
+// style.textContent = ${JSON.stringify(code)}
+//       `.trim()
     }
     ctx.response.type = 'application/javascript'
   }

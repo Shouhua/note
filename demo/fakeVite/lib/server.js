@@ -1,4 +1,4 @@
-const { vueMiddleware } = require('./middleware/vue')
+const { vueMiddleware, parseMainSFC } = require('./middleware/vue')
 const {rewriteMiddleware} = require('./middleware/rewrite')
 const moduleMiddleware = require('./middleware/module')
 const http = require('http')
@@ -8,6 +8,7 @@ const Koa = require('koa')
 const fs = require('fs-extra')
 const WebSocket = require('ws')
 const chokidar = require('chokidar')
+const hash_sum = require('hash-sum')
 
 const debug = require('debug')('fakeVite:server')
 
@@ -72,21 +73,80 @@ function createServer(
     socket.send(JSON.stringify({ type: 'connected' }))
   })
 
+  function isEqual(a, b) {
+    if (!a && !b) return true
+    if (!a || !b) return false
+    if (a.content !== b.content) return false
+    const keysA = Object.keys(a.attrs)
+    const keysB = Object.keys(b.attrs)
+    if (keysA.length !== keysB.length) {
+      return false
+    }
+    return keysA.every((key) => a.attrs[key] === b.attrs[key])
+  }
+
+  function send(payload) {
+    ws.clients.forEach((client) => {
+      if (client.readyState === WebSocket.OPEN && payload) {
+        client.send(JSON.stringify({
+          ...payload
+        }))
+      }
+    })
+  }
+
   watcher.on('change', (file) => {
     deleteCache(file)
-    debug(`watch on change: ${file}`)
+    debug(`delete file: ${file}`)
+    let publicPath = '/' + path.relative(cwd, file)
     if (file.endsWith('.html')) {
-      ws.clients.forEach((client) => {
-        if (client.readyState === WebSocket.OPEN) {
-          client.send(JSON.stringify({
-            type: 'full-reload',
-            path: file
-          }))
-        }
+      send({
+        type: 'full-reload',
+        timestamp: Date.now()
       })
     }
     if(file.endsWith('.vue')) {
-
+      // 重新parse，然后compare descriptor，不同部分send不同的hmr command
+      let needRerender = false
+      let needReload = false
+      let [descriptor, prev] = parseMainSFC(getContent(file), file)
+      if(!prev) return
+      if(!isEqual(descriptor.template, prev.template)) {
+        needRerender = true
+      }
+      if(!isEqual(descriptor.script, prev.script)) {
+        needReload = true
+      }
+      if(needReload) {
+        send({
+          type: 'reload',
+          path: publicPath,
+          timestamp: Date.now()
+        })
+      }
+      if(needRerender) {
+        send({
+          type: 'rerender',
+          path: publicPath,
+          timestamp: Date.now()
+        })
+      }
+      if(!needReload) {
+        const styleId = hash_sum(publicPath)
+        const prevStyles = prev.styles || []
+        const nextStyles = descriptor.styles || []
+        nextStyles.forEach((_, i) => {
+          if (!prevStyles[i] || !isEqual(prevStyles[i], nextStyles[i])) {
+            send({
+              type: 'style-update',
+              path: publicPath,
+              index: i,
+              id: `${styleId}-${i}`,
+              timestamp: Date.now()
+            })
+          }
+        })
+      }
     }
   })
 
