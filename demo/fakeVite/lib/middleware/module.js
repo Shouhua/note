@@ -21,7 +21,7 @@ module.exports = function moduleMiddleware(ctx, next) {
 				)
 			}
 			ctx.body = getContent(vuePath)
-			ctx.response.type = 'application/javascript'
+			ctx.response.type = 'text/javascript'
 			return next()
     }
 

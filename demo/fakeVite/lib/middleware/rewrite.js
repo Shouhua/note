@@ -37,7 +37,7 @@ function rewriteMiddleware(ctx, next) {
 		const file = resolve(ctx.cwd, ctx.path.slice(1))
 		debug(`file path: ${file}`)
 		ctx.body = setCache(file, rewrite(getContent(file)))
-		ctx.response.type = 'application/javascript'
+		ctx.response.type = 'text/javascript'
 	}
 	return next()
 }
