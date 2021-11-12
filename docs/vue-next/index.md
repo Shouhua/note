@@ -49,8 +49,8 @@ performance.clearMark(endTag)
 window.memory可以查看浏览器的内存使用情况(only chrome)
 ### 支持HMR，devtools
 ### jsx或者render函数会遇到的问题原因：  
-1. ::v-slotted样式的处理问题, 就是说在scoped style环境中使用render函数和template得到的data-v-*注入结果不一致，原因是使用render函数时丢失了scope id的信息，只能自己手动获取scope id然后使用提供的withId和withScopeId包裹render函数
-2.  instance.vnode.scopeId这个不是component自己的scope id，而是component所在component中的scope id，获取component自己的scope id，可以使用instance.type.__scopeId, 但是这个__scopeId是@internal的。
+1. ```::v-slotted(现在使用:slotted(.foo))```样式的处理问题, 就是说在scoped style环境中使用render函数和template得到的data-v-*注入结果不一致，原因是使用render函数时丢失了scope id的信息，只能自己手动获取scope id然后使用提供的withId和withScopeId包裹render函数
+2.  instance.vnode.scopeId这个不是component自己的scope id，而是component所在component中的scope id，获取component自己的scope id，可以使用instance.type.__scopeId, 但是这个__scopeId是@internal的，**这个scopeId是在打包工具编译时传入的**。
 3. 只有stateful component才有vnode.appcontext, 因为在createComponentInstance里面才有appContext的设置
 4. 同样的，functional component是有执行createComponentInstance的，shapeFlags.FUNCTIONAL_COMPONENT导致没有执行setupStatefulComponent后面的流程了, 所以functional component的instance.proxy没有设置
 
@@ -194,3 +194,5 @@ git push orgin master
 ## tsd
 typescript类型测试
 
+### CSP问题
+vue CSP with fucntion, 主要是说在解析tempalte获取组件render函数时，使用了```new Function(...arguments, body)(runtimeCore)```语法，可能会触发浏览器的CSP, 解决版本是在浏览器中不使用含有compiler的vue版本，只使用runtime版本的vue，例如可以使用一些打包工具，比如vue-loader，rollup-plugin-vue提前讲sfc编译成render函数
