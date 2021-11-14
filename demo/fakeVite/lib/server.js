@@ -178,7 +178,17 @@ function createServer(
   app.use(rewriteMiddleware)
   app.use(vueMiddleware)
 
-  http.createServer(app.callback()).listen(3000, () => {
+  const server = http.createServer(app.callback())
+
+  const listen = server.listen.bind(server)
+  server.listen = (async (port, ...args) => {
+    await require('./prebundle').optimizedDeps(process.cwd(), {
+      exclude: ['vue', 'fakevite']
+    })
+    return listen(port, ...args)
+  })
+
+  server.listen(3000, () => {
     console.log('Now listen on localhost:3000')
   })
 }

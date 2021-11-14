@@ -1,9 +1,39 @@
 const resolve = require('resolve-from')
 const { getContent, setCache } = require('../utils/utils')
 const path = require('path')
+const fs = require('fs-extra')
+
+const debug = require('debug')('fakeVite:module')
 
 const idToFileMap = new Map()
 const idToEntry = new Map()
+
+const viteOptimizedMap = new Map()
+
+function resolveOptimizedModule(
+  root,
+  id
+) {
+  const cacheKey = `${root}#${id}`
+  const cached = viteOptimizedMap.get(cacheKey)
+  if (cached) {
+    return cached
+  }
+
+  // const cacheDir = resolveOptimizedCacheDir(root)
+  const cacheDir = path.join(root, 'node_modules/.vite_opt_cache')
+  if (!cacheDir) return
+
+  const tryResolve = (file) => {
+    file = path.join(cacheDir, file)
+    if (fs.existsSync(file) && fs.statSync(file).isFile()) {
+      viteOptimizedMap.set(cacheKey, file)
+      return file
+    }
+  }
+
+  return tryResolve(id) || tryResolve(id + '.js')
+}
 
 module.exports = function moduleMiddleware(ctx, next) {
 	const debug = require('debug')('fakeVite:module')
@@ -24,6 +54,14 @@ module.exports = function moduleMiddleware(ctx, next) {
 			ctx.response.type = 'text/javascript'
 			return next()
     }
+
+		const optimized = resolveOptimizedModule(ctx.cwd, id)
+		if(optimized) {
+			debug(`optimized cache: ${id}`)
+			ctx.body = getContent(optimized)
+			ctx.response.type = 'text/javascript'
+			return next()
+		}
 
 		if(idToEntry.has(id)) {
 			return ctx.redirect(idToEntry.get(id))

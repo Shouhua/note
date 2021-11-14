@@ -6,13 +6,15 @@
 
 <script>
 import {ref} from 'vue'
+import { debounce } from 'lodash-es'
 
 export default {
 	setup() {
 		let count = ref(0)
 		return {
 			count,
-			handleClick: () => count.value += 10
+			// handleClick: () => count.value += 10
+			handleClick: debounce(() => count.value += 10)
 		}
 	}
 }

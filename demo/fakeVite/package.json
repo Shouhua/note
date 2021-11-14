@@ -18,11 +18,18 @@
   "license": "ISC",
   "devDependencies": {
     "@babel/parser": "^7.16.3",
+    "@rollup/plugin-commonjs": "^21.0.1",
     "@rollup/plugin-json": "^4.1.0",
+    "@rollup/plugin-node-resolve": "^13.0.6",
+    "chalk": "^4.1.2",
     "debug": "^4.3.2",
+    "es-module-lexer": "^0.9.3",
     "hash-sum": "^2.0.0",
+    "isbuiltin": "^1.0.0",
     "magic-string": "^0.25.7",
+    "resolve": "^1.20.0",
     "resolve-from": "^5.0.0",
-    "rollup-plugin-copy": "^3.4.0"
+    "rollup-plugin-copy": "^3.4.0",
+    "rollup-plugin-dynamic-import-variables": "^1.1.0"
   }
 }
