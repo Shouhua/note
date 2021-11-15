@@ -7,6 +7,7 @@
 3. publicPath, filePath, 比如hmr需要用到publicPath, cache需要用到filePath，还有2者之间的转化
 4. hmr使用的HMR boundary
 5. 加载外部包时的**跳转**，比如lodash-es, 以及她所依赖的加载，直接导致需要pre-bundling
+6. 添加配置文件, 将相关的上下文变量如何添加到各个middleware
 ### simple dev server for vue
 - [ ] 新建简单的dev server
 - [ ] 支持解析SFC

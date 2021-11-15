@@ -11,7 +11,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "fakevite": "^1.0.0",
+    "fakevite": "link:../fakeVite",
     "lodash-es": "^4.17.21",
     "vue": "^3.2.21"
   }

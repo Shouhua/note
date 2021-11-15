@@ -1,9 +1,11 @@
-const { vueMiddleware, parseMainSFC } = require('./middleware/vue')
-const {rewriteMiddleware} = require('./middleware/rewrite')
-const moduleMiddleware = require('./middleware/module')
+const { vuePlugin, parseMainSFC } = require('./middleware/vue')
+const { rewritePlugin } = require('./middleware/rewrite')
+const { modulePlugin } = require('./middleware/module')
+const { htmlPlugin } = require('./middleware/html')
+const { hmrPlugin } = require('./middleware/hmr')
 const http = require('http')
 const path = require('path')
-const { getFromCache, setCache, getContent, deleteCache } = require('./utils/utils')
+const { getFromCache, setCache, getContent, deleteCache, isEqual } = require('./utils/utils')
 const Koa = require('koa')
 const fs = require('fs-extra')
 const WebSocket = require('ws')
@@ -20,71 +22,14 @@ function createServer(
   })
 
   const app = new Koa()
-  const logTag = 'X-Response-Time'
-  const hmrPath = '/fakeVite/hmr'
-  const wsPort = 3030;
-
-  app.use(async (ctx, next) => {
-    Object.assign(ctx, {watcher, cwd})
-    return next()
-  })
-
-  app.use(async (ctx, next) => {
-    await next()
-    const rt = ctx.response.get(logTag)
-    debug(`${ctx.method} - ${ctx.path} - ${rt}`)
-  })
-
-  app.use(async (ctx, next) => {
-    const start = Date.now()
-    await next()
-    const ms = Date.now() - start
-    ctx.response.set(logTag, `${ms}ms`)
-  })
-
-
-  const devInjectionCode = `
-  <script type="module">
-    import '${hmrPath}'
-    window.process = {
-      env: {
-        NODE_ENV: 'development'
-      }
-    }
-  </script>
-  `
-
-  const injectReplaceRE = [/<head>/, /<!doctype html>/i]
-
-  function injectScriptToHtml(html, script) {
-    for (const re of injectReplaceRE) {
-      if (re.test(html)) {
-        return html.replace(re, `$&${script}`)
-      }
-    }
-    return script + html
-  }
-
+  const WS_PORT = 3030;
   // init websocket
   const ws = new WebSocket.Server({
-    port: wsPort
+    port: WS_PORT
   });
   ws.on('connection', (socket, request) => {
     socket.send(JSON.stringify({ type: 'connected' }))
   })
-
-  function isEqual(a, b) {
-    if (!a && !b) return true
-    if (!a || !b) return false
-    if (a.content !== b.content) return false
-    const keysA = Object.keys(a.attrs)
-    const keysB = Object.keys(b.attrs)
-    if (keysA.length !== keysB.length) {
-      return false
-    }
-    return keysA.every((key) => a.attrs[key] === b.attrs[key])
-  }
-
   function send(payload) {
     ws.clients.forEach((client) => {
       if (client.readyState === WebSocket.OPEN && payload) {
@@ -150,33 +95,19 @@ function createServer(
     }
   })
 
-  app.use(async (ctx, next) => {
-    if(ctx.path === '/') {
-      ctx.redirect('index.html')
-      return
-    }
-    if(ctx.path === '/index.html') {
-      const filePath = path.resolve(cwd, ctx.path.slice(1))
-      let html = getContent(filePath)
-      html = injectScriptToHtml(html, devInjectionCode) 
-      ctx.response.type = 'text/html'
-      ctx.body = html
-    }
-    if(ctx.path === hmrPath) {
-      if(!getFromCache(hmrPath)) {
-        const clientContent = fs.readFileSync(path.resolve(__dirname, 'client.js'), {
-          encoding: 'utf8'
-        })
-        setCache(hmrPath, clientContent)
-      }
-      ctx.response.type = 'application/javascript'
-      ctx.body = getFromCache(hmrPath)
-    }
-    return next()
-  })
-  app.use(moduleMiddleware)
-  app.use(rewriteMiddleware)
-  app.use(vueMiddleware)
+  const context = {
+    app,
+    ws,
+    watcher,
+    root: cwd
+  }
+
+  ;[ htmlPlugin,
+    hmrPlugin,
+    modulePlugin,
+    rewritePlugin,
+    vuePlugin
+  ].forEach(m => m(context))
 
   const server = http.createServer(app.callback())
 

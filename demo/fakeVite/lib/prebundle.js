@@ -237,6 +237,7 @@ function resolveQualifiedDeps(
     debug(`skipping ${id} (single esm file, doesn't need optimization)`)
   })
 
+
   const qualified = {}
   qualifiedDeps.forEach((id) => {
     qualified[id] = resolveNodeModule(root, id, resolver).entryFilePath
@@ -340,6 +341,11 @@ async function optimizedDeps(root, options) {
     console.log(`No listed dependency requires optimization. Skipping.`)
     return
   }
+
+      // This is auto run on server start - let the user know that we are
+    // pre-optimizing deps
+    console.log(chalk.greenBright(`[vite] Optimizable dependencies detected:`))
+    console.log(Object.keys(qualified).map((id) => chalk.yellow(id)).join(`, `))
 
 	console.log(`Pre-bundling them to speed up dev server page load...\n` +
 	`(this will be run only when your dependencies have changed)`)

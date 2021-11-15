@@ -1,7 +1,7 @@
-const { getContent, setCache } = require('../utils/utils')
-const { resolve } = require('path')
-const { parse } = require('@babel/parser')
+const{ parse } = require('@babel/parser')
 const MagicString = require('magic-string')
+const { requestToFile } = require('../resolver')
+const { cacheRead } = require('../utils/utils')
 
 const debug = require('debug')('fakeVite:rewrite')
 
@@ -30,19 +30,19 @@ function rewrite(source, asSFCScript) {
   return s.toString()
 }
 
-function rewriteMiddleware(ctx, next) {
-	const debug = require('debug')('fakeVite:rewrite')
-	debug(`rewrite: ${ctx.path}`)
-	if(ctx.path.endsWith('.js')) {
-		const file = resolve(ctx.cwd, ctx.path.slice(1))
-		debug(`file path: ${file}`)
-		ctx.body = setCache(file, rewrite(getContent(file)))
-		ctx.response.type = 'text/javascript'
-	}
-	return next()
+function rewritePlugin({ app, root }) {
+  app.use(async (ctx, next) => {
+    if(ctx.path.endsWith('.js')) {
+      const filePath = requestToFile(ctx.path, root)
+      let content = await cacheRead(ctx, filePath)
+      ctx.body = rewrite(content)
+      return 
+    }
+    return next()
+  })
 }
 
 module.exports = {
   rewrite,
-  rewriteMiddleware
+  rewritePlugin
 }
