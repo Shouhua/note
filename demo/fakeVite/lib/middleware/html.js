@@ -1,7 +1,7 @@
 const path = require('path')
 const { requestToFile } = require('../resolver')
 const { HMR_PATH } = require('./hmr')
-const { cacheRead } = require('../utils/utils')
+const { cacheRead } = require('../utils')
 
 const devInjectionCode = `
 <script type="module">

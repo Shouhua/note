@@ -1,4 +1,4 @@
-const { getContent, setCache } = require('../utils/utils')
+const { getContent, setCache } = require('../utils')
 const path = require('path')
 const { compileScript, compileStyle, compileTemplate, parse } = require('@vue/compiler-sfc')
 const url = require('url')

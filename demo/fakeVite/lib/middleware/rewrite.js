@@ -1,7 +1,7 @@
 const{ parse } = require('@babel/parser')
 const MagicString = require('magic-string')
 const { requestToFile } = require('../resolver')
-const { cacheRead } = require('../utils/utils')
+const { cacheRead } = require('../utils')
 
 const debug = require('debug')('fakeVite:rewrite')
 

@@ -1,8 +1,8 @@
 const resolve = require('resolve-from')
-const { getContent, setCache } = require('../utils/utils')
+const { getContent, setCache } = require('../utils')
 const path = require('path')
 const fs = require('fs-extra')
-const { cacheRead } = require('../utils/utils')
+const { cacheRead } = require('../utils')
 
 const debug = require('debug')('fakeVite:module')
 
