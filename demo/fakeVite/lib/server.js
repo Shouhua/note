@@ -10,8 +10,11 @@ const chokidar = require('chokidar')
 const debug = require('debug')('fakeVite:server')
 
 function createServer(
-  root = process.cwd()
+  config
 ) {
+  const { 
+    root = process.cwd()
+  } = config
   const watcher = chokidar.watch(root, {
     ignored: [/\bnode_modules\b/, /\b\.git\b/, /\b__tests__\b/]
   })
@@ -35,9 +38,9 @@ function createServer(
 
   const listen = server.listen.bind(server)
   server.listen = (async (port, ...args) => {
-    await require('./prebundle').optimizedDeps(process.cwd(), {
-      exclude: ['vue', 'fakevite']
-    })
+    if(config.optimizeDeps.auto !== false) {
+      await require('./prebundle').optimizeDeps(config)
+    }
     return listen(port, ...args)
   })
 

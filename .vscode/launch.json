@@ -194,5 +194,15 @@
       "runtimeArgs": ["-r", "esm"]
       // "preLaunchTask": "tsc: watch - tsconfig.json"
     },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "fakeVite",
+      "skipFiles": [
+        "<node_internals>/**"
+      ],
+      "args": ["serve", "--debug", "--config", "./fakeVite.config.js", "helo"],
+      "program": "${workspaceFolder}/demo/fakeVite/bin/fakeVite.js"
+    },
   ]
 }

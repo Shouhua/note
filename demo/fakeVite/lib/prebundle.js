@@ -1,5 +1,4 @@
 const path = require('path')
-const debug = require('debug')('fakeVite:prebundle')
 const fs = require('fs-extra')
 const resolve = require('resolve')
 const { init, parse } = require('es-module-lexer')
@@ -9,6 +8,8 @@ const { createHash } = require('crypto')
 const OPTIMIZE_CACHE_DIR = `node_modules/.vite_opt_cache`
 const supportedExts = ['.mjs', '.js', '.ts', '.jsx', '.tsx', '.json']
 const mainFields = ['module', 'jsnext', 'jsnext:main', 'browser', 'main']
+
+const debug = require('debug')('fakeVite:prebundle')
 
 function lookupFile(
   dir,
@@ -167,7 +168,10 @@ function resolveQualifiedDeps(
   options,
   resolver
 ){
-  const { include, exclude, link } = options
+  const { 
+    include = [], 
+    exclude = [], 
+    link = [] } = options
   const pkgContent = lookupFile(root, ['package.json'])
   if (!pkgContent) {
     return {
@@ -314,12 +318,17 @@ function onRollupWarning(
   }
 }
 
-async function optimizedDeps(root, options) {
+async function optimizeDeps(config) {
+  const { 
+    force,
+    root = process.cwd()
+  } = config
+  const options = config.optimizeDeps
 	const cacheDir = path.join(root, 'node_modules/.vite_opt_cache')	
 	const hashPath = path.join(cacheDir, 'hash')
 	const depHash = getDepHash(root)
 
-	if (!options.force) {
+	if (!force) {
     let prevhash
     try {
       prevhash = await fs.readFile(hashPath, 'utf-8')
@@ -408,6 +417,6 @@ async function optimizedDeps(root, options) {
 }
 
 module.exports = {
-	optimizedDeps,
+	optimizeDeps,
 	OPTIMIZE_CACHE_DIR
 }

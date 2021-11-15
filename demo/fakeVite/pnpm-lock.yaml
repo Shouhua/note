@@ -14,6 +14,7 @@ specifiers:
   lru-cache: ^6.0.0
   magic-string: ^0.25.7
   mime-types: ^2.1.34
+  minimist: ^1.2.5
   resolve: ^1.20.0
   resolve-from: ^5.0.0
   rollup: ^2.60.0
@@ -34,6 +35,7 @@ devDependencies:
   lru-cache: 6.0.0
   magic-string: 0.25.7
   mime-types: 2.1.34
+  minimist: 1.2.5
   resolve: 1.20.0
   resolve-from: 5.0.0
   rollup: 2.60.0
@@ -485,6 +487,10 @@ packages:
     resolution: {integrity: sha512-yJHVQEhyqPLUTgt9B83PXu6W3rx4MvvHvSUvToogpwoGDOUQ+yDrR0HRot+yOCdCO7u4hX3pWft6kWBBcqh0UA==}
     dependencies:
       brace-expansion: 1.1.11
+    dev: true
+
+  /minimist/1.2.5:
+    resolution: {integrity: sha512-FM9nNUYrRBAELZQT3xeZQ7fmMOBg6nWNmJKTcgsJeaLstP/UODVpGsr5OhXhhXg6f+qtJ8uiZ+PUxkDWcgIXLw==}
     dev: true
 
   /ms/2.1.2:
