@@ -28,17 +28,17 @@ socket.addEventListener('message', async ({data}) => {
   const payload = JSON.parse(data)
   console.log(payload)
   if(payload.type === 'rerender') {
-    import(`${payload.path}?type=template&t=${payload.timestamp}`).then(m => {
+    import(`${payload.path}?vue&type=template&t=${payload.timestamp}`).then(m => {
       __VUE_HMR_RUNTIME__.rerender(payload.path, m.render)
     })
   }
   if(payload.type === 'reload') {
-    import(`${payload.path}?t=${payload.timestamp}`).then(m => {
+    import(`${payload.path}?vue&t=${payload.timestamp}`).then(m => {
       __VUE_HMR_RUNTIME__.reload(payload.path, m.default)
     })
   }
   if(payload.type === 'style-update') {
-    updateStyle(payload.id, `${payload.path}?type=style&index=${payload.index}&t=${payload.timestamp}`)
+    updateStyle(payload.id, `${payload.path}?vue&type=style&index=${payload.index}&t=${payload.timestamp}`)
   }
   if(payload.type === 'full-reload') {
     location.reload()
