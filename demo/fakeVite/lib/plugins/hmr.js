@@ -6,14 +6,32 @@ const { getContent, deleteCache, isEqual, cacheRead } = require('../utils')
 const { parseMainSFC } = require('../utils/vueUtils')
 
 const HMR_PATH = '/fakeVite/client'
-const WS_PORT = 3030
 
-function hmrPlugin({ app, root, watcher }) {
-  const ws = new WebSocket.Server({
-    port: WS_PORT
+const debug = require('debug')('fakeVite:hmr')
+
+function hmrPlugin({ app, root, server, watcher }) {
+  const wss = new WebSocket.Server({
+    noServer: true
   });
+  server.on('upgrade', (req, socket, head) => {
+    if(req.headers['sec-websocket-protocol'] === 'fake-vite-hmr') {
+      debug('socket upgrade')
+      wss.handleUpgrade(req, socket, head, (ws) => {
+        wss.emit('connection', ws, req)
+      })
+    }
+  })
+  wss.on('error', (e) => {
+    if (e.code !== 'EADDRINUSE') {
+      console.error(chalk.red(`[fakeVite] WebSocket server error:`))
+      console.error(e)
+    }
+  })
+  wss.on('connection', (socket) => {
+    socket.send(JSON.stringify({ type: 'connected' }))
+  })
 	const send = watcher.send = (payload) => {
-		ws.clients.forEach((client) => {
+		wss.clients.forEach((client) => {
 			if (client.readyState === WebSocket.OPEN && payload) {
 				client.send(JSON.stringify({
 					...payload
@@ -21,10 +39,6 @@ function hmrPlugin({ app, root, watcher }) {
 			}
 		})
 	}
-  ws.on('connection', (socket, request) => {
-    send({ type: 'connected' })
-  })
-
   watcher.on('change', (file) => {
     deleteCache(file)
     let publicPath = '/' + path.relative(root, file)

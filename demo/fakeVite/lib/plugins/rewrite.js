@@ -37,7 +37,6 @@ function rewrite(source, asSFCScript) {
 function rewritePlugin({ app, root }) {
   app.use(async (ctx, next) => {
     await next()
-    debug(`after: ${ctx.url}`)
     if(ctx.path.endsWith('.js') ||
       (ctx.path.endsWith('.vue') && ctx.query.type && ctx.query.type !== 'style')
     ) {

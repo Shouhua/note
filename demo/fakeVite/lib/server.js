@@ -47,7 +47,10 @@ function resolveServer(
   reqeustListeners) {
   if(https) {
     return require('http2').createSecureServer(
-      resolveHttpsConfig(httpsOptions),
+      {
+        ...resolveHttpsConfig(httpsOptions),
+        allowHTTP1: true
+      },
       reqeustListeners)
   } else {
     return require('http').createServer(reqeustListeners)
@@ -65,11 +68,13 @@ function createServer(
   })
 
   const app = new Koa()
+  const server = resolveServer(config, app.callback())
 
   const context = {
     app,
     watcher,
-    root
+    root,
+    server
   }
 
   ;[ 
@@ -84,8 +89,6 @@ function createServer(
     assetsPlugin,
     staticPlugin
   ].forEach(m => m(context))
-
-  const server = resolveServer(config, app.callback())
 
   const listen = server.listen.bind(server)
   server.listen = (async (port, ...args) => {

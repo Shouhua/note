@@ -1,5 +1,6 @@
-const socketUrl = `ws://${location.hostname}:3030`
-const socket = new WebSocket(socketUrl)
+let protocol = location.protocol === 'https:' ? 'wss:' : 'ws:'
+const socketUrl = `${protocol}//${location.hostname}:3000`
+const socket = new WebSocket(socketUrl, 'fake-vite-hmr')
 
 // export function updateStyle(id, url) {
 //   const linkId = `vue-style-${id}`
