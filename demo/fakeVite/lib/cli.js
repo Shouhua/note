@@ -1,7 +1,8 @@
 const argv = require('minimist')(process.argv.slice(2))
-process.env.DEBUG = `fakeVite: ` + (argv.debug === true ? '*' : argv.debug)
+process.env.DEBUG = `fakeVite:` + (argv.debug === true ? '*' : argv.debug)
 
 const chalk = require('chalk')
+const path = require('path')
 
 console.log(chalk.cyan(`fakeVite v${require('../package.json').version}`))
 
@@ -54,6 +55,12 @@ function resolveOptions() {
     include: [],
     exclude: ['vue', 'fakevite'],
     link: []
+  }
+  argv.https = true
+  argv.httpsOptions = {
+    // ca: path.join(__dirname, 'cert/ca-cert.pem'),
+    cert: path.resolve(__dirname, '../cert/server-cert.pem'),
+    key: path.resolve(__dirname, '../cert/server-key.pem')
   }
 	return argv
 }

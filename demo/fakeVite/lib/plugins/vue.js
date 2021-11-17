@@ -4,8 +4,10 @@ const { compileScript, compileStyle, compileTemplate, parse } = require('@vue/co
 const url = require('url')
 const { rewrite } = require('./rewrite')
 const hash = require('hash-sum')
+const { HMR_PATH } = require('./hmr')
+const { parseMainSFC } = require('../utils/vueUtils')
+const { rewriteCssUrls } = require('./css')
 
-const cache = new Map()
 const debug = require('debug')('fakeVite:vue')
 
 function vuePlugin({ app, root }) {
@@ -15,9 +17,8 @@ function vuePlugin({ app, root }) {
       const vuePath = path.resolve(root, ctx.path.slice(1))
       let content = getContent(vuePath)
       let [descriptor, prev] = parseMainSFC(content, vuePath)
-      cache.set(vuePath, descriptor)
       const query = parsed.query
-      let code = 'import {updateStyle} from "/fakeVite/hmr"'
+      let code = `import {updateStyle} from '${HMR_PATH}'`
       if(!query.type) {
         if(descriptor.script) {
           code += rewrite(descriptor.script.content, true)
@@ -25,7 +26,10 @@ function vuePlugin({ app, root }) {
         if(descriptor.styles) {
           descriptor.styles.forEach((s, i) => {
             // code += `\nimport "${parsed.pathname}?vue&type=style&index=${i}"`
-            code += `updateStyle("${hash(parsed.pathname)}-${i}", "${parsed.pathname}?vue&type=style&index=${i}")`
+            // code += `updateStyle("${hash(parsed.pathname)}-${i}", "${parsed.pathname}?vue&type=style&index=${i}")`
+            let css = JSON.stringify(s.content)
+            css = rewriteCssUrls(css, parsed.pathname)
+            code += `updateStyle("${hash(parsed.pathname)}-${i}", ${css})`
           })
         }
         if(descriptor.template) {
@@ -36,10 +40,11 @@ function vuePlugin({ app, root }) {
         code += `\n__script.__file = ${JSON.stringify(vuePath)}`
         ctx.body = code.trim()
         ctx.response.type = 'application/javascript'
-        return;
+        return
       }
       let filename = path.join(root, parsed.pathname.slice(1))
       if(query.type === 'template') {
+        debug('template execute...')
         ctx.body = compileTemplate({
           source: descriptor.template.content,
           filename,
@@ -75,16 +80,10 @@ function vuePlugin({ app, root }) {
   //       `.trim()
       }
       ctx.response.type = 'application/javascript'
+      return
     }
     return next()
   })
-}
-
-function parseMainSFC(content, filename) {
-  const descriptor = parse(content, {
-    filename
-  }).descriptor
-  return [descriptor, cache.get(filename)]
 }
 
 function parseScript() {

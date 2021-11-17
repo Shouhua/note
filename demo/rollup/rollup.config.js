@@ -1,16 +1,34 @@
-import { terser } from 'rollup-plugin-terser'
+// import { terser } from 'rollup-plugin-terser'
+import css from './cssPlugin'
+function renderChunkTestPlugin() {
+  return {
+    name: 'fakeVite:render-chunk',
+    async renderChunk(code, chunk, options) {
+      console.log(code)
+      console.log(chunk)
+      console.log(options)
+      return {
+        code: 'just for test' + code,
+        map: null
+      }
+    }
+  }
+}
 
 export default {
-  input: './index.js',
+  input: './src/index.js',
   output: {
-    file: 'bundle.js',
+    dir: 'dist',
+    name: 'bundle.[hash].js',
     format: 'esm'
   },
   plugins: [
-    terser({
-      compress: {
-        side_effects: true
-      }
-    })
+    css(false)
+    // renderChunkTestPlugin()
+    // terser({
+    //   compress: {
+    //     side_effects: true
+    //   }
+    // })
   ]
 }

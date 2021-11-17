@@ -1,17 +1,27 @@
 const socketUrl = `ws://${location.hostname}:3030`
 const socket = new WebSocket(socketUrl)
 
-export function updateStyle(id, url) {
-  const linkId = `vue-style-${id}`
-  let link = document.getElementById(linkId)
-  if (!link) {
-    link = document.createElement('link')
-    link.id = linkId
-    link.setAttribute('rel', 'stylesheet')
-    link.setAttribute('type', 'text/css')
-    document.head.appendChild(link)
+// export function updateStyle(id, url) {
+//   const linkId = `vue-style-${id}`
+//   let link = document.getElementById(linkId)
+//   if (!link) {
+//     link = document.createElement('link')
+//     link.id = linkId
+//     link.setAttribute('rel', 'stylesheet')
+//     link.setAttribute('type', 'text/css')
+//     document.head.appendChild(link)
+//   }
+//   link.setAttribute('href', url)
+// }
+const sheetsMap = new Map()
+export function updateStyle(id, content) {
+  let style = sheetsMap.get(id)
+  if(!style) {
+    style = new CSSStyleSheet()
+    style.replaceSync(content)
+    document.adoptedStyleSheets = [...document.adoptedStyleSheets, style]
   }
-  link.setAttribute('href', url)
+  sheetsMap.set(id, style)
 }
 
 socket.addEventListener('message', async ({data}) => {

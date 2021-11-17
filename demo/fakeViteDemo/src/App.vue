@@ -1,12 +1,16 @@
 <template>
-	<h1>helo world!!</h1>
+	<h1 class="green">helo world!</h1>
+	<input type="range">
 	<div class="red">{{ count }}</div>
 	<button @click="handleClick">Click</button>
+	<!-- <div class="url">css url</div> -->
+	<div><img src="./cx.jpeg" alt=""></div>
 </template>
 
 <script>
 import {ref} from 'vue'
 import { debounce } from 'lodash-es'
+// import './style.css'
 
 export default {
 	setup() {
@@ -25,4 +29,7 @@ export default {
 	color: red;
 	font-size: 60px;
 }
+/* .url {
+	background: url('./full.jpeg');
+} */
 </style>

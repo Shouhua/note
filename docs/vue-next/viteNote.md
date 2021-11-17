@@ -16,6 +16,10 @@
 - [ ] 支持解析SFC
 - [ ] 支持HMR, script/template/style(module, scoped)
 
+### vite解析和编译css
+serve时候，遇到import css，生成code中使用updateStyle加载返回的静态css内容
+build时候，使用
+
 ### cli至少应该具有的功能
 1. template
 2. dev server

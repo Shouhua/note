@@ -3,8 +3,9 @@ const path = require('path')
 const WebSocket = require('ws')
 const hash_sum = require('hash-sum')
 const { getContent, deleteCache, isEqual, cacheRead } = require('../utils')
+const { parseMainSFC } = require('../utils/vueUtils')
 
-const HMR_PATH = '/fakeVite/hmr'
+const HMR_PATH = '/fakeVite/client'
 const WS_PORT = 3030
 
 function hmrPlugin({ app, root, watcher }) {
@@ -26,7 +27,7 @@ function hmrPlugin({ app, root, watcher }) {
 
   watcher.on('change', (file) => {
     deleteCache(file)
-    let publicPath = '/' + path.relative(cwd, file)
+    let publicPath = '/' + path.relative(root, file)
     if (file.endsWith('.html')) {
       send({
         type: 'full-reload',

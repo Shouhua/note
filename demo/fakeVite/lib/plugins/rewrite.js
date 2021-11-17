@@ -1,22 +1,26 @@
-const{ parse } = require('@babel/parser')
+// const{ init, parse } = require('es-module-lexer')
+const { parse } = require('@babel/parser')
 const MagicString = require('magic-string')
 const { requestToFile } = require('../resolver')
-const { cacheRead } = require('../utils')
+const { cacheRead, readBody } = require('../utils')
+const { HMR_PATH } = require('./hmr')
 
 const debug = require('debug')('fakeVite:rewrite')
 
 function rewrite(source, asSFCScript) {
-	const ast = parse(source, {
-    sourceType: 'module',
+  const ast = parse(source, {
+    sourceType: 'module'
   }).program.body
-
   const s = new MagicString(source)
   ast.forEach((node) => {
     if (node.type === 'ImportDeclaration') {
-      debug(`rewrite debug: ${node.source.value}`)
       if (/^[^\.\/]/.test(node.source.value)) {
         s.overwrite( node.source.start, node.source.end, `"/@module/${node.source.value}"`
         )
+      } else {
+        if(/^\./.test(node.source.value)) {
+          s.overwrite(node.source.start, node.source.end, `"${node.source.value}?import"`)
+        }
       }
     } else if (asSFCScript && node.type === 'ExportDefaultDeclaration') {
       s.overwrite(
@@ -32,13 +36,22 @@ function rewrite(source, asSFCScript) {
 
 function rewritePlugin({ app, root }) {
   app.use(async (ctx, next) => {
-    if(ctx.path.endsWith('.js')) {
+    await next()
+    debug(`after: ${ctx.url}`)
+    if(ctx.path.endsWith('.js') ||
+      (ctx.path.endsWith('.vue') && ctx.query.type && ctx.query.type !== 'style')
+    ) {
       const filePath = requestToFile(ctx.path, root)
-      let content = await cacheRead(ctx, filePath)
+      let content
+      if(ctx.query.vue != null) {
+        content = await readBody(ctx.body)
+      } else {
+        content = await cacheRead(ctx, filePath)
+      }
       ctx.body = rewrite(content)
-      return 
+    } else {
+      debug(`(skip) ${ctx.url}`)
     }
-    return next()
   })
 }
 

@@ -4,6 +4,7 @@ const mime = require('mime-types')
 const path = require('path')
 const getETag = require('etag')
 const LRUCache = require('lru-cache')
+const { Readable } = require('stream')
 
 const cacheMap = new Map()
 function getFromCache(key) {
@@ -81,11 +82,39 @@ async function cacheRead(ctx, file) {
 	return content
 }
 
+/**
+ * Read already set body on a Koa context and normalize it into a string.
+ * Useful in post-processing middlewares.
+ */
+ async function readBody(
+  stream
+) {
+  if (stream instanceof Readable) {
+    return new Promise((resolve, reject) => {
+      let res = ''
+      stream
+        .on('data', (chunk) => (res += chunk))
+        .on('error', reject)
+        .on('end', () => {
+          resolve(res)
+        })
+    })
+  } else {
+    return !stream || typeof stream === 'string' ? stream : stream.toString()
+  }
+}
+
+const isImportRequest = (ctx) => {
+  return ctx.query.import != null
+}
+
 module.exports = {
 	getFromCache,
 	setCache,
 	deleteCache,
 	getContent,
 	isEqual,
-	cacheRead
+	cacheRead,
+	readBody,
+	isImportRequest
 }

@@ -1,13 +1,56 @@
-const { vuePlugin } = require('./middleware/vue')
-const { rewritePlugin } = require('./middleware/rewrite')
-const { modulePlugin } = require('./middleware/module')
-const { htmlPlugin } = require('./middleware/html')
-const { hmrPlugin } = require('./middleware/hmr')
+const { vuePlugin } = require('./plugins/vue')
+const { rewritePlugin } = require('./plugins/rewrite')
+const { modulePlugin } = require('./plugins/module')
+const { htmlPlugin } = require('./plugins/html')
+const { hmrPlugin } = require('./plugins/hmr')
+const { staticPlugin } = require('./plugins/static')
+const { cssPlugin } = require('./plugins/css')
+const { assetsPlugin } = require('./plugins/assets')
+
 const http = require('http')
 const Koa = require('koa')
 const chokidar = require('chokidar')
+const fs = require('fs-extra')
+const path = require('path')
 
 const debug = require('debug')('fakeVite:server')
+
+function readFileIfExists(value) {
+  if (value && !Buffer.isBuffer(value)) {
+    try {
+      return fs.readFileSync(path.resolve(value))
+    } catch (e) {
+      return value
+    }
+  }
+  return value
+}
+
+function resolveHttpsConfig(httpsOption) {
+  const { ca, cert, key, pfx } = httpsOption
+  Object.assign(httpsOption, {
+    ca: readFileIfExists(ca),
+    cert: readFileIfExists(cert),
+    key: readFileIfExists(key),
+    pfx: readFileIfExists(pfx)
+  })
+  // if (!httpsOption.key || !httpsOption.cert) {
+  //   httpsOption.cert = httpsOption.key = createCertificate()
+  // }
+  return httpsOption
+}
+
+function resolveServer(
+  { https = false, httpsOptions = {}},
+  reqeustListeners) {
+  if(https) {
+    return require('http2').createSecureServer(
+      resolveHttpsConfig(httpsOptions),
+      reqeustListeners)
+  } else {
+    return require('http').createServer(reqeustListeners)
+  }
+}
 
 function createServer(
   config
@@ -27,14 +70,18 @@ function createServer(
     root
   }
 
-  ;[ htmlPlugin,
+  ;[ 
+    rewritePlugin,
+    htmlPlugin,
     hmrPlugin,
     modulePlugin,
-    rewritePlugin,
-    vuePlugin
+    vuePlugin,
+    cssPlugin,
+    assetsPlugin,
+    staticPlugin
   ].forEach(m => m(context))
 
-  const server = http.createServer(app.callback())
+  const server = resolveServer(config, app.callback())
 
   const listen = server.listen.bind(server)
   server.listen = (async (port, ...args) => {
@@ -45,7 +92,7 @@ function createServer(
   })
 
   server.listen(3000, () => {
-    console.log('Now listen on localhost:3000')
+    console.log(`Now listen on ${config.https ? 'https' : 'http'}://localhost:3000`)
   })
 }
 
