@@ -44,10 +44,14 @@ function vuePlugin({ app, root }) {
       }
       let filename = path.join(root, parsed.pathname.slice(1))
       if(query.type === 'template') {
-        debug('template execute...')
         ctx.body = compileTemplate({
           source: descriptor.template.content,
           filename,
+          transformAssetUrls: { 
+            // 添加base后，img使用src不会新建新的import请求，原因是添加base后，不会将src地址hoist为import import_0 from './cx.jpeg', 因而不会产生新的import请求，而是直接使用static serve
+            // 更底层是compiler-sfc中解析template时使用的函数transformSrcset里面的逻辑，如果有base，处理后直接返回了，没有hoist操作
+            base: path.dirname(ctx.path)
+          },
           compilerOptions: {
             scopeId: descriptor.styles.some((s) => s.scoped) ? `data-v-${hash(parsed.pathname)}` : null,
             runtimeModuleName: '/@module/vue'
