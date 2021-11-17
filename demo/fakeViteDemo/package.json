@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
+    "serve": "vite",
     "dev": "fakeVite serve --debug=\"server\""
   },
   "keywords": [],
@@ -14,5 +15,9 @@
     "fakevite": "link:../fakeVite",
     "lodash-es": "^4.17.21",
     "vue": "^3.2.21"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^1.9.4",
+    "vite": "^2.6.14"
   }
 }

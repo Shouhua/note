@@ -36,6 +36,21 @@ Options:
   --force                    [boolean] force the optimizer to ignore the cache and re-bundle
 `
 
+
+;(async () => {
+	const { help, h, mode, m, version, v } = argv
+  if (help || h) {
+    logHelp()
+    return
+  } else if (version || v) {
+    return
+  }
+	const options = resolveOptions()
+	if(!options.command || options.command === 'serve') {
+		require('./server').createServer(options)
+	}
+})()
+
 function resolveOptions() {
 	Object.keys(argv).forEach(key => {
 		if(argv[key] === 'false') {
@@ -51,32 +66,29 @@ function resolveOptions() {
 	if(!argv.root && argv._[1]) {
 		argv.root = argv._[1]
 	}
-	argv.optimizeDeps = {
-    include: [],
-    exclude: ['vue', 'fakevite'],
-    link: []
+  const userConfig = resolveConfig()
+  if (userConfig) {
+    return {
+      ...userConfig,
+      ...argv // cli options take higher priority
+    }
   }
-  argv.https = true
-  argv.httpsOptions = {
-    // ca: path.join(__dirname, 'cert/ca-cert.pem'),
-    cert: path.resolve(__dirname, '../cert/server-cert.pem'),
-    key: path.resolve(__dirname, '../cert/server-key.pem')
-  }
+	// argv.optimizeDeps = {
+  //   include: [],
+  //   exclude: ['vue', 'fakevite'],
+  //   link: []
+  // }
+  // argv.https = true
+  // argv.httpsOptions = {
+  //   // ca: path.join(__dirname, 'cert/ca-cert.pem'),
+  //   cert: path.resolve(__dirname, '../cert/server-cert.pem'),
+  //   key: path.resolve(__dirname, '../cert/server-key.pem')
+  // }
 	return argv
 }
 
-;(async () => {
-	const { help, h, mode, m, version, v } = argv
-
-  if (help || h) {
-    logHelp()
-    return
-  } else if (version || v) {
-    // noop, already logged
-    return
-  }
-	const options = resolveOptions()
-	if(!options.command || options.command === 'serve') {
-		require('./server').createServer(options)
-	}
-})()
+function resolveConfig() {
+  const configPath = path.resolve(process.cwd(), 'fakeVite.config.js')
+  const userConfig = require(configPath)
+  return userConfig
+}
