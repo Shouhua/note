@@ -20,8 +20,10 @@ function vuePlugin({ app, root }) {
       const query = parsed.query
       let code = `import {updateStyle} from '${HMR_PATH}'`
       if(!query.type) {
+        let map
         if(descriptor.script) {
           code += rewrite(descriptor.script.content, true)
+          map = descriptor.script.map
         }
         if(descriptor.styles) {
           descriptor.styles.forEach((s, i) => {
@@ -39,14 +41,16 @@ function vuePlugin({ app, root }) {
         code += `\n__script.__hmrId = ${JSON.stringify(parsed.pathname)}`
         code += `\n__script.__file = ${JSON.stringify(vuePath)}`
         ctx.body = code.trim()
+        ctx.map = map
         ctx.response.type = 'application/javascript'
         return
       }
       let filename = path.join(root, parsed.pathname.slice(1))
       if(query.type === 'template') {
-        ctx.body = compileTemplate({
+        const { code, map } = compileTemplate({
           source: descriptor.template.content,
           filename,
+          inMap: descriptor.template.map,
           transformAssetUrls: { 
             // 添加base后，img使用src不会新建新的import请求，原因是添加base后，不会将src地址hoist为import import_0 from './cx.jpeg', 因而不会产生新的import请求，而是直接使用static serve
             // 更底层是compiler-sfc中解析template时使用的函数transformSrcset里面的逻辑，如果有base，处理后直接返回了，没有hoist操作
@@ -57,7 +61,9 @@ function vuePlugin({ app, root }) {
             runtimeModuleName: '/@module/vue'
           },
           id: hash(parsed.pathname)
-        }).code
+        })
+        ctx.body = code
+        ctx.map = map
       }
       if(query.type === 'style') {
         const id = hash(parsed.pathname)

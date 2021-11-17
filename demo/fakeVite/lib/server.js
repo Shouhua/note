@@ -6,6 +6,7 @@ const { hmrPlugin } = require('./plugins/hmr')
 const { staticPlugin } = require('./plugins/static')
 const { cssPlugin } = require('./plugins/css')
 const { assetsPlugin } = require('./plugins/assets')
+const { sourceMapPlugin } = require('./plugins/sourceMap')
 
 const http = require('http')
 const Koa = require('koa')
@@ -71,6 +72,7 @@ function createServer(
   }
 
   ;[ 
+    sourceMapPlugin,
     rewritePlugin,
     htmlPlugin,
     hmrPlugin,

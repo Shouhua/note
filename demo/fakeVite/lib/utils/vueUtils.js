@@ -5,7 +5,8 @@ const cache = new Map()
 function parseMainSFC(content, filename) {
 	const prev = cache.get(filename)
   const descriptor = parse(content, {
-    filename
+    filename,
+    sourceMap: true
   }).descriptor
 	cache.set(filename, descriptor)
   return [descriptor, prev]

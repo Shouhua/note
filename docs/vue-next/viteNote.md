@@ -9,8 +9,9 @@
 5. 加载外部包时的**跳转**，比如lodash-es, 以及她所依赖的加载，直接导致需要pre-bundling
 6. 调整代码结构，middleware->plugin
 7. 添加配置文件, 将相关的上下文变量如何添加到各个plugin
-8. 如何处理常规打包工具比如webpack中各种loader，比如，file-loader对assets文件的处理
+8. 如何处理常规打包工具比如webpack中各种loader，比如，file-loader对assets文件的处理, 自己实现了其中的处理，包括css，assets，json等
 9. config和option命名规范，在传递配置时候叫做options，在配置server的时候叫做config, 用于prebundle时候又叫做options
+10. compiler-sfc中处理template的函数transformSrcset中如果给了配置项transformSrcset.base，会直接join base和img的src，并且src不会被hoist，这样就不会被生成新的import assets请求, **其中compiler-sfc中添加node transfer体现了vue-next compiler的可扩展性，可以重点关注下**
 ### simple dev server for vue
 - [ ] 新建简单的dev server
 - [ ] 支持解析SFC
