@@ -18,10 +18,7 @@ import person from './person.json'
 import './style.css'
 import styleModule from './style.module.css'
 import Foo from './components/foo.vue'
-import browser from 'debug'
-
-localStorage.debug = 'foo'
-const debug = new browser('foo')
+import { appDebug as debug } from './utils/index.js'
 
 export default {
 	components: {
@@ -31,7 +28,7 @@ export default {
 		let count = ref(0)
 		let name = ref(person.name)
 		const s = reactive(styleModule)
-		debug('foooooooooooooooooooooo')
+		debug('apppppppppppppppppppppppppppp')
 		return {
 			s,
 			count,

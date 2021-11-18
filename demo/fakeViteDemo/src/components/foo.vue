@@ -3,9 +3,11 @@
 </template>
 <script>
 import { ref } from 'vue'
+import { fooDebug } from '../utils/index.js'
 
 export default {
 	setup() {
+		fooDebug('fooooooooooooooooooooooooo')
 		return {
 			name: ref('Foo')
 		}
