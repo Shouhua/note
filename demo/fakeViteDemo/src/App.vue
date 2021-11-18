@@ -1,27 +1,32 @@
 <template>
 	<h1>helo world!</h1>
 	<div class="green">{{ name }}</div>
+	<div :class="s.foo">module style</div>
+	<div :class="$style.bar">inline module style</div>
 	<input type="range">
 	<div class="red">{{ count }}</div>
 	<button @click="handleClick">Click</button> 
-	<!-- <div class="url">css url</div> -->
+	<div class="url">css url</div>
 	<div><img src="./cx.jpeg" alt=""></div>
 </template>
 
 <script>
-import {ref} from 'vue'
+import { ref, reactive } from 'vue'
 import { debounce } from 'lodash-es'
 import person from './person.json'
 import './style.css'
+import styleModule from './style.module.css'
 
 export default {
 	setup() {
 		let count = ref(0)
 		let name = ref(person.name)
+		const s = reactive(styleModule)
+		console.log(s)
 		return {
+			s,
 			count,
 			name,
-			// handleClick: () => count.value += 10
 			handleClick: debounce(() => count.value += 10)
 		}
 	}
@@ -33,7 +38,9 @@ export default {
 	color: red;
 	font-size: 60px;
 }
-/* .url {
-	background: url('./cx.jpeg');
-} */
+</style>
+<style module>
+.bar {
+	color:blue;
+}
 </style>

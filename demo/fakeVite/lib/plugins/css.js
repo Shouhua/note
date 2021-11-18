@@ -3,6 +3,8 @@ const { HMR_PATH } = require('./hmr')
 const { dataToEsm } = require('@rollup/pluginutils')
 const { readBody } = require('../utils')
 const path = require('path')
+const { compileStyleAsync } = require('@vue/compiler-sfc')
+const { compileCss } = require('../utils/cssUtils')
 
 const urlRE = /url\(\s*('[^']+'|"[^"]+"|[^'")]+)\s*\)/
 const cssPreprocessLangRE = /\.(less|sass|scss|styl|stylus|postcss)$/
@@ -14,8 +16,8 @@ const debug = require('debug')('fakeVite:css')
 
 function codegenCss(
   id,
-  css,
-  modules
+  css, 
+	modules = false
 ) {
   let code =
     `import { updateStyle } from "${HMR_PATH}"\n` +
@@ -53,9 +55,36 @@ function rewriteCssUrls(css, base) {
 	}))
 }
 
+const processedCSS = new Map()
 async function processCss(root, ctx) {
 	let css = await readBody(ctx.body)
-	return rewriteCssUrls(css, ctx.path)
+	// const result = await compileStyleAsync({
+	// 	id: '',
+	// 	source: css,
+	// 	modules: ctx.path.includes('.module'),
+	// 	scoped: false
+	// })
+	const result = await compileCss(root, ctx.path, {
+		id: '',
+		source: css,
+		modules: ctx.path.includes('.module'),
+		scoped: false
+	})
+	if(typeof result === 'string') {
+		return {
+			css: rewriteCssUrls(css, ctx.path)
+		}
+	}
+	if (result.errors.length) {
+		console.error(`[fakeVite] error applying css transforms: `)
+		result.errors.forEach(console.error)
+	}
+	const res = {
+		css: rewriteCssUrls(result.code, ctx.path),
+		modules: result.modules
+	}
+	processedCSS.set(ctx.path, res)
+	return res
 }
 
 const cssPlugin = ({ app, root }) => {
@@ -64,9 +93,9 @@ const cssPlugin = ({ app, root }) => {
 		if(ctx.body && isCSSRequest(ctx.path)) {
 			const id = hash_sum(ctx.path)
 			if(ctx.query.import != null) {
-				const css = await processCss(root, ctx)
+				const res = await processCss(root, ctx)
 				ctx.type = 'js'
-				ctx.body = codegenCss(id, css)
+				ctx.body = codegenCss(id, res.css, res.modules)
 			}
 		}
 	})
@@ -74,5 +103,6 @@ const cssPlugin = ({ app, root }) => {
 
 module.exports = {
 	cssPlugin,
-	rewriteCssUrls
+	rewriteCssUrls,
+	codegenCss
 }

@@ -3,7 +3,8 @@ const path = require('path')
 const WebSocket = require('ws')
 const hash_sum = require('hash-sum')
 const { getContent, deleteCache, isEqual, cacheRead } = require('../utils')
-const { parseMainSFC } = require('../utils/vueUtils')
+const { parseSFC } = require('../utils/vueUtils')
+const chalk = require('chalk')
 
 const HMR_PATH = '/fakeVite/client'
 
@@ -52,7 +53,7 @@ function hmrPlugin({ app, root, server, watcher }) {
       // 重新parse，然后compare descriptor，不同部分send不同的hmr command
       let needRerender = false
       let needReload = false
-      let [descriptor, prev] = parseMainSFC(getContent(file), file)
+      let [descriptor, prev] = parseSFC(getContent(file), file)
       if(!prev) return
       if(!isEqual(descriptor.template, prev.template)) {
         needRerender = true
@@ -74,15 +75,28 @@ function hmrPlugin({ app, root, server, watcher }) {
           timestamp: Date.now()
         })
       }
+      if(
+        prev.styles.some(s => s.module != null) ||
+        descriptor.styles.some(s => s.module != null) 
+      ) {
+        return send({
+          type: 'reload',
+          path: publicPath,
+          timestamp: Date.now()
+        })
+      }
       if(!needReload) {
         const styleId = hash_sum(publicPath)
         const prevStyles = prev.styles || []
         const nextStyles = descriptor.styles || []
         nextStyles.forEach((_, i) => {
           if (!prevStyles[i] || !isEqual(prevStyles[i], nextStyles[i])) {
+            debug(`[fakeVite:hmr] ${path.relative(root, file)} style${i} changed`)
+            const isModule = nextStyles[i].module != null
+            const isScoped = nextStyles[i].scoped != null
             send({
               type: 'style-update',
-              path: publicPath,
+              path: (`${publicPath}?vue&type=style&index=${i}` + (isModule ? '&module' : '') + (isScoped ? '&scoped' : '')),
               index: i,
               id: `${styleId}-${i}`,
               timestamp: Date.now()

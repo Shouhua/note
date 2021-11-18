@@ -1,12 +1,13 @@
 const { getContent, setCache } = require('../utils')
 const path = require('path')
-const { compileScript, compileStyle, compileTemplate, parse } = require('@vue/compiler-sfc')
+const { compileTemplate, parse } = require('@vue/compiler-sfc')
 const url = require('url')
 const { rewrite } = require('./rewrite')
 const hash = require('hash-sum')
 const { HMR_PATH } = require('./hmr')
-const { parseMainSFC } = require('../utils/vueUtils')
-const { rewriteCssUrls } = require('./css')
+const { parseSFC } = require('../utils/vueUtils')
+const { compileCss } = require('../utils/cssUtils')
+const { codegenCss, rewriteCssUrls } = require('./css')
 
 const debug = require('debug')('fakeVite:vue')
 
@@ -16,26 +17,44 @@ function vuePlugin({ app, root }) {
     if(parsed.pathname.endsWith('.vue')) {
       const vuePath = path.resolve(root, ctx.path.slice(1))
       let content = getContent(vuePath)
-      let [descriptor, prev] = parseMainSFC(content, vuePath)
+      let [descriptor, prev] = parseSFC(content, vuePath)
       const query = parsed.query
       let code = `import {updateStyle} from '${HMR_PATH}'`
+      let timestamp = ctx.query.t ? `&t=${ctx.query.t}` : ''
       if(!query.type) {
         let map
         if(descriptor.script) {
           code += rewrite(descriptor.script.content, true)
           map = descriptor.script.map
         }
+        let hasScoped = false
+        let hasCSSModules = false
         if(descriptor.styles) {
           descriptor.styles.forEach((s, i) => {
-            // code += `\nimport "${parsed.pathname}?vue&type=style&index=${i}"`
-            // code += `updateStyle("${hash(parsed.pathname)}-${i}", "${parsed.pathname}?vue&type=style&index=${i}")`
-            let css = JSON.stringify(s.content)
-            css = rewriteCssUrls(css, parsed.pathname)
-            code += `updateStyle("${hash(parsed.pathname)}-${i}", ${css})`
+            const styleRequest = parsed.pathname + `?vue&type=style&index=${i}${timestamp}`
+            if(s.scoped) hasScoped = true
+            if(s.module) {
+              if(!hasCSSModules) {
+                code += `\nconst __cssModules = __script.__cssModules = {}`
+                hasCSSModules = true
+              }
+              const styleVar = `__style${i}`
+              const moduleName = typeof s.module === 'string' ? s.module : '$style'
+              code += `\nimport ${styleVar} from ${JSON.stringify(styleRequest + '&module')}`
+              code += `\n__cssModules[${JSON.stringify(moduleName)}] = ${styleVar}`
+            } else {
+              code += `\nimport ${JSON.stringify(styleRequest)}`
+            }
+            if(hasScoped) {
+              code += `\n__script.__scopeId = "data-v-${id}"`
+            }
+            // let css = JSON.stringify(s.content)
+            // css = rewriteCssUrls(css, parsed.pathname)
+            // code += `updateStyle("${hash(parsed.pathname)}-${i}", ${css})`
           })
         }
         if(descriptor.template) {
-          code += `\nimport { render as __render } from "${parsed.pathname}?vue&type=template"`
+          code += `\nimport { render as __render } from "${parsed.pathname}?vue&type=template${timestamp}"`
           code += `\n__script.render = __render;`
         }
         code += `\n__script.__hmrId = ${JSON.stringify(parsed.pathname)}`
@@ -67,27 +86,15 @@ function vuePlugin({ app, root }) {
       }
       if(query.type === 'style') {
         const id = hash(parsed.pathname)
-        const code = compileStyle({
-          source: descriptor.styles[Number(query.index)].content,
-          id: `data-v-${id}`,
+        const index = Number(query.index)
+        const styleBlock = descriptor.styles[index]
+        const result = await parseStyle(root, parsed.pathname, {
+          source: styleBlock.content,
           filename,
-          scoped: descriptor.styles[query.index].scoped
-        }).code
-
-        ctx.body = `${code}`
-        ctx.response.type = 'text/css'
-        return
-
-  //       ctx.body = `
-  // const id = "vue-style-${id}-${query.index}"
-  // let style = document.getElementById(id)
-  // if(!style) {
-  //   style = document.createElement('style')
-  //   style.id = id
-  //   document.head.appendChild(style)
-  // }
-  // style.textContent = ${JSON.stringify(code)}
-  //       `.trim()
+          scoped: styleBlock.scoped != null,
+          modules: styleBlock.module != null
+        })
+        ctx.body = codegenCss(`${id}-${index}`, result.code, result.modules) 
       }
       ctx.response.type = 'application/javascript'
       return
@@ -96,22 +103,23 @@ function vuePlugin({ app, root }) {
   })
 }
 
-function parseScript() {
-
-}
-
-function parseTemplate() {
-
-}
-
-function parseStyle() {
-
+async function parseStyle(root, publicPath, {
+  source,
+  filename,
+  scoped,
+  modules,
+}) {
+  const result = await compileCss(root, publicPath, {
+    source,
+    filename,
+    scoped,
+    modules
+  })
+  result.code = rewriteCssUrls(result.code, publicPath)
+  return result
 }
 
 module.exports = {
   vuePlugin,
-  parseMainSFC,
-  parseScript,
-  parseTemplate,
   parseStyle
 }

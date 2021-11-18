@@ -2,7 +2,7 @@ const { compileScript, compileStyle, compileTemplate, parse } = require('@vue/co
 const { getContent, setCache } = require('../utils')
 
 const cache = new Map()
-function parseMainSFC(content, filename) {
+function parseSFC(content, filename) {
 	const prev = cache.get(filename)
   const descriptor = parse(content, {
     filename,
@@ -25,7 +25,7 @@ function parseStyle() {
 }
 
 module.exports = {
-  parseMainSFC,
+  parseSFC,
   parseScript,
   parseTemplate,
   parseStyle
