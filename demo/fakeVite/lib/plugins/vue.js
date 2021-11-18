@@ -30,6 +30,7 @@ function vuePlugin({ app, root }) {
         let hasScoped = false
         let hasCSSModules = false
         if(descriptor.styles) {
+          const id = hash(parsed.pathname)
           descriptor.styles.forEach((s, i) => {
             const styleRequest = parsed.pathname + `?vue&type=style&index=${i}${timestamp}`
             if(s.scoped) hasScoped = true

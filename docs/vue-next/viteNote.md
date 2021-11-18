@@ -14,6 +14,7 @@
 10. compiler-sfc中处理template的函数transformSrcset中如果给了配置项transformSrcset.base，会直接join base和img的src，并且src不会被hoist，这样就不会被生成新的import assets请求, **其中compiler-sfc中添加node transfer体现了vue-next compiler的可扩展性，可以重点关注下**
 11. 支持css, 如果是import css, 解析出来的css通过updateStyle添加到style tag，module则export default出来
 12. module style change后会更新class name, 怎么办？解决办法是vue-reload，因为module style更新会影响template和script, 这个就需要在vuePlugin中添加timestamp参数，用于reload时候重新请求render和style
+13. @vue/compiler-sfc中解析样式使用compileStyle和compileStyleAsync,如果引入css module则必须使用compileStyleAsync, 由于引入了postcss-modules
 ### simple dev server for vue
 - [ ] 新建简单的dev server
 - [ ] 支持解析SFC
