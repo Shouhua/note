@@ -12,10 +12,12 @@
 8. 如何处理常规打包工具比如webpack中各种loader，比如，file-loader对assets文件的处理, 自己实现了其中的处理，包括css，assets，json等
 9. config和option命名规范，在传递配置时候叫做options，在配置server的时候叫做config, 用于prebundle时候又叫做options
 10. compiler-sfc中处理template的函数transformSrcset中如果给了配置项transformSrcset.base，会直接join base和img的src，并且src不会被hoist，这样就不会被生成新的import assets请求, **其中compiler-sfc中添加node transfer体现了vue-next compiler的可扩展性，可以重点关注下**
+11. 支持css, 如果是import css, 解析出来的css通过updateStyle添加到style tag，module则export default出来
 ### simple dev server for vue
 - [ ] 新建简单的dev server
 - [ ] 支持解析SFC
 - [ ] 支持HMR, script/template/style(module, scoped)
+- [ ] 支持css(module)，assets，json
 
 ### vite解析和编译css
 serve时候，遇到import css，生成code中使用updateStyle加载返回的静态css内容

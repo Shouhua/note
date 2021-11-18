@@ -14,6 +14,9 @@ const socket = new WebSocket(socketUrl, 'fake-vite-hmr')
 //   }
 //   link.setAttribute('href', url)
 // }
+
+console.log('[fakeVite] connecting...')
+
 const sheetsMap = new Map()
 export function updateStyle(id, content) {
   let style = sheetsMap.get(id)
@@ -25,23 +28,34 @@ export function updateStyle(id, content) {
   sheetsMap.set(id, style)
 }
 
+socket.addEventListener('close', (ev) => {
+  console.log(`[fakeVite] server connection lost. polling for restart...`)
+  setInterval(() => {
+    fetch('/').then(() => {
+      location.reload()
+    }).catch(e => {})
+  }, 1000)
+})
+
 socket.addEventListener('message', async ({data}) => {
-  const payload = JSON.parse(data)
-  console.log(payload)
-  if(payload.type === 'rerender') {
-    import(`${payload.path}?vue&type=template&t=${payload.timestamp}`).then(m => {
-      __VUE_HMR_RUNTIME__.rerender(payload.path, m.render)
+  const { type, path, id, index, timestamp } = JSON.parse(data)
+  if(type === 'connected') {
+    console.log('[fakeVite] connected')
+  }
+  if(type === 'rerender') {
+    import(`${path}?vue&type=template&t=${timestamp}`).then(m => {
+      __VUE_HMR_RUNTIME__.rerender(path, m.render)
     })
   }
-  if(payload.type === 'reload') {
-    import(`${payload.path}?vue&t=${payload.timestamp}`).then(m => {
-      __VUE_HMR_RUNTIME__.reload(payload.path, m.default)
+  if(type === 'reload') {
+    import(`${path}?vue&t=${timestamp}`).then(m => {
+      __VUE_HMR_RUNTIME__.reload(path, m.default)
     })
   }
-  if(payload.type === 'style-update') {
-    updateStyle(payload.id, `${payload.path}?vue&type=style&index=${payload.index}&t=${payload.timestamp}`)
+  if(type === 'style-update') {
+    updateStyle(id, `${path}?vue&type=style&index=${index}&t=${timestamp}`)
   }
-  if(payload.type === 'full-reload') {
+  if(type === 'full-reload') {
     location.reload()
   }
 })
