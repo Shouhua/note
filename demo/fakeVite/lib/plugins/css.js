@@ -1,5 +1,5 @@
 const hash_sum = require('hash-sum')
-const { HMR_PATH } = require('./hmr')
+const { HMR_PATH } = require('./client')
 const { dataToEsm } = require('@rollup/pluginutils')
 const { readBody } = require('../utils')
 const path = require('path')

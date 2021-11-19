@@ -1,5 +1,5 @@
 let protocol = location.protocol === 'https:' ? 'wss:' : 'ws:'
-const socketUrl = `${protocol}//${location.hostname}:3000`
+const socketUrl = `${protocol}//${location.hostname}:${__HMR_PORT__}`
 const socket = new WebSocket(socketUrl, 'fake-vite-hmr')
 
 // export function updateStyle(id, url) {

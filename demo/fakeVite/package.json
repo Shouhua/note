@@ -39,5 +39,9 @@
     "rollup": "^2.60.0",
     "rollup-plugin-copy": "^3.4.0",
     "rollup-plugin-dynamic-import-variables": "^1.1.0"
+  },
+  "dependencies": {
+    "cross-spawn": "^7.0.3",
+    "open": "^8.4.0"
   }
 }

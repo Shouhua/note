@@ -6,8 +6,6 @@ const { getContent, deleteCache, isEqual, cacheRead } = require('../utils')
 const { parseSFC } = require('../utils/vueUtils')
 const chalk = require('chalk')
 
-const HMR_PATH = '/fakeVite/client'
-
 const debug = require('debug')('fakeVite:hmr')
 
 function hmrPlugin({ app, root, server, watcher }) {
@@ -107,16 +105,10 @@ function hmrPlugin({ app, root, server, watcher }) {
     }
   })
 	app.use(async (ctx, next) => {
-		if(ctx.path === HMR_PATH) {
-			const filePath = path.resolve(__dirname, '../client.js')
-			await cacheRead(ctx, filePath)
-			return
-		}
 		return next()
 	})
 }
 
 module.exports = {
-	HMR_PATH,
 	hmrPlugin
 }

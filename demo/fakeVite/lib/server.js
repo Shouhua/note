@@ -8,6 +8,9 @@ const { cssPlugin } = require('./plugins/css')
 const { assetsPlugin } = require('./plugins/assets')
 const { sourceMapPlugin } = require('./plugins/sourceMap')
 const { jsonPlugin } = require('./plugins/json')
+const { clientPlugin } = require('./plugins/client')
+
+const { createResolver } = require('./resolver')
 
 const http = require('http')
 const Koa = require('koa')
@@ -61,7 +64,8 @@ function createServer(
   config
 ) {
   const { 
-    root = process.cwd()
+    root = process.cwd(),
+    resolve
   } = config
   const watcher = chokidar.watch(root, {
     ignored: [/\bnode_modules\b/, /\b\.git\b/, /\b__tests__\b/]
@@ -70,17 +74,23 @@ function createServer(
   const app = new Koa()
   const server = resolveServer(config, app.callback())
 
+  const resolver = createResolver(root, resolve)
+
   const context = {
     app,
     watcher,
     root,
-    server
+    server,
+    config,
+    resolver,
+    port: config.port || 3000
   }
 
   ;[ 
     sourceMapPlugin,
     rewritePlugin,
     htmlPlugin,
+    clientPlugin,
     hmrPlugin,
     modulePlugin,
     vuePlugin,
@@ -97,10 +107,10 @@ function createServer(
     }
     return listen(port, ...args)
   })
-
-  server.listen(3000, () => {
-    console.log(`Now listen on ${config.https ? 'https' : 'http'}://localhost:3000`)
+  server.once('listening', () => {
+    context.port = server.address().port
   })
+  return server
 }
 
 module.exports = {

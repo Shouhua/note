@@ -1,8 +1,11 @@
+const start = Date.now()
 const argv = require('minimist')(process.argv.slice(2))
 process.env.DEBUG = `fakeVite:` + (argv.debug === true ? '*' : argv.debug)
+console.log(process.env.DEBUG);
 
 const chalk = require('chalk')
 const path = require('path')
+const os = require('os')
 
 console.log(chalk.cyan(`fakeVite v${require('../package.json').version}`))
 
@@ -47,9 +50,57 @@ Options:
   }
 	const options = resolveOptions()
 	if(!options.command || options.command === 'serve') {
-		require('./server').createServer(options)
+    runServe(options)
 	}
 })()
+
+function runServe(options) {
+  const server = require('./server').createServer(options)
+  let port = options.port || 3000
+  let hostname = options.name || 'localhost'
+  let protocol = options.https ? 'https' : 'http'
+  server.on('error', (e) => {
+    if(e.code === 'EADDRINUSE') {
+      console.log(`Port ${port} is in use, try another one...`);
+      setTimeout(() => {
+        server.close()
+        server.listen(++port)
+      }, 100)
+    } else {
+      console.error(chalk.red(`[fakeVite] server error: `))
+      console.error(e)
+    }
+  })
+  server.listen(port, () => {
+    console.log()
+    console.log(`  Dev server running at:`)
+    const interfaces = os.networkInterfaces()
+    Object.keys(interfaces).forEach((key) => {
+      ;(interfaces[key] || [])
+        .filter((details) => details.family === 'IPv4')
+        .map((detail) => {
+          return {
+            type: detail.address.includes('127.0.0.1')
+              ? 'Local:   '
+              : 'Network: ',
+            host: detail.address.replace('127.0.0.1', hostname)
+          }
+        })
+        .forEach(({ type, host }) => {
+          const url = `${protocol}://${host}:${chalk.bold(port)}/`
+          console.log(`  > ${type} ${chalk.cyan(url)}`)
+        })
+    })
+    console.log()
+    console.log(chalk.green(`server ready in ${Date.now() - start}ms.`))
+
+    if (options.open) {
+      require('./utils/openBrowser')(
+        `${protocol}://${hostname}:${port}`
+      )
+    }
+  })
+}
 
 function resolveOptions() {
 	Object.keys(argv).forEach(key => {
@@ -73,17 +124,6 @@ function resolveOptions() {
       ...argv // cli options take higher priority
     }
   }
-	// argv.optimizeDeps = {
-  //   include: [],
-  //   exclude: ['vue', 'fakevite'],
-  //   link: []
-  // }
-  // argv.https = true
-  // argv.httpsOptions = {
-  //   // ca: path.join(__dirname, 'cert/ca-cert.pem'),
-  //   cert: path.resolve(__dirname, '../cert/server-cert.pem'),
-  //   key: path.resolve(__dirname, '../cert/server-key.pem')
-  // }
 	return argv
 }
 

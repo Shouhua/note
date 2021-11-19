@@ -1,6 +1,5 @@
 const path = require('path')
-const { requestToFile } = require('../resolver')
-const { HMR_PATH } = require('./hmr')
+const { HMR_PATH } = require('./client')
 const { cacheRead } = require('../utils')
 
 const devInjectionCode = `
@@ -25,13 +24,13 @@ function injectScriptToHtml(html, script) {
 	return script + html
 }
 
-function htmlPlugin({app, root}) {
+function htmlPlugin({app, root, resolver}) {
 	app.use(async (ctx, next) => {
     if(ctx.path === '/') {
       return ctx.redirect('index.html')
     }
     if(ctx.path === '/index.html') {
-      const filePath = requestToFile(ctx.path, root)
+      const filePath = resolver.requestToFile(ctx.path)
       let htmlContent = await cacheRead(ctx, filePath)
       htmlContent = injectScriptToHtml(htmlContent, devInjectionCode) 
       ctx.body = htmlContent

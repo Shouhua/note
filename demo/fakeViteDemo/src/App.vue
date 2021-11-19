@@ -1,5 +1,5 @@
 <template>
-	<h1>helo world!</h1>
+	<h1>helo worldddd!</h1>
 	<foo />
 	<div class="green">{{ name }}</div>
 	<div :class="s.foo">module style</div>
@@ -17,8 +17,8 @@ import { debounce } from 'lodash-es'
 import person from './person.json'
 import './style.css'
 import styleModule from './style.module.css'
-import Foo from './components/foo.vue'
-import { appDebug as debug } from './utils/index.js'
+import Foo from '@/components/foo.vue'
+import { appDebug as debug } from './utils/index'
 
 export default {
 	components: {

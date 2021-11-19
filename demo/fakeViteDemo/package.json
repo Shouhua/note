@@ -5,8 +5,8 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "serve": "vite",
-    "dev": "fakeVite serve --debug=\"module\""
+    "serve": "vite --debug=\"resolve\"",
+    "dev": "fakeVite serve --open --debug=\"static\""
   },
   "keywords": [],
   "author": "",
@@ -17,8 +17,6 @@
     "vue": "^3.2.21"
   },
   "devDependencies": {
-    "@vitejs/plugin-vue": "^1.9.4",
-    "fakevite": "link:../fakeVite",
-    "vite": "^2.6.14"
+    "fakevite": "link:../fakeVite"
   }
 }
