@@ -1,7 +1,7 @@
 const { compileStyleAsync } = require('@vue/compiler-sfc')
 const hash_sum = require('hash-sum')
 
-async function compileCss(root, publicPath, {
+async function compileCss(publicPath, {
 	source,
 	filename,
 	scoped,

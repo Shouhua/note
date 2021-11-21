@@ -105,7 +105,7 @@ async function parseStyle(root, publicPath, {
   scoped,
   modules,
 }) {
-  const result = await compileCss(root, publicPath, {
+  const result = await compileCss(publicPath, {
     source,
     filename,
     scoped,

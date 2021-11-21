@@ -7,5 +7,5 @@ export const a = /*#__PURE__*/(function() {
 // }())
 
 export const b = function() {
-  console.log('b')
+  console.log('bbbbbb')
 }

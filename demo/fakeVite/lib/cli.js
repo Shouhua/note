@@ -52,6 +52,9 @@ Options:
 	if(!options.command || options.command === 'serve') {
     runServe(options)
 	}
+  if(options.command === 'build') {
+    await runBuild(options)
+  }
 })()
 
 function runServe(options) {
@@ -131,4 +134,8 @@ function resolveConfig() {
   const configPath = path.resolve(process.cwd(), 'fakeVite.config.js')
   const userConfig = require(configPath)
   return userConfig
+}
+
+async function runBuild(options) {
+  await require('./build').build()
 }

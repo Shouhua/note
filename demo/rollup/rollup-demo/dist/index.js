@@ -3,8 +3,10 @@
 // }())
 
 const b = function() {
-  console.log('b');
+  console.log('bbbbbb');
 };
+
+// import './style.css'
 
 console.log('index');
 b();

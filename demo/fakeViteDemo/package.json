@@ -6,7 +6,8 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "serve": "vite --debug=\"resolve\"",
-    "dev": "fakeVite serve --open --debug=\"static\""
+    "dev": "fakeVite serve --open --debug=\"static\"",
+    "build": "fakeVite build"
   },
   "keywords": [],
   "author": "",

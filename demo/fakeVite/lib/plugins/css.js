@@ -64,7 +64,7 @@ async function processCss(root, ctx) {
 	// 	modules: ctx.path.includes('.module'),
 	// 	scoped: false
 	// })
-	const result = await compileCss(root, ctx.path, {
+	const result = await compileCss(ctx.path, {
 		id: '',
 		source: css,
 		modules: ctx.path.includes('.module'),

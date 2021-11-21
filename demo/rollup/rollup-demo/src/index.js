@@ -1,5 +1,5 @@
 import {a, b} from './utils'
-import './style.css'
+// import './style.css'
 
 console.log('index')
 b()
