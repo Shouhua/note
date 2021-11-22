@@ -1,6 +1,7 @@
 const fs = require('fs-extra')
 const Module = require('./module')
 const MagicString = require('magic-string')
+const path = require('path')
 
 class Bundle {
 	constructor(options) {
@@ -12,10 +13,19 @@ class Bundle {
 		// 把这个入口模块所有语句进行展开，返回所有语句组成的数组
 		this.statements = entryModule.expandAllStatements()
 		const { code } = this.generate()
-		fs.writeFileSync(code,  outputFileName, 'utf-8')
+		fs.writeFileSync(outputFileName,  code, 'utf-8')
 	}
-	fetchModule(importee) {
-		let route = importee
+	fetchModule(importee, importer) {
+		let route
+		if(!importer) {
+			route = importee 
+		} else {
+			if(path.isAbsolute(importee)) {
+				route = importee
+			} else if(importee[0] === '.') {
+				route = path.resolve(path.dirname(importer), importee.replace(/\.js$/, '')+'.js')
+			}
+		}
 		if(route) {
 			let code = fs.readFileSync(route, 'utf-8')
 			let module = new Module({
@@ -31,14 +41,17 @@ class Bundle {
 		let magicString = new MagicString.Bundle()
 		this.statements.forEach(statement => {
 			const source = statement._source.clone()
+			if(statement.type === 'ExportNamedDeclaration') {
+				source.remove(statement.start, statement.declaration.start)
+			}
 			magicString.addSource({
 				content: source,
 				separator: '\n'
 			})
-			return {
-				code: magicString.toString()
-			}
 		})
+		return {
+			code: magicString.toString()
+		}
 	}
 }
 

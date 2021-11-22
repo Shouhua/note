@@ -13,7 +13,7 @@ function visit(node, parent, enter, leave) {
 			value.forEach(val =>{
 				visit(val, node, enter, leave)
 			})
-		} else {
+		} else if(value && value.type) { // 只遍历有type的对象
 			visit(value, node, enter, leave)
 		}
 	})

@@ -204,5 +204,14 @@
       "args": ["serve", "--debug", "--config", "./fakeVite.config.js", "helo"],
       "program": "${workspaceFolder}/demo/fakeVite/bin/fakeVite.js"
     },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "rollup",
+      "skipFiles": [
+        "<node_internals>/**"
+      ],
+      "program": "${workspaceFolder}/demo/rollup/rollup-from-scratch/debug.js"
+    },
   ]
 }
