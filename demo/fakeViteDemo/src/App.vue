@@ -17,8 +17,8 @@ import { debounce } from 'lodash-es'
 import person from './person.json'
 import './style.css'
 import styleModule from './style.module.css'
-import Foo from '@/components/foo.vue'
-import { appDebug as debug } from './utils/index'
+import Foo from './components/foo.vue'
+import { appDebug as debug } from './utils/index.js'
 
 export default {
 	components: {

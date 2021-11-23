@@ -1,5 +1,3 @@
-import fs from 'fs';
-
 export default {
     input: 'src/index.js',
     output: {
@@ -7,22 +5,21 @@ export default {
         format: 'es'
     },
     plugins: [
-        copyAndWatch('index.html', 'index.html')
+       testPlugin() 
     ]
 };
 
-function copyAndWatch(fileIn, fileOut) {
+function testPlugin() {
     return {
-        name: 'copy-and-watch',
-        async buildStart() {
-            this.addWatchFile(fileIn);
-        },
-        async generateBundle() {
-            this.emitFile({
+        name: 'test',
+        generateBundle(options, bundle) {
+            bundle['abc'] = {
+                name: 'abc',
+                isAsset: true,
                 type: 'asset',
-                fileName: fileOut,
-                source: fs.readFileSync(fileIn)
-            });
+                fileName: 'abc.css',
+                source: `.red{color:red;;;;}`
+            }
         }
     }
 }

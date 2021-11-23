@@ -6,18 +6,23 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "serve": "vite --debug=\"resolve\"",
-    "dev": "fakeVite serve --open --debug=\"static\"",
-    "build": "fakeVite build"
+    "dev": "fakeVite serve --debug=\"static\"",
+    "build": "fakeVite build --debug",
+    "prod": "vite build"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@vue/compiler-sfc": "^3.0.2",
     "debug": "^4.3.2",
     "lodash-es": "^4.17.21",
-    "vue": "^3.2.21"
+    "vue": "^3.0.2"
   },
   "devDependencies": {
-    "fakevite": "link:../fakeVite"
+    "fakevite": "link:../fakeVite",
+    "koa": "^2.13.4",
+    "koa-static": "^5.0.0",
+    "vite": "^2.6.14"
   }
 }

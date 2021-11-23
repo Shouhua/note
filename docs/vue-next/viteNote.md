@@ -15,11 +15,20 @@
 11. 支持css, 如果是import css, 解析出来的css通过updateStyle添加到style tag，module则export default出来
 12. module style change后会更新class name, 怎么办？解决办法是vue-reload，因为module style更新会影响template和script, 这个就需要在vuePlugin中添加timestamp参数，用于reload时候重新请求render和style
 13. @vue/compiler-sfc中解析样式使用compileStyle和compileStyleAsync,如果引入css module则必须使用compileStyleAsync, 由于引入了postcss-modules
+14.build
+- vendor. use config function ```mannualChunks``` provided by rollup output options 
+- css rewrite url(), 使用this.emitFile({...})生成的referenceId生成```import.meta.ROLLUP_FILE_URL_[referenceId]```替换，然后rollup在output阶段resolveFileUrl会自动填充这个内部标识符，详见cssPlugin和rollup文档解释
+- css plugin
+- asset plugin
+- manifest plugin
+- json plugin. @rollup/plugin-json
+- sourcemap. output.sourcemap=true
+- build. **支持mannual code split，sourcemap，特别注意debug这样的package，package.json里面提供的是main和browser，但是nodeResolve默认的解析是[module, main], 找到的是cjs版本, 即使后面通过commonjs转化，但是找不到cjs版本中的比如tty等包，打包出来的代码直接使用import 'tty'是有问题的**
 ### simple dev server for vue
-- [ ] 新建简单的dev server
-- [ ] 支持解析SFC
-- [ ] 支持HMR, script/template/style(module, scoped)
-- [ ] 支持css(module)，assets，json
+- [-] 新建简单的dev server
+- [-] 支持解析SFC
+- [-] 支持HMR, script/template/style(module, scoped)
+- [-] 支持css(module)，assets，json
 
 ### vite解析和编译css
 serve时候，遇到import css，生成code中使用updateStyle加载返回的静态css内容

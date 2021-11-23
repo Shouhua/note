@@ -137,5 +137,5 @@ function resolveConfig() {
 }
 
 async function runBuild(options) {
-  await require('./build').build()
+  await require('./build').build(options)
 }

@@ -1,7 +1,0 @@
-lockfileVersion: 5.3
-
-specifiers:
-  fakevite: ^1.0.0
-
-dependencies:
-  fakevite: link:../../../../../../.n/pnpm-global/5/node_modules/fakeVite
