@@ -43,6 +43,7 @@
   "dependencies": {
     "@rollup/plugin-replace": "^3.0.0",
     "@vue/compiler-dom": "^3.2.22",
+    "brotli-size": "^4.0.0",
     "chokidar": "^3.5.2",
     "cross-spawn": "^7.0.3",
     "fs-extra": "^10.0.0",

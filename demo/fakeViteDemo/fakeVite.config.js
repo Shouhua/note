@@ -15,5 +15,6 @@ module.exports = {
 			'@': path.resolve(__dirname, 'src')
 		}
 	},
-	minify: false // build是否压缩
+	minify: false, // build是否压缩
+	emitAssets: true
 }

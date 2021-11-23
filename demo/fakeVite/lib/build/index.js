@@ -14,6 +14,7 @@ const { createBuildAssetPlugin } = require('./assetPlugin')
 const mainFields = ['module', 'jsnext', 'jsnext:main', 'browser', 'main']
 
 async function build(options) {
+  let result
   const inputOptions = {
     input: 'src/main.js',
     plugins: [
@@ -36,6 +37,9 @@ async function build(options) {
         __buildVersion: 15, 
         preventAssignment: true
       }),
+      createEmitPlugin(options.emitAssets, (assets) => {
+        result = assets
+      })
     ],
     onwarn(warning, warn) {
     	warn(warning)
@@ -60,7 +64,7 @@ async function build(options) {
   }
   const build = await rollup.rollup(inputOptions)
   fs.emptyDirSync(outputOptions.output.dir)
-  await build.write(outputOptions)
+  const output = await build.write(outputOptions)
   const root = process.cwd()
   const indexHtml = `
 <!DOCTYPE html>
@@ -77,7 +81,39 @@ async function build(options) {
 </html>
   `
   fs.writeFileSync(path.resolve(root, 'dist/index.html'), indexHtml)
+  for(let asset in result) {
+    console.log(JSON.stringify(asset))
+  }
   await build.close()
+}
+
+function printFileInfo(
+  filePath,
+  content,
+  type
+) {
+  const needCompression =
+    type === WriteType.JS || type === WriteType.CSS || type === WriteType.HTML
+
+  const compressed = needCompression
+    ? `, brotli: ${(require('brotli-size').sync(content) / 1024).toFixed(2)}kb`
+    : ``
+
+  console.log(
+    `${chalk.gray(`[write]`)} ${writeColors[type](
+      path.relative(process.cwd(), filePath)
+    )} ${(content.length / 1024).toFixed(2)}kb${compressed}`
+  )
+}
+
+function createEmitPlugin(emitAssets, emit) {
+  return {
+    name: 'fakeVite:emit',
+    generateBundle(options, bundle) {
+      const output = Object.values(bundle)
+      emit(output)
+    }
+  }
 }
 
 module.exports = {
