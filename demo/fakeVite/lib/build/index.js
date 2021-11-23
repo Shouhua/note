@@ -5,6 +5,7 @@ const json = require('@rollup/plugin-json')
 const fs = require('fs-extra')
 const cjs = require('@rollup/plugin-commonjs')
 const path = require('path')
+const chalk = require('chalk')
 
 const { nodeResolve } = require('@rollup/plugin-node-resolve')
 const { cssPlugin } = require('./cssPlugin')
@@ -81,8 +82,9 @@ async function build(options) {
 </html>
   `
   fs.writeFileSync(path.resolve(root, 'dist/index.html'), indexHtml)
-  for(let asset in result) {
-    console.log(JSON.stringify(asset))
+  for(let asset of result) {
+    console.log(JSON.stringify(asset.fileName))
+    printFileInfo(asset.fileName, asset.code || asset.source, asset.type)
   }
   await build.close()
 }
@@ -92,15 +94,17 @@ function printFileInfo(
   content,
   type
 ) {
-  const needCompression =
-    type === WriteType.JS || type === WriteType.CSS || type === WriteType.HTML
+  // const needCompression =
+  //   type === WriteType.JS || type === WriteType.CSS || type === WriteType.HTML
 
+  const needCompression = true
   const compressed = needCompression
     ? `, brotli: ${(require('brotli-size').sync(content) / 1024).toFixed(2)}kb`
     : ``
 
   console.log(
-    `${chalk.gray(`[write]`)} ${writeColors[type](
+    // `${chalk.gray(`[write]`)} ${writeColors[type](
+    `${chalk.gray(`[write]`)} ${(
       path.relative(process.cwd(), filePath)
     )} ${(content.length / 1024).toFixed(2)}kb${compressed}`
   )
@@ -112,6 +116,9 @@ function createEmitPlugin(emitAssets, emit) {
     generateBundle(options, bundle) {
       const output = Object.values(bundle)
       emit(output)
+      for(const asset of output) {
+        bundle[asset.fileName] = asset
+      }
     }
   }
 }
