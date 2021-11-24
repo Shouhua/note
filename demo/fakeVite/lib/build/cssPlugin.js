@@ -17,14 +17,6 @@ function cssPlugin({
 
 	return {
 		name: 'fakeVite:css',
-		async load(id) {
-			// if(id === 'vue') {
-			// 	const vueRequest = path.resolve(root, 'node_modules/vue/dist/vue.esm-browser.js')
-			// 	const content = fs.readFileSync(vueRequest)
-			// 	return content.toString('utf-8')
-			// }
-			return null
-		},
 		async transform(css, id) {
 			if(id.endsWith('.css')) {
 				const isVueStyle = /\?vue&type=style/.test(id)
@@ -76,14 +68,22 @@ function cssPlugin({
         }
 				styles.set(id, css)
 				return {
-					code: modules
-					? dataToEsm(modules, { namedExports: true })
-					: cssCodeSplit
-						? `${cssPlaceHolder}\n`
-						: ``
-						+ `export default ${JSON.stringify(css)}`, // only export will be removed on source code!!!
-					map: null
-				} 
+          code: modules
+            ? dataToEsm(modules, { namedExports: true })
+            : `${cssPlaceHolder}\n` + `export default ${JSON.stringify(css)}`,
+					          // code: modules
+          //   ? dataToEsm(modules, { namedExports: true })
+          //   : (cssCodeSplit
+          //       ? // If code-splitting CSS, inject a fake marker to avoid the module
+          //         // from being tree-shaken. This preserves the .css file as a
+          //         // module in the chunk's metadata so that we can retrieve them in
+          //         // renderChunk.
+          //         `${cssPlaceHolder}\n`
+          //       : ``) + `export default ${JSON.stringify(css)}`,
+          map: null,
+          // #795 css always has side effect
+          moduleSideEffects: true
+        }
 			}
 		},
 		async renderChunk(code, chunk) {
@@ -93,6 +93,13 @@ function cssPlugin({
 					chunkCss += styles.get(id) + '\n'
 				}
 			}
+
+			let match
+			const injectAssetRe = /import.meta.ROLLUP_FILE_URL_(\w+)/
+      while ((match = injectAssetRe.exec(chunkCss))) {
+        const outputFilepath = '/' + this.getFileName(match[1])
+        chunkCss = chunkCss.replace(match[0], outputFilepath)
+      }
 
 			if(cssCodeSplit) {
 				code = code.replace(`${cssPlaceHolder}`, `
@@ -105,13 +112,18 @@ if(!document.getElementById('fakeviite-${hash(chunk.name)}')) {
 			`)
 			code = code.replace(/__VITE_CSS__\(\);/g, '')
 
-				return {
-					code,
-					map: null
-				}
+				// return {
+				// 	code,
+				// 	map: null
+				// }
 			} else {
+				code = code.replace(/__VITE_CSS__\(\);/g, '')
 				staticCss += chunkCss
-				return null
+				// return null
+			}
+			return {
+				code,
+				map: null
 			}
 		},
 		async generateBundle(_options, bundle) {

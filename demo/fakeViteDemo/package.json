@@ -23,6 +23,7 @@
     "fakevite": "link:../fakeVite",
     "koa": "^2.13.4",
     "koa-static": "^5.0.0",
+    "minimist": "^1.2.5",
     "vite": "^2.6.14"
   }
 }

@@ -24,6 +24,12 @@
 - json plugin. @rollup/plugin-json
 - sourcemap. output.sourcemap=true
 - build. **支持mannual code split，sourcemap，特别注意debug这样的package，package.json里面提供的是main和browser，但是nodeResolve默认的解析是[module, main], 找到的是cjs版本, 即使后面通过commonjs转化，但是找不到cjs版本中的比如tty等包，打包出来的代码直接使用import 'tty'是有问题的**
+15. css build. 目前遇到的问题是，vitejs1.0.0-rc.9版本中有个配置cssCodeSplit，用于拆分css文件，如果为true，则把所有的style打包成单独的一个包，会在代码中动态添加__VITE_CSS__()的js函数占位符，然后在renderChunk中如果是isDynamicEntry会添加这个函数的函数体，其他就找不到这个函数了；如果这个值为false，因为打包出来的main.js的依赖里面(renderChunk中的chunk.modules里面)没有rollup-plugin-vue打包App.vue的引入css：
+```js
+import 'App.vue?vue&type=style&index=0&language.css'
+import 'App.vue?vue&type=style&index=0&module&language.css'
+```
+这些引入会直接讲以上两个依赖项tree shaking掉，所以如果添加css占位符就不会；源码中根据这个问题增加了```export default JSON.stringify(css)```这个也貌似没有作用???，在fakeVite中全部添加css占位，然后renderChunk中手动去掉，但是这样就没有css的tree shaking了，只要是引用就加入到style文件了，先做笔记，后续看最新vite2
 ### simple dev server for vue
 - [-] 新建简单的dev server
 - [-] 支持解析SFC

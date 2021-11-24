@@ -5,7 +5,6 @@ module.exports = {
 			name: 'fakeVite:manifest',
 			generateBundle(_options, bundle) {
 				for(const name in bundle) {
-					console.log(`manifest name: ${name}`);
 					const chunk = bundle[name]
 					if(chunk.type === 'chunk') {
 						manifest[chunk.name + '.js'] = chunk.fileName

@@ -7,6 +7,7 @@ specifiers:
   koa: ^2.13.4
   koa-static: ^5.0.0
   lodash-es: ^4.17.21
+  minimist: ^1.2.5
   vite: ^2.6.14
   vue: ^3.0.2
 
@@ -20,6 +21,7 @@ devDependencies:
   fakevite: link:../fakeVite
   koa: 2.13.4
   koa-static: 5.0.0
+  minimist: 1.2.5
   vite: 2.6.14
 
 packages:
@@ -556,6 +558,10 @@ packages:
     engines: {node: '>= 0.6'}
     dependencies:
       mime-db: 1.51.0
+    dev: true
+
+  /minimist/1.2.5:
+    resolution: {integrity: sha512-FM9nNUYrRBAELZQT3xeZQ7fmMOBg6nWNmJKTcgsJeaLstP/UODVpGsr5OhXhhXg6f+qtJ8uiZ+PUxkDWcgIXLw==}
     dev: true
 
   /ms/2.1.2:

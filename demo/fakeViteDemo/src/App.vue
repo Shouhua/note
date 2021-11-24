@@ -33,7 +33,7 @@ export default {
 			s,
 			count,
 			name,
-			handleClick: debounce(() => count.value += 10)
+			handleClick: debounce(() => count.value += 10),
 		}
 	}
 }

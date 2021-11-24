@@ -16,7 +16,7 @@ if(!document.getElementById('fakeviite-2d26a6af')) {
 	font-size: 16px;
 }
 .url {
-	background: url('assets/cx-3e15c4d4.jpeg');
+	background: url('/assets/cx-3e15c4d4.jpeg');
 }
 ._foo_110uz_1 {
 	color: lightcoral;
@@ -84,7 +84,7 @@ var script = {
 			s,
 			count,
 			name,
-			handleClick: debounce(() => count.value += 10)
+			handleClick: debounce(() => count.value += 10),
 		}
 	}
 };

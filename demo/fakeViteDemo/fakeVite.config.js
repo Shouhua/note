@@ -16,5 +16,8 @@ module.exports = {
 		}
 	},
 	minify: false, // build是否压缩
-	emitAssets: true
+	emitAssets: true,
+	assetsDir: 'assets',
+	outDir: 'dist',
+	cssCodeSplit: true
 }
