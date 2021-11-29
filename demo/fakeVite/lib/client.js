@@ -92,8 +92,24 @@ socket.addEventListener('close', (ev) => {
   }, 1000)
 })
 
+function handleVueReload(path, timestamp) {
+  import(`${path}?vue&t=${timestamp}`).then(m => {
+    __VUE_HMR_RUNTIME__.reload(path, m.default)
+  })
+}
+
 socket.addEventListener('message', async ({data}) => {
-  const { type, path, id, index, timestamp } = JSON.parse(data)
+  const { type, path, id, index, timestamp, changeSrcPath, updates } = JSON.parse(data)
+  if(type === 'multi') {
+    updates.forEach(update => {
+      if(update.type === 'reload') {
+        handleVueReload(update.path, update.timestamp)
+      }
+      if(update.type === 'js-update') {
+        updateModule(update.path, update.changeSrcPath, update.timestamp)
+      }
+    })
+  }
   if(type === 'connected') {
     console.log('[fakeVite] connected')
   }
@@ -103,9 +119,7 @@ socket.addEventListener('message', async ({data}) => {
     })
   }
   if(type === 'reload') {
-    import(`${path}?vue&t=${timestamp}`).then(m => {
-      __VUE_HMR_RUNTIME__.reload(path, m.default)
-    })
+    handleVueReload(path, timestamp)
   }
   if(type === 'style-update') {
     // updateStyle(id, `${path}?vue&type=style&index=${index}&t=${timestamp}`)
@@ -121,7 +135,93 @@ socket.addEventListener('message', async ({data}) => {
     await import(`${path}${importQuery}&t=${timestamp}`)
     console.log(`[fakeVite] ${path} updated.`)
   }
+  if(type === 'js-update') {
+    updateModule(path, changeSrcPath, timestamp)
+  }
   if(type === 'full-reload') {
     location.reload()
   }
 })
+
+/**
+ * {
+ *    id: **,
+ *    callbacks:
+ *    [{
+ *      deps: [],
+ *      fn: () => {}
+ *    }]
+ * }
+ */
+const hotModulesMap = new Map()
+
+export async function updateModule(id, changedPath, timestamp) {
+  const mod = hotModulesMap.get(id)
+  const moduleMap = new Map()
+  if(!mod) {
+    return 
+  }
+  const modulesToUpdate = new Set()
+  if(id === changedPath) {
+    modulesToUpdate.add(id)
+  } else {
+    for(const { deps } of mod.callbacks) {
+      if(Array.isArray(deps)) {
+        deps.forEach(dep => modulesToUpdate.add(dep))
+      } else {
+        modulesToUpdate.add(deps)
+      }
+    }
+  }
+
+  const callbacks = mod.callbacks.filter(({deps}) => {
+    return Array.isArray(deps)
+      ? deps.some(dep => modulesToUpdate.has(dep))
+      : modulesToUpdate.has(deps)
+  }) 
+  await Promise.all(
+    Array.from(modulesToUpdate).map(async (dep) => {
+      const newMod = await import(dep + (dep.includes('?') ? '&' : '?') + `t=${timestamp}`)
+      moduleMap.set(dep, newMod)
+    })
+  )
+  for(const {deps, fn} of callbacks) {
+    if(Array.isArray(deps)) {
+      fn(deps.map(dep =>moduleMap.get(dep)))
+    } else {
+      fn(moduleMap.get(deps))
+    }
+  }
+}
+
+
+export function createHotContext(id) {
+  const mod = hotModulesMap.get(id)
+  if(mod) {
+    mod.callbacks = []
+  }
+
+  const isFunc = (target) => Object.prototype.toString.call(target) === '[object Function]'
+
+  const hot = {
+    accept(deps, callback) {
+      if(isFunc(deps)) {
+        hot.acceptDeps(id, (m) => m.default())
+      } else {
+        hot.acceptDeps(deps, callback)
+      }
+    },
+    acceptDeps(deps, callback) {
+      const mod = hotModulesMap.get(id) || {
+        id,
+        callbacks: []
+      }
+      mod.callbacks.push({
+        deps,
+        fn: callback
+      })
+      hotModulesMap.set(id, mod)
+    }
+  }
+  return hot
+}

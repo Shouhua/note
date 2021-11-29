@@ -5,6 +5,7 @@ const hash_sum = require('hash-sum')
 const { getContent, deleteCache, isEqual, cacheRead } = require('../utils')
 const { parseSFC } = require('../utils/vueUtils')
 const chalk = require('chalk')
+const { importerMap, hmrAcceptanceMap } = require('./rewrite')
 
 const debug = require('debug')('fakeVite:hmr')
 
@@ -103,10 +104,56 @@ function hmrPlugin({ app, root, server, watcher }) {
         })
       }
     }
+    if(file.endsWith('.js')) {
+      let hmrBoundaries = new Set()
+      if(isHmrAccepted(publicPath, publicPath)) {
+        hmrBoundaries.add(publicPath)
+      }
+      walkImportChain(publicPath, hmrBoundaries)
+      if(!hmrBoundaries) {
+        return
+      }
+      const boundaries = [...hmrBoundaries]
+        const file =
+          boundaries.length === 1 ? boundaries[0] : `${boundaries.length} files`
+        console.log(
+          chalk.green(`[vite:hmr] `) +
+            `${file} hot updated due to change in ${publicPath}.`
+        )
+        send({
+          type: 'multi',
+          updates: boundaries.map((boundary) => {
+            return {
+              type: boundary.endsWith('vue') ? 'reload' : 'js-update',
+              path: boundary,
+              changeSrcPath: publicPath,
+              timestamp: Date.now()
+            }
+          })
+        })
+    }
   })
 	app.use(async (ctx, next) => {
 		return next()
 	})
+}
+
+function walkImportChain(importee, hmrBoundaries) {
+  const importers = importerMap.get(importee)
+  if(importers) {
+    for(const importer of importers) {
+      if(importer.endsWith('.vue') || isHmrAccepted(importer, importer) || isHmrAccepted(importer, importee)) {
+        hmrBoundaries.add(importer)
+      } else {
+        walkImportChain(importer)
+      }
+    }        
+  }
+}
+
+function isHmrAccepted(importer, dep) {
+  const deps = hmrAcceptanceMap.get(importer)
+  return deps ? deps.has(dep) : false
 }
 
 module.exports = {

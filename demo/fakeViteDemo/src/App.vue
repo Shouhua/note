@@ -19,12 +19,14 @@ import './style.css'
 import styleModule from './style.module.css'
 import Foo from './components/foo.vue'
 import { appDebug as debug } from './utils/index.js'
+import foobar from './foobar.js'
 
 export default {
 	components: {
 		Foo
 	},
 	setup() {
+		foobar()
 		let count = ref(0)
 		let name = ref(person.name)
 		const s = reactive(styleModule)
