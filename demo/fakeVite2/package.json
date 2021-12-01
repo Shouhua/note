@@ -1,0 +1,15 @@
+{
+  "name": "fakevite2",
+  "version": "1.0.0",
+  "description": "fake vite version 2",
+  "bin": "bin/fakeVite2.js",
+  "files": [
+    "bin",
+    "lib"
+  ],
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC"
+}

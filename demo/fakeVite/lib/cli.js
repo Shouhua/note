@@ -1,7 +1,6 @@
 const start = Date.now()
 const argv = require('minimist')(process.argv.slice(2))
-// process.env.DEBUG = `fakeVite:` + (argv.debug === true ? '*' : argv.debug)
-process.env.DEBUG = '*'
+process.env.DEBUG = `fakeVite:` + (argv.debug === true ? '*' : argv.debug)
 
 const chalk = require('chalk')
 const path = require('path')
