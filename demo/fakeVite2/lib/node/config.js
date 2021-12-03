@@ -4,12 +4,25 @@ const { build } = require('esbuild')
 const { performance } = require('perf_hooks')
 const { createLogger } = require('./logger')
 const chalk = require('chalk')
+const dotenv = require('dotenv')
+const dotenvExpand = require('dotenv-expand')
+const { resolveBuildOptions } = require('./build')
+const aliasPlugin = require('@rollup/plugin-alias')
+const { resolvePlugin } = require('./plugins/resolve')
+const { DEFAULT_ASSETS_RE } = require('./constant')
+const { searchForWorkspaceRoot } = require('./server/searchRoot')
 const {
 	createDebugger,
 	lookupFile,
 	dynamicImport,
 	normalizePath,
-	isObject
+	isObject,
+	CLIENT_ENTRY,
+	ENV_ENTRY,
+	arraify,
+	isExternalUrl,
+	ensureLeadingSlash,
+	CLIENT_DIR
 } = require('./utils')
 
 const debug = createDebugger('fakeVite:config')
@@ -23,7 +36,7 @@ function normalizeAlias(o) {
 		: Object.keys(o).map((find) => {
 			normalizeSingleAlias({
 				find,
-				replacement: o['find']
+				replacement: o[find]
 			})
 		})
 }
@@ -32,8 +45,8 @@ function normalizeSingleAlias({find, replacement}) {
 		find.endsWith('/') && 
 		replacement.endsWith('/')
 	) {
-		find = find.slice(0, find.length -1)
-		replacement = replacement.slice(0, replacement.length -1)
+		find = find.slice(0, find.length - 1)
+		replacement = replacement.slice(0, replacement.length - 1)
 	}
 	return { find, replacement }
 }
@@ -75,38 +88,282 @@ function mergeConfig(a, b, isRoot = true) {
 	return mergeConfigRecursively(a, b, isRoot ? '' : '.')
 }
 
+function sortUserPlugins(plugins) {
+  const prePlugins = []
+  const postPlugins = []
+  const normalPlugins = []
+  if (plugins) {
+    plugins.flat().forEach((p) => {
+      if (p.enforce === 'pre') prePlugins.push(p)
+      else if (p.enforce === 'post') postPlugins.push(p)
+      else normalPlugins.push(p)
+    })
+  }
+  return [prePlugins, normalPlugins, postPlugins]
+}
+
 async function resolveConfig(
 	inlineConfig,
 	command = 'serve',
 	defaultMode = 'development'
-	) {
-		let config = inlineConfig
-		let configFileDependencies = []
-		let mode = inlineConfig.mode || defaultMode
+) {
+	let config = inlineConfig
+	let configFileDependencies = []
+	let mode = inlineConfig.mode || defaultMode
 
-		if(mode === 'production') {
-			process.env.NODE_ENV = 'production'
+	if(mode === 'production') {
+		process.env.NODE_ENV = 'production'
+	}
+
+	const configEnv = {
+		mode,
+		command
+	}
+
+	let { configFile } = config
+	if(configFile !== false) {
+		const loadResult = await loadConfigFromFile(
+			configEnv,
+			configFile,
+			config.root,
+			config.logLevel
+		)
+		if(loadResult) {
+			config = mergeConfig(loadResult.config, config)
+			configFile = loadResult.path
+			configFileDependencies = loadResult.dependencies
 		}
+	}
+	// Define logger
+	const logger = createLogger(config.logLevel, {
+		allowClearScreen: config.clearScreen,
+		customLogger: config.customLogger
+	})
 
-		const configEnv = {
-			mode,
-			command
+	// user config may provide an alternative mode. But --mode has a higher priority
+	mode = inlineConfig.mode || config.mode || mode
+	configEnv.mode = mode
+
+	// resolve plugins
+	const rawUserPlugins = (config.plugins || []).flat().filter((p) => {
+		if (!p) {
+			return false
+		} else if (!p.apply) {
+			return true
+		} else if (typeof p.apply === 'function') {
+			return p.apply({ ...config, mode }, configEnv)
+		} else {
+			return p.apply === command
 		}
+	})
+	const [prePlugins, normalPlugins, postPlugins] =
+		sortUserPlugins(rawUserPlugins)
 
-		let { configFile } = config
-		if(configFile !== false) {
-			const loadResult = await loadConfigFromFile(
-				configEnv,
-				configFile,
-				config.root,
-				config.logLevel
-			)
-			if(loadResult) {
-				config = mergeConfig(loadResult.config, config)
-				configFile = loadResult.path
-				configFileDependencies = loadResult.dependencies
+	// run config hooks
+	const userPlugins = [...prePlugins, ...normalPlugins, ...postPlugins]
+	for (const p of userPlugins) {
+		if (p.config) {
+			const res = await p.config(config, configEnv)
+			if (res) {
+				config = mergeConfig(config, res)
 			}
 		}
+	}
+	// resolve root
+	const resolvedRoot = normalizePath(
+		config.root ? path.resolve(config.root) : process.cwd()
+	)
+
+	const clientAlias = [
+		{ find: /^[\/]?@vite\/env/, replacement: () => ENV_ENTRY },
+		{ find: /^[\/]?@vite\/client/, replacement: () => CLIENT_ENTRY }
+	]
+
+	// resolve alias with internal client alias
+	const resolvedAlias = mergeAlias(
+		clientAlias,
+		config.resolve.alias || config.alias || []
+	)	
+
+	const resolveOptions = {
+		dedupe: config.dedupe,
+		...config.resolve,
+		alias: resolvedAlias
+	}
+
+	// load .env files
+	const envDir = config.envDir
+		? normalizePath(path.resolve(resolvedRoot, config.envDir))
+		: resolvedRoot
+  const userEnv =
+    inlineConfig.envFile !== false &&
+    loadEnv(mode, envDir, resolveEnvPrefix(config))
+
+	const isProduction = (process.env.VITE_USER_NODE_ENV || mode) === 'production'
+  if (isProduction) {
+    process.env.NODE_ENV = 'production'
+  }
+	// resolve public base url
+	const BASE_URL = resolveBaseUrl(config.base, command === 'build', logger)
+	const resolvedBuildOptions = resolveBuildOptions(resolvedRoot, config.build)
+	// resolve cache directory
+	const pkgPath = lookupFile(
+		resolvedRoot,
+		[`package.json`],
+		true /* pathOnly */
+	)
+	const cacheDir = config.cacheDir
+		? path.resolve(resolvedRoot, config.cacheDir)
+		: pkgPath && path.join(path.dirname(pkgPath), `node_modules/.vite`)
+
+	const assetsFilter = config.assetsInclude
+		? createFilter(config.assetsInclude)
+		: () => false
+
+	// create an internal resolver to be used in special scenarios, e.g.
+	// optimizer & handling css @imports
+	const createResolver = (options) => {
+		let aliasContainer
+		let resolverContainer
+		return async (id, importer, aliasOnly, ssr) => {
+			let container
+			if (aliasOnly) {
+				container =
+					aliasContainer ||
+					(aliasContainer = await createPluginContainer({
+						...resolved,
+						plugins: [aliasPlugin({ entries: resolved.resolve.alias })]
+					}))
+			} else {
+				container =
+					resolverContainer ||
+					(resolverContainer = await createPluginContainer({
+						...resolved,
+						plugins: [
+							aliasPlugin({ entries: resolved.resolve.alias }),
+							resolvePlugin({
+								...resolved.resolve,
+								root: resolvedRoot,
+								isProduction,
+								isBuild: command === 'build',
+								ssrConfig: resolved.ssr,
+								asSrc: true,
+								preferRelative: false,
+								tryIndex: true,
+								...options
+							})
+						]
+					}))
+			}
+			return (await container.resolveId(id, importer, { ssr }))?.id
+		}
+	}
+	const { publicDir } = config
+	const resolvedPublicDir = (publicDir !== false && publicDir !== '') 
+		? path.resolve(resolvedRoot, typeof publicDir === 'string' ? publicDir : 'public')
+		: ''
+	const server = resolveServerOptions(resolvedRoot, config.server)
+	const resolved = {
+		...config,
+		configFile: configFile ? normalizePath(configFile) : undefined,
+		configFileDependencies,
+		inlineConfig,
+		root: resolvedRoot,
+		base: BASE_URL,
+		resolve: resolveOptions,
+		publicDir: resolvedPublicDir,
+		cacheDir,
+		command,
+		mode,
+		isProduction,
+		plugins: userPlugins,
+		server,
+		// preview: resolvePreviewOptions(config.preview, server),
+    env: {
+      ...userEnv,
+      BASE_URL,
+      MODE: mode,
+      DEV: !isProduction,
+      PROD: isProduction
+    },
+    assetsInclude(file) {
+      return DEFAULT_ASSETS_RE.test(file) || assetsFilter(file)
+    },
+    logger,
+    packageCache: new Map(),
+    createResolver,
+    optimizeDeps: {
+      ...config.optimizeDeps,
+      esbuildOptions: {
+        keepNames: config.optimizeDeps?.keepNames,
+        preserveSymlinks: config.resolve?.preserveSymlinks,
+        ...config.optimizeDeps?.esbuildOptions
+      }
+    }
+	}
+
+	// TODO
+  // resolved.plugins = await resolvePlugins(
+  //   resolved,
+  //   prePlugins,
+  //   normalPlugins,
+  //   postPlugins
+  // )
+
+  // call configResolved hooks
+  await Promise.all(userPlugins.map((p) => p.configResolved(resolved)))
+
+  if (process.env.DEBUG) {
+    debug(`using resolved config: %O`, {
+      ...resolved,
+      plugins: resolved.plugins.map((p) => p.name)
+    })
+  }
+}
+
+function resolveBaseUrl(
+  base = '/',
+  isBuild,
+  logger
+) {
+  // #1669 special treatment for empty for same dir relative base
+  if (base === '' || base === './') {
+    return isBuild ? base : '/'
+  }
+  if (base.startsWith('.')) {
+    logger.warn(
+      chalk.yellow.bold(
+        `(!) invalid "base" option: ${base}. The value can only be an absolute ` +
+          `URL, ./, or an empty string.`
+      )
+    )
+    base = '/'
+  }
+
+  // external URL
+  if (isExternalUrl(base)) {
+    if (!isBuild) {
+      // get base from full url during dev
+      const parsed = require('url').parse(base)
+      base = parsed.pathname || '/'
+    }
+  } else {
+    // ensure leading slash
+    if (!base.startsWith('/')) {
+      logger.warn(
+        chalk.yellow.bold(`(!) "base" option should start with a slash.`)
+      )
+      base = '/' + base
+    }
+  }
+
+  // ensure ending slash
+  if (!base.endsWith('/')) {
+    logger.warn(chalk.yellow.bold(`(!) "base" option should end with a slash.`))
+    base += '/'
+  }
+
+  return base
 }
 
 async function loadConfigFromFile(
@@ -190,7 +447,6 @@ async function loadConfigFromFile(
 		if(!isObject(config)) {
 			throw new Error(`config must export or return an object.`)
 		}
-		debug(config)
 		return {
 			path: normalizePath(resolvedPath),
 			config,
@@ -282,6 +538,110 @@ async function bundleConfigFile(
 		code: text,
 		dependencies: result.metafile ? Object.keys(result.metafile.inputs) : []
 	}
+}
+
+function loadEnv(
+  mode,
+  envDir,
+  prefixes = 'VITE_'
+) {
+  if (mode === 'local') {
+    throw new Error(
+      `"local" cannot be used as a mode name because it conflicts with ` +
+        `the .local postfix for .env files.`
+    )
+  }
+  prefixes = arraify(prefixes)
+  const env = {}
+  const envFiles = [
+    /** mode local file */ `.env.${mode}.local`,
+    /** mode file */ `.env.${mode}`,
+    /** local file */ `.env.local`,
+    /** default file */ `.env`
+  ]
+
+  // check if there are actual env variables starting with VITE_*
+  // these are typically provided inline and should be prioritized
+  for (const key in process.env) {
+    if (
+      prefixes.some((prefix) => key.startsWith(prefix)) &&
+      env[key] === undefined
+    ) {
+      env[key] = process.env[key]
+    }
+  }
+
+  for (const file of envFiles) {
+    const path = lookupFile(envDir, [file], true)
+    if (path) {
+      const parsed = dotenv.parse(fs.readFileSync(path), {
+        debug: !!process.env.DEBUG || undefined
+      })
+
+      // let environment variables use each other
+      dotenvExpand({
+        parsed,
+        // prevent process.env mutation
+        ignoreProcessEnv: true
+      })
+
+      // only keys that start with prefix are exposed to client
+      for (const [key, value] of Object.entries(parsed)) {
+        if (
+          prefixes.some((prefix) => key.startsWith(prefix)) &&
+          env[key] === undefined
+        ) {
+          env[key] = value
+        } else if (key === 'NODE_ENV') {
+          // NODE_ENV override in .env file
+          process.env.VITE_USER_NODE_ENV = value
+        }
+      }
+    }
+  }
+  return env
+}
+
+function resolveEnvPrefix({
+  envPrefix = 'VITE_'
+}) {
+  envPrefix = arraify(envPrefix)
+  if (envPrefix.some((prefix) => prefix === '')) {
+    throw new Error(
+      `envPrefix option contains value '', which could lead unexpected exposure of sensitive information.`
+    )
+  }
+  return envPrefix
+}
+
+
+function resolvedAllowDir(root, dir) {
+  return ensureLeadingSlash(normalizePath(path.resolve(root, dir)))
+}
+
+function resolveServerOptions(root, raw) {
+  const server = raw || {}
+  let allowDirs = (server.fs || {}).allow
+  const deny = (server.fs || {}).deny || ['.env', '.env.*', '*.{crt,pem}']
+
+  if (!allowDirs) {
+    allowDirs = [searchForWorkspaceRoot(root)]
+  }
+
+  allowDirs = allowDirs.map((i) => resolvedAllowDir(root, i))
+
+  // only push client dir when vite itself is outside-of-root
+  const resolvedClientDir = resolvedAllowDir(root, CLIENT_DIR)
+  if (!allowDirs.some((i) => resolvedClientDir.startsWith(i))) {
+    allowDirs.push(resolvedClientDir)
+  }
+
+  server.fs = {
+    strict: (server.fs || {}).strict ?? true,
+    allow: allowDirs,
+    deny
+  }
+  return server
 }
 
 module.exports = {

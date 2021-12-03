@@ -1,13 +1,18 @@
-module.exports = function(configEnv) {
-	if(configEnv.mode === 'development') {
-		return {
-			input: './index.js',
-			output: 'out.js'
+export default {
+	input: './index.js',
+	output: 'out.js',
+	resolve: {
+		alias: {
+			'@/': '/src/'
 		}
-	} else {
-		return {
-			input: './index.js',
-			mode: 'production'
-		}
+	},
+	server: {
+
+	},
+	build: {
+
+	},
+	optimizeDeps: {
+
 	}
 }
