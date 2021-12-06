@@ -29,7 +29,7 @@ const {
 const debug = createDebugger('fakeVite:config')
 
 function mergeAlias(a, b) {
-	return [...normalizeAlias(a), ...normalizeAlias(b)]
+	return [...normalizeAlias(a), ...normalizeAlias(b)].filter(Boolean)
 }
 function normalizeAlias(o) {
 	return Array.isArray(o)

@@ -1,4 +1,4 @@
-const { isImportRequest, isInternalRequest, cleanUrl, isFileReadable, ensureLeadingSlash, fsPathFromId } = require('../../utils')
+const { normalizePath, isImportRequest, isInternalRequest, cleanUrl, isFileReadable, ensureLeadingSlash, fsPathFromId } = require('../../utils')
 const { FS_PREFIX } = require('../../constant')
 const { isMatch } = require('micromatch')
 const sirv = require('sirv')
@@ -115,6 +115,8 @@ function serveRawFsMiddleware(server) {
     }
   }
 }
+
+const _matchOptions = { matchBase: true }
 
 function isFileServingAllowed(
   url,

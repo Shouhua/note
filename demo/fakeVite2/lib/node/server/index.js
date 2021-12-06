@@ -12,6 +12,7 @@ const { resolveHostname } = require('../utils')
 const { printCommonServerUrls } = require('../logger')
 const { servePublicMiddleware, serveRawFsMiddleware, serveStaticMiddleware } = require('./middleware/static')
 const { spaFallbackMiddleware } = require('./middleware/spaFallback')
+const { indexHtmlMiddleware } = require('./middleware/indexHtml')
 
 async function createServer(inlineConfig) {
 	const config = await resolveConfig(inlineConfig, 'serve', 'development')
@@ -257,16 +258,16 @@ async function createServer(inlineConfig) {
   // serve custom content instead of index.html.
   postHooks.forEach((fn) => fn && fn())
 
-  // if (!middlewareMode || middlewareMode === 'html') {
-  //   // transform index.html
-  //   middlewares.use(indexHtmlMiddleware(server))
-  //   // handle 404s
-  //   // Keep the named function. The name is visible in debug logs via `DEBUG=connect:dispatcher ...`
-  //   middlewares.use(function vite404Middleware(_, res) {
-  //     res.statusCode = 404
-  //     res.end()
-  //   })
-  // }
+  if (!middlewareMode || middlewareMode === 'html') {
+    // transform index.html
+    middlewares.use(indexHtmlMiddleware(server))
+    // handle 404s
+    // Keep the named function. The name is visible in debug logs via `DEBUG=connect:dispatcher ...`
+    middlewares.use(function vite404Middleware(_, res) {
+      res.statusCode = 404
+      res.end()
+    })
+  }
 
   // error handler
   // middlewares.use(errorMiddleware(server, !!middlewareMode))

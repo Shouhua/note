@@ -2,6 +2,7 @@ const debug = require('debug')
 const path = require('path')
 const fs = require('fs')
 const os = require('os')
+const { URL, pathToFileURL } = require('url')
 const remapping = require('@ampproject/remapping')
 const chalk = require('chalk')
 const { FS_PREFIX, CLIENT_PUBLIC_PATH, ENV_PUBLIC_PATH, VALID_ID_PREFIX } = require('./constant')
@@ -366,6 +367,23 @@ function fsPathFromId(id) {
     : `/${fsPath}`
 }
 
+function injectQuery(url, queryToInject) {
+  // encode percents for consistent behavior with pathToFileURL
+  // see #2614 for details
+  let resolvedUrl = new URL(url.replace(/%/g, '%25'), 'relative:///')
+  if (resolvedUrl.protocol !== 'relative:') {
+    resolvedUrl = pathToFileURL(url)
+  }
+  let { protocol, pathname, search, hash } = resolvedUrl
+  if (protocol === 'file:') {
+    pathname = pathname.slice(1)
+  }
+  pathname = decodeURIComponent(pathname)
+  return `${pathname}?${queryToInject}${search ? `&` + search.slice(1) : ''}${
+    hash || ''
+  }`
+}
+
 module.exports = {
 	createDebugger,
 	lookupFile,
@@ -394,5 +412,6 @@ module.exports = {
   resolveHostname,
   isImportRequest,
   isInternalRequest,
-  fsPathFromId
+  fsPathFromId,
+  injectQuery
 }
