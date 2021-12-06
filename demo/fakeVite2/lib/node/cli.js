@@ -1,4 +1,6 @@
 const cac = require('cac')
+const chalk = require('chalk')
+const { createLogger } = require('./logger')
 
 const cli = cac('fakeVite')
 
@@ -17,13 +19,39 @@ cli
 	.option('--force', `[boolean] force the optimizer to ignore the cache and re-bundle`)
 	.action(async (root, options) => {
 		const { createServer } = require('./server')
-		await createServer({
-			root,
-			mode: options.mode,
-			logLevel: options.logLevel,
-			clearScreen: options.clearScreen,
-			configFile: options.config
-		})
+		try {
+			const server = await createServer({
+				root,
+				mode: options.mode,
+				logLevel: options.logLevel,
+				clearScreen: options.clearScreen,
+				configFile: options.config
+			})
+			if(!server.httpServer) {
+				throw new Error('HTTP server not available')
+			}
+			await server.listen()
+			const info = server.config.logger.info
+			info(
+				chalk.cyan(`\n  vite v${require('fakevite2/package.json').version}`) +
+					chalk.green(` dev server running at:\n`),
+				{
+					clear: !server.config.logger.hasWarned
+				}
+			)
+			server.printUrls()
+			if (global.__vite_start_time) {
+        // @ts-ignore
+        const startupDuration = performance.now() - global.__vite_start_time
+        info(`\n  ${chalk.cyan(`ready in ${Math.ceil(startupDuration)}ms.`)}\n`)
+      }
+		} catch(e) {
+			createLogger(options.logLevel).error(
+        chalk.red(`error when starting dev server:\n${e.stack}`),
+        { error: e }
+      )
+      process.exit(1)
+		}
 	})
 
 cli.help()

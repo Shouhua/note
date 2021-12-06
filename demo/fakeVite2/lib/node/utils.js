@@ -4,7 +4,13 @@ const fs = require('fs')
 const os = require('os')
 const remapping = require('@ampproject/remapping')
 const chalk = require('chalk')
-const { FS_PREFIX } = require('./constant')
+const { FS_PREFIX, CLIENT_PUBLIC_PATH, ENV_PUBLIC_PATH, VALID_ID_PREFIX } = require('./constant')
+
+const queryRE = /\?.*$/s
+const hashRE = /#.*$/s
+
+const cleanUrl = (url) =>
+  url.replace(hashRE, '').replace(queryRE, '')
 
 const externalRE = /^(https?:)?\/\//
 const isExternalUrl = (url) => externalRE.test(url)
@@ -247,6 +253,22 @@ function timeFrom(start, subtract = 0) {
   }
 }
 
+const importQueryRE = /(\?|&)import=?(?:&|$)/
+const internalPrefixes = [
+  FS_PREFIX,
+  VALID_ID_PREFIX,
+  CLIENT_PUBLIC_PATH,
+  ENV_PUBLIC_PATH
+]
+const InternalPrefixRE = new RegExp(`^(?:${internalPrefixes.join('|')})`)
+const isImportRequest = (url) => importQueryRE.test(url)
+const isInternalRequest = (url) =>
+  InternalPrefixRE.test(url)
+
+function removeImportQuery(url) {
+  return url.replace(importQueryRE, '$1').replace(trailingSeparatorRE, '')
+}
+
 const timestampRE = /\bt=\d{13}&?\b/
 const trailingSeparatorRE = /[\?&]$/
 function removeTimestampQuery(url) {
@@ -304,6 +326,46 @@ function ensureLeadingSlash(path) {
   return !path.startsWith('/') ? '/' + path : path
 }
 
+const bareImportRE = /^[\w@](?!.*:\/\/)/
+const deepImportRE = /^([^@][^/]*)\/|^(@[^/]+\/[^/]+)\//
+
+function resolveHostname(
+  optionsHost
+) {
+  let host
+  if (
+    optionsHost === undefined ||
+    optionsHost === false ||
+    optionsHost === 'localhost'
+  ) {
+    // Use a secure default
+    host = '127.0.0.1'
+  } else if (optionsHost === true) {
+    // If passed --host in the CLI without arguments
+    host = undefined // undefined typically means 0.0.0.0 or :: (listen on all IPs)
+  } else {
+    host = optionsHost
+  }
+
+  // Set host name to localhost when possible, unless the user explicitly asked for '127.0.0.1'
+  const name =
+    (optionsHost !== '127.0.0.1' && host === '127.0.0.1') ||
+    host === '0.0.0.0' ||
+    host === '::' ||
+    host === undefined
+      ? 'localhost'
+      : host
+
+  return { host, name }
+}
+
+function fsPathFromId(id) {
+  const fsPath = normalizePath(id.slice(FS_PREFIX.length))
+  return fsPath.startsWith('/') || fsPath.match(VOLUME_RE)
+    ? fsPath
+    : `/${fsPath}`
+}
+
 module.exports = {
 	createDebugger,
 	lookupFile,
@@ -323,5 +385,14 @@ module.exports = {
 	timeFrom,
 	prettifyUrl,
 	isFileReadable,
-  ensureLeadingSlash
+  ensureLeadingSlash,
+  bareImportRE,
+  deepImportRE,
+  cleanUrl,
+  removeTimestampQuery,
+  removeImportQuery,
+  resolveHostname,
+  isImportRequest,
+  isInternalRequest,
+  fsPathFromId
 }

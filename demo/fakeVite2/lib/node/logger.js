@@ -1,5 +1,6 @@
 const readline = require('readline')
 const chalk = require('chalk')
+const { resolveHostname } = require('./utils')
 
 function clearScreen() {
 	const repeatCount = process.stdout.rows - 2
@@ -102,6 +103,56 @@ function createLogger(
 	return logger
 }
 
+function printServerUrls(
+  hostname,
+  protocol,
+  port,
+  base,
+  info
+) {
+  if (hostname.host === '127.0.0.1') {
+    const url = `${protocol}://${hostname.name}:${chalk.bold(port)}${base}`
+    info(`  > Local: ${chalk.cyan(url)}`)
+    if (hostname.name !== '127.0.0.1') {
+      info(`  > Network: ${chalk.dim('use `--host` to expose')}`)
+    }
+  } else {
+    Object.values(os.networkInterfaces())
+      .flatMap((nInterface) => nInterface ?? [])
+      .filter((detail) => detail && detail.address && detail.family === 'IPv4')
+      .map((detail) => {
+        const type = detail.address.includes('127.0.0.1')
+          ? 'Local:   '
+          : 'Network: '
+        const host = detail.address.replace('127.0.0.1', hostname.name)
+        const url = `${protocol}://${host}:${chalk.bold(port)}${base}`
+        return `  > ${type} ${chalk.cyan(url)}`
+      })
+      .forEach((msg) => info(msg))
+  }
+}
+
+function printCommonServerUrls(
+  server,
+  options,
+  config
+) {
+  const address = server.address()
+  const isAddressInfo = (x) => (x || {}).address
+  if (isAddressInfo(address)) {
+    const hostname = resolveHostname(options.host)
+    const protocol = options.https ? 'https' : 'http'
+    printServerUrls(
+      hostname,
+      protocol,
+      address.port,
+      config.base,
+      config.logger.info
+    )
+  }
+}
+
 module.exports = {
-	createLogger
+	createLogger,
+  printCommonServerUrls
 }

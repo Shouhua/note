@@ -11,6 +11,7 @@ const aliasPlugin = require('@rollup/plugin-alias')
 const { resolvePlugin } = require('./plugins/resolve')
 const { DEFAULT_ASSETS_RE } = require('./constant')
 const { searchForWorkspaceRoot } = require('./server/searchRoot')
+const { resolvePlugins } = require('./plugins')
 const {
 	createDebugger,
 	lookupFile,
@@ -302,16 +303,15 @@ async function resolveConfig(
     }
 	}
 
-	// TODO
-  // resolved.plugins = await resolvePlugins(
-  //   resolved,
-  //   prePlugins,
-  //   normalPlugins,
-  //   postPlugins
-  // )
+  resolved.plugins = await resolvePlugins(
+    resolved,
+    prePlugins,
+    normalPlugins,
+    postPlugins
+  )
 
   // call configResolved hooks
-  await Promise.all(userPlugins.map((p) => p.configResolved(resolved)))
+  await Promise.all(userPlugins.map((p) => p.configResolved && p.configResolved(resolved)))
 
   if (process.env.DEBUG) {
     debug(`using resolved config: %O`, {
@@ -319,6 +319,7 @@ async function resolveConfig(
       plugins: resolved.plugins.map((p) => p.name)
     })
   }
+	return resolved
 }
 
 function resolveBaseUrl(

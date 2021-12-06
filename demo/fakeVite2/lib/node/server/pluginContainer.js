@@ -14,7 +14,7 @@ const path = require('path')
 const fs = require('fs')
 const acorn = require('acorn')
 
-function createPluginContainer(
+async function createPluginContainer(
 	{ plugins, logger, root, build: { rollupOptions } },
 	moduleGraph,
 	watcher
@@ -123,7 +123,7 @@ function createPluginContainer(
 		getWatchFiles() {
 			return [...watchFiles]
 		}
-		emitFile(assetOrFile: EmittedFile) {
+		emitFile(assetOrFile) {
       warnIncompatibleMethod(`emitFile`, this._activePlugin.name)
       return ''
     }
@@ -210,11 +210,11 @@ function createPluginContainer(
           }
           err.frame = generateCodeFrame(code, err.loc)
         }
-      } else if ((err as any).line && (err as any).column) {
+      } else if (err.line && err.column) {
         err.loc = {
           file: err.id,
-          line: (err as any).line,
-          column: (err as any).column
+          line: err.line,
+          column: err.column
         }
         err.frame = err.frame || generateCodeFrame(ctx._activeCode, err.loc)
       }
@@ -271,7 +271,7 @@ function createPluginContainer(
     }
 
     getCombinedSourcemap() {
-      return this._getCombinedSourcemap(true) as SourceMap
+      return this._getCombinedSourcemap(true)
     }
 	}
 	let closed = false
@@ -415,13 +415,17 @@ function createPluginContainer(
       if (closed) return
       const ctx = new Context()
       await Promise.all(
-        plugins.map((p) => p.buildEnd && p.buildEnd.call(ctx as any))
+        plugins.map((p) => p.buildEnd && p.buildEnd.call(ctx))
       )
       await Promise.all(
-        plugins.map((p) => p.closeBundle && p.closeBundle.call(ctx as any))
+        plugins.map((p) => p.closeBundle && p.closeBundle.call(ctx))
       )
       closed = true
     }
 	}
 	return container
+}
+
+module.exports = {
+  createPluginContainer
 }
