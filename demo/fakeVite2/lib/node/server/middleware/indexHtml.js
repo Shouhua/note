@@ -174,6 +174,7 @@ function indexHtmlMiddleware(server) {
       if (fs.existsSync(filename)) {
         try {
           let html = fs.readFileSync(filename, 'utf-8')
+          // TODO
           // html = await server.transformIndexHtml(url, html, req.originalUrl)
           return send(req, res, html, 'html')
         } catch (e) {

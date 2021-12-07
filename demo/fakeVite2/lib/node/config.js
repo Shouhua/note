@@ -28,18 +28,17 @@ const {
 
 const debug = createDebugger('fakeVite:config')
 
-function mergeAlias(a, b) {
-	return [...normalizeAlias(a), ...normalizeAlias(b)].filter(Boolean)
+function mergeAlias(a = [], b = []) {
+	return [...normalizeAlias(a), ...normalizeAlias(b)]
 }
 function normalizeAlias(o) {
 	return Array.isArray(o)
 		? o.map(normalizeSingleAlias)
-		: Object.keys(o).map((find) => {
+		: Object.keys(o).map((find) => 
 			normalizeSingleAlias({
 				find,
 				replacement: o[find]
-			})
-		})
+			}))
 }
 function normalizeSingleAlias({find, replacement}) {
 	if(typeof find === 'string' &&

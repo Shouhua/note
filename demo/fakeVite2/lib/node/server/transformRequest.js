@@ -26,7 +26,6 @@ function transformRequest(url, server, options) {
 
 async function doTransform(url, server, options) {
 	url = removeTimestampQuery(url)	
-	console.log(`[想知道这个transform quest中的url是不是绝对路径，看起来不是] ${url}`)
   const { config, pluginContainer, moduleGraph, watcher } = server
   const { root, logger } = config
   const prettyUrl = isDebug ? prettifyUrl(url, root) : ''

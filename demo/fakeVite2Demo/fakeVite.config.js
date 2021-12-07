@@ -5,7 +5,7 @@ export default {
 	output: 'out.js',
 	resolve: {
 		alias: {
-			'@/': '/src/'
+			'/@/': '/src/'
 		}
 	},
 	server: {

@@ -104,7 +104,7 @@ async function createPluginContainer(
 				skip = new Set(this._resolveSkips)
 				skip.add(this._activePlugin)
 			}
-			let out = await CredentialsContainer.resolveId(id, importer, { skip, ssr: this.ssr })
+			let out = await container.resolveId(id, importer, { skip, ssr: this.ssr })
 			if(typeof out === 'string') out = { id: out }
 			return out || null
 		}

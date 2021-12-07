@@ -73,7 +73,6 @@ function serveStaticMiddleware(dir, server) {
     if (!ensureServingAccess(fileUrl, server, res, next)) {
       return
     }
-
     if (redirected) {
       req.url = redirected
     }
