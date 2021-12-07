@@ -1,4 +1,4 @@
-const { isObject } = require('./utils')
+const { isObject } = require('../utils')
 const { WebSocketServer } = require('ws')
 const { STATUS_CODES } = require('http')
 

@@ -3,7 +3,7 @@ const path = require('path')
 const MagicString = require('magic-string')
 const { CLIENT_PUBLIC_PATH, FS_PREFIX } = require('../../constant')
 const { cleanUrl, fsPathFromId, normalizePath, injectQuery } = require('../../utils') 
-const { send } = require('../../send')
+const { send } = require('../send')
 
 // import {
 //   addToHTMLProxyCache,

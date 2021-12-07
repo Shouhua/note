@@ -5,7 +5,7 @@ const chokidar = require('chokidar')
 const connect = require('connect')
 const { resolveConfig } = require('../config')
 const { resolveHttpsConfig, resolveHttpServer } = require('../http')
-const { createWebSocketServer } = require('../ws')
+const { createWebSocketServer } = require('./ws')
 const { ModuleGraph } = require('./moduleGraph')
 const { createPluginContainer } = require('./pluginContainer')
 const { resolveHostname } = require('../utils')
@@ -13,6 +13,9 @@ const { printCommonServerUrls } = require('../logger')
 const { servePublicMiddleware, serveRawFsMiddleware, serveStaticMiddleware } = require('./middleware/static')
 const { spaFallbackMiddleware } = require('./middleware/spaFallback')
 const { indexHtmlMiddleware } = require('./middleware/indexHtml')
+const { timeMiddleware } = require('./middleware/time')
+const { transformMiddleware } = require('./middleware/transform')
+
 
 async function createServer(inlineConfig) {
 	const config = await resolveConfig(inlineConfig, 'serve', 'development')
@@ -204,9 +207,9 @@ async function createServer(inlineConfig) {
   // Internal middlewares ------------------------------------------------------
 
   // request timer
-  // if (process.env.DEBUG) {
-  //   middlewares.use(timeMiddleware(root))
-  // }
+  if (process.env.DEBUG) {
+    middlewares.use(timeMiddleware(root))
+  }
 
   // cors (enabled by default)
   // const { cors } = serverConfig
@@ -242,7 +245,7 @@ async function createServer(inlineConfig) {
   }
 
   // main transform middleware
-  // middlewares.use(transformMiddleware(server))
+  middlewares.use(transformMiddleware(server))
 
   // serve static files
   middlewares.use(serveRawFsMiddleware(server))

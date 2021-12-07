@@ -186,5 +186,6 @@ function renderRestrictedErrorHTML(msg) {
 module.exports = {
   servePublicMiddleware,
   serveStaticMiddleware,
-  serveRawFsMiddleware
+  serveRawFsMiddleware,
+  isFileServingAllowed
 }

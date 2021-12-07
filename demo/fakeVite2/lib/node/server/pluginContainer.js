@@ -13,6 +13,7 @@ const { FS_PREFIX } = require('../constant')
 const path = require('path')
 const fs = require('fs')
 const acorn = require('acorn')
+const chalk = require('chalk')
 
 async function createPluginContainer(
 	{ plugins, logger, root, build: { rollupOptions } },
@@ -302,8 +303,8 @@ async function createPluginContainer(
 			)
 		},
 		async resolveId(rawId, importer = path.join(root, 'index.html'), options) {
-			const skip = options.skip
-			const ssr = options.ssr
+			const skip = (options || {}).skip
+			const ssr = (options || {}).ssr
 			const ctx = new Context()
 			ctx.ssr = !!ssr
 			ctx._resolveSkips = skip
@@ -313,7 +314,7 @@ async function createPluginContainer(
 			const partial = {}
 			for(const plugin of plugins) {
 				if(!plugin.resolveId) continue
-				if(skip.has(plugin)) continue
+				if(skip && skip.has(plugin)) continue
 				ctx._activePlugin = plugin
 				const pluginResolveStart = isDebug ? performance.now() : 0
 				const result = await plugin.resolveId.call(ctx, rawId, importer, { ssr })

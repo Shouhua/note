@@ -43,6 +43,7 @@ const JS_TYPES_RE = /\.(?:j|t)sx?$|\.mjs$/
 const OPTIMIZABLE_ENTRY_RE = /\.(?:m?js|ts)$/
 const SPECIAL_QUERY_RE = /[\?&](?:worker|sharedworker|raw|url)\b/
 
+const NULL_BYTE_PLACEHOLDER = `__x00__`
 
 module.exports = {
 	FS_PREFIX,
@@ -53,5 +54,6 @@ module.exports = {
   SPECIAL_QUERY_RE,
   CLIENT_PUBLIC_PATH,
   ENV_PUBLIC_PATH,
-  VALID_ID_PREFIX
+  VALID_ID_PREFIX,
+  NULL_BYTE_PLACEHOLDER
 }

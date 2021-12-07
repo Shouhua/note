@@ -384,6 +384,47 @@ function injectQuery(url, queryToInject) {
   }`
 }
 
+const knownJsSrcRE = /\.((j|t)sx?|mjs|vue|marko|svelte|astro)($|\?)/
+const isJSRequest = (url) => {
+  url = cleanUrl(url)
+  if (knownJsSrcRE.test(url)) {
+    return true
+  }
+  if (!path.extname(url) && !url.endsWith('/')) {
+    return true
+  }
+  return false
+}
+
+const cssLangs = `\\.(css|less|sass|scss|styl|stylus|pcss|postcss)($|\\?)`
+const cssLangRE = new RegExp(cssLangs)
+const cssModuleRE = new RegExp(`\\.module${cssLangs}`)
+const directRequestRE = /(\?|&)direct\b/
+const commonjsProxyRE = /\?commonjs-proxy/
+const inlineRE = /(\?|&)inline\b/
+const usedRE = /(\?|&)used\b/
+
+const isCSSRequest = (request) =>
+  cssLangRE.test(request)
+
+function unwrapId(id) {
+  return id.startsWith(VALID_ID_PREFIX) ? id.slice(VALID_ID_PREFIX.length) : id
+}
+
+function ensureWatchedFile(watcher, file, root) {
+  if (
+    file &&
+    // only need to watch if out of root
+    !file.startsWith(root + '/') &&
+    // some rollup plugins use null bytes for private resolved Ids
+    !file.includes('\0') &&
+    fs.existsSync(file)
+  ) {
+    // resolve file to normalized system path
+    watcher.add(path.resolve(file))
+  }
+}
+
 module.exports = {
 	createDebugger,
 	lookupFile,
@@ -413,5 +454,9 @@ module.exports = {
   isImportRequest,
   isInternalRequest,
   fsPathFromId,
-  injectQuery
+  injectQuery,
+  isJSRequest,
+  isCSSRequest,
+  unwrapId,
+  ensureWatchedFile
 }
