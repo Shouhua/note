@@ -1,5 +1,5 @@
 const path = require('path')
-const { createDebugger, prettifyUrl, unwrapId, normalizePath, removeTimestampQuery, cleanUrl, isCSSRequest, isImportRequest, isJSRequest, removeImportQuery } = require('../../utils')
+const { injectQuery, createDebugger, prettifyUrl, unwrapId, normalizePath, removeTimestampQuery, cleanUrl, isCSSRequest, isImportRequest, isJSRequest, removeImportQuery } = require('../../utils')
 const { CLIENT_PUBLIC_PATH, NULL_BYTE_PLACEHOLDER, DEP_VERSION_RE } = require('../../constant')
 const { send } = require('../send')
 const chalk = require('chalk')

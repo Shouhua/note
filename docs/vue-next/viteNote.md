@@ -68,3 +68,7 @@ debug=123 && ./run.sh # empty
 1. ```debug=123 echo $debug``` 在echo执行的时候就已经argument expand by the shell，但是这时debug的assignment处于同一个expand时间，debug还没有形成变量，接下俩条所以可以，```;```表示语句的结束，变量已经生成；```&&```表示前一条语句必须执行结果为true，后面才接着执行
 2. 如果换成脚本，个人理解是第一条相当于本地的变量生成，第二三条**极有可能**是由于script使用的环境child shell，但是环境变量没有debug export，所以没有。(```debug=123;echo $$;./run.sh```)
 3. 可以使用```env -i ./run.sh```来清除继承自parent shell的env
+
+## vite 2.x
+1. virtual module
+@my-virtual-module -> (custome plugin resolve id)\0@my-virtual-module -> (builtin transform)@id/__x00__@my-virtual-module

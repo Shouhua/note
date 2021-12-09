@@ -20,6 +20,7 @@ specifiers:
   rollup: ^2.60.2
   selfsigned: ^1.10.11
   sirv: ^1.0.19
+  strip-ansi: ^7.0.1
   ws: ^8.3.0
 
 dependencies:
@@ -42,6 +43,7 @@ dependencies:
   rollup: 2.60.2
   selfsigned: 1.10.11
   sirv: 1.0.19
+  strip-ansi: 7.0.1
   ws: 8.3.0
 
 packages:
@@ -85,6 +87,11 @@ packages:
     resolution: {integrity: sha512-U1riIR+lBSNi3IbxtaHOIKdH8sLFv3NYfNv8sg7ZsNhcfl4HF2++BfqqrNAxoCLQW1iiylOj76ecnaUxz+z9yw==}
     engines: {node: '>=0.4.0'}
     hasBin: true
+    dev: false
+
+  /ansi-regex/6.0.1:
+    resolution: {integrity: sha512-n5M855fKb2SsfMIiFFoVrABHJC8QtHwVx+mHWP3QcEqBHYienj5dHSgjbxtC0WEZXYt4wcD6zrQElDPhFuZgfA==}
+    engines: {node: '>=12'}
     dev: false
 
   /ansi-styles/4.3.0:
@@ -542,6 +549,13 @@ packages:
   /statuses/1.5.0:
     resolution: {integrity: sha1-Fhx9rBd2Wf2YEfQ3cfqZOBR4Yow=}
     engines: {node: '>= 0.6'}
+    dev: false
+
+  /strip-ansi/7.0.1:
+    resolution: {integrity: sha512-cXNxvT8dFNRVfhVME3JAe98mkXDYN2O1l7jmcwMnOslDeESg1rF/OZMtK0nRAhiari1unG5cD4jG3rapUAkLbw==}
+    engines: {node: '>=12'}
+    dependencies:
+      ansi-regex: 6.0.1
     dev: false
 
   /supports-color/7.2.0:

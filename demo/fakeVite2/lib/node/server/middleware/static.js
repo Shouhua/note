@@ -19,7 +19,7 @@ function servePublicMiddleware(dir) {
   const serve = sirv(dir, sirvOptions)
 
   // Keep the named function. The name is visible in debug logs via `DEBUG=connect:dispatcher ...`
-  return function viteServePublicMiddleware(req, res, next) {
+  return function fakeViteServePublicMiddleware(req, res, next) {
     // skip import request and internal requests `/@fs/ /@vite-client` etc...
     if (isImportRequest(req.url) || isInternalRequest(req.url)) {
       return next()
@@ -32,7 +32,7 @@ function serveStaticMiddleware(dir, server) {
   const serve = sirv(dir, sirvOptions)
 
   // Keep the named function. The name is visible in debug logs via `DEBUG=connect:dispatcher ...`
-  return function viteServeStaticMiddleware(req, res, next) {
+  return function fakeViteServeStaticMiddleware(req, res, next) {
     // only serve the file if it's not an html request or ends with `/`
     // so that html requests can fallthrough to our html middleware for
     // special processing
@@ -85,7 +85,7 @@ function serveRawFsMiddleware(server) {
   const serveFromRoot = sirv('/', sirvOptions)
 
   // Keep the named function. The name is visible in debug logs via `DEBUG=connect:dispatcher ...`
-  return function viteServeRawFsMiddleware(req, res, next) {
+  return function fakeViteServeRawFsMiddleware(req, res, next) {
     let url = req.url
     // In some cases (e.g. linked monorepos) files outside of root will
     // reference assets that are also out of served root. In such cases

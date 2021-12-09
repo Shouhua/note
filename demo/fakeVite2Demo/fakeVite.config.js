@@ -16,7 +16,7 @@ export default {
 		hmr: true,
 		fs: {
 			// allow: [],
-			// deny: []
+			// deny: ['main.js']
 			// strict: false
 		}
 	},

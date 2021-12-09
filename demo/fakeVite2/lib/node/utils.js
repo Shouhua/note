@@ -458,5 +458,6 @@ module.exports = {
   isJSRequest,
   isCSSRequest,
   unwrapId,
-  ensureWatchedFile
+  ensureWatchedFile,
+  pad
 }

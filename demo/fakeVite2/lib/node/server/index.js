@@ -15,7 +15,7 @@ const { spaFallbackMiddleware } = require('./middleware/spaFallback')
 const { indexHtmlMiddleware } = require('./middleware/indexHtml')
 const { timeMiddleware } = require('./middleware/time')
 const { transformMiddleware } = require('./middleware/transform')
-
+const { errorMiddleware } = require('./middleware/error')
 
 async function createServer(inlineConfig) {
 	const config = await resolveConfig(inlineConfig, 'serve', 'development')
@@ -273,7 +273,7 @@ async function createServer(inlineConfig) {
   }
 
   // error handler
-  // middlewares.use(errorMiddleware(server, !!middlewareMode))
+  middlewares.use(errorMiddleware(server, !!middlewareMode))
 
   // const runOptimize = async () => {
   //   if (config.cacheDir) {
