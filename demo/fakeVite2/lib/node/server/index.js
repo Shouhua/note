@@ -16,6 +16,7 @@ const { indexHtmlMiddleware } = require('./middleware/indexHtml')
 const { timeMiddleware } = require('./middleware/time')
 const { transformMiddleware } = require('./middleware/transform')
 const { errorMiddleware } = require('./middleware/error')
+const { invalidatePackageData } = require('../packages')
 
 async function createServer(inlineConfig) {
 	const config = await resolveConfig(inlineConfig, 'serve', 'development')
@@ -153,33 +154,34 @@ async function createServer(inlineConfig) {
     process.stdin.on('end', exitProcess)
   }
 
-  // const { packageCache } = config
-  // const setPackageData = packageCache.set.bind(packageCache)
-  // packageCache.set = (id, pkg) => {
-  //   if (id.endsWith('.json')) {
-  //     watcher.add(id)
-  //   }
-  //   return setPackageData(id, pkg)
-  // }
+  const { packageCache } = config
+  const setPackageData = packageCache.set.bind(packageCache)
+  packageCache.set = (id, pkg) => {
+    if (id.endsWith('.json')) {
+      watcher.add(id)
+    }
+    return setPackageData(id, pkg)
+  }
 
-  // watcher.on('change', async (file) => {
-  //   file = normalizePath(file)
-  //   if (file.endsWith('/package.json')) {
-  //     return invalidatePackageData(packageCache, file)
-  //   }
-  //   // invalidate module graph cache on file change
-  //   moduleGraph.onFileChange(file)
-  //   if (serverConfig.hmr !== false) {
-  //     try {
-  //       await handleHMRUpdate(file, server)
-  //     } catch (err) {
-  //       ws.send({
-  //         type: 'error',
-  //         err: prepareError(err)
-  //       })
-  //     }
-  //   }
-  // })
+  watcher.on('change', async (file) => {
+    file = normalizePath(file)
+    if (file.endsWith('/package.json')) {
+      return invalidatePackageData(packageCache, file)
+    }
+    // invalidate module graph cache on file change
+    moduleGraph.onFileChange(file)
+    if (serverConfig.hmr !== false) {
+      try {
+        // TODO
+        // await handleHMRUpdate(file, server)
+      } catch (err) {
+        ws.send({
+          type: 'error',
+          err: prepareError(err)
+        })
+      }
+    }
+  })
 
   // watcher.on('add', (file) => {
   //   handleFileAddUnlink(normalizePath(file), server)

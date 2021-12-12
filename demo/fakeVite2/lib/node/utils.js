@@ -5,7 +5,8 @@ const os = require('os')
 const { URL, pathToFileURL } = require('url')
 const remapping = require('@ampproject/remapping')
 const chalk = require('chalk')
-const { FS_PREFIX, CLIENT_PUBLIC_PATH, ENV_PUBLIC_PATH, VALID_ID_PREFIX } = require('./constant')
+const { DEFAULT_EXTENSIONS, FS_PREFIX, CLIENT_PUBLIC_PATH, ENV_PUBLIC_PATH, VALID_ID_PREFIX } = require('./constant')
+const resolve = require('resolve')
 
 const queryRE = /\?.*$/s
 const hashRE = /#.*$/s
@@ -425,6 +426,16 @@ function ensureWatchedFile(watcher, file, root) {
   }
 }
 
+const ssrExtensions = ['.js', '.cjs', '.json', '.node']
+
+function resolveFrom(id, basedir, preserveSymlinks=false, ssr=fale) {
+  return resolve.sync(id, {
+    basedir,
+    extensions: ssr ? ssrExtensions : DEFAULT_EXTENSTIONS,
+    preserveSymlinks: preserveSymlinks || false
+  })
+}
+
 module.exports = {
 	createDebugger,
 	lookupFile,
@@ -459,5 +470,6 @@ module.exports = {
   isCSSRequest,
   unwrapId,
   ensureWatchedFile,
-  pad
+  pad,
+  resolveFrom
 }
