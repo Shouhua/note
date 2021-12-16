@@ -51,15 +51,6 @@ const DEFAULT_MAIN_FIELDS = [
   'jsnext'
 ]
 
-const DEFAULT_EXTENSIONS = [
-  '.mjs',
-  '.js',
-  '.ts',
-  '.jsx',
-  '.tsx',
-  '.json'
-]
-
 const DEP_VERSION_RE = /[\?&](v=[\w\.-]+)\b/
 const JS_TYPES_RE = /\.(?:j|t)sx?$|\.mjs$/
 const OPTIMIZABLE_ENTRY_RE = /\.(?:m?js|ts)$/

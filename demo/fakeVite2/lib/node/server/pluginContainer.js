@@ -319,6 +319,7 @@ async function createPluginContainer(
 				ctx._activePlugin = plugin
 				const pluginResolveStart = isDebug ? performance.now() : 0
 				const result = await plugin.resolveId.call(ctx, rawId, importer, { ssr })
+        console.log(`[resolve plugin]${plugin.name}, ${rawId}, ${result}`)
 				if(!result) continue
 				if(typeof result === 'string') {
 					id = result

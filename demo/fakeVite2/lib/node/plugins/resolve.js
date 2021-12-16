@@ -35,7 +35,7 @@ const { loadPackageData, resolvePackageData } = require('../packages')
 const browserExternalId = '__vite-browser-external'
 
 const isDebug = process.env.DEBUG
-const debug = createDebugger('vite:resolve-details', {
+const debug = createDebugger('fakeVite:resolve-details', {
   onlyWhenFocused: true
 })
 
