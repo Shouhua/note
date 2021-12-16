@@ -44,6 +44,22 @@ const KNOWN_ASSET_TYPES = [
 const DEFAULT_ASSETS_RE = new RegExp(
   `\\.(` + KNOWN_ASSET_TYPES.join('|') + `)(\\?.*)?$`
 )
+
+const DEFAULT_MAIN_FIELDS = [
+  'module',
+  'jsnext:main', // moment still uses this...
+  'jsnext'
+]
+
+const DEFAULT_EXTENSIONS = [
+  '.mjs',
+  '.js',
+  '.ts',
+  '.jsx',
+  '.tsx',
+  '.json'
+]
+
 const DEP_VERSION_RE = /[\?&](v=[\w\.-]+)\b/
 const JS_TYPES_RE = /\.(?:j|t)sx?$|\.mjs$/
 const OPTIMIZABLE_ENTRY_RE = /\.(?:m?js|ts)$/
@@ -74,5 +90,6 @@ module.exports = {
   CLIENT_ENTRY,
   CLIENT_DIR,
   ENV_ENTRY,
-  DEFAULT_EXTENSIONS
+  DEFAULT_EXTENSIONS,
+  DEFAULT_MAIN_FIELDS
 }
