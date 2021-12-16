@@ -1,5 +1,5 @@
  const { dataToEsm } = require('@rollup/pluginutils')
- const { SPECIAL_QUERY_RE } = require('../constant')
+ const { SPECIAL_QUERY_RE } = require('../constants')
  
  // Custom json filter for vite
  const jsonExtRE = /\.json($|\?)(?!commonjs-(proxy|external))/

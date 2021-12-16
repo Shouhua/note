@@ -1,6 +1,9 @@
 const aliasPlugin = require('@rollup/plugin-alias')
 const { preAliasPlugin } = require('./preAlias')
 const { jsonPlugin } = require('./json')
+const { importAnalysisPlugin } = require('./importAnalysis')
+const { clientInjectionsPlugin } = require('./clientInjections')
+const { resolvePlugin } = require('./resolve')
 
 async function resolvePlugins(
   config,
@@ -21,15 +24,15 @@ async function resolvePlugins(
     // config.build.polyfillModulePreload
     //   ? modulePreloadPolyfillPlugin(config)
     //   : null,
-    // resolvePlugin({
-    //   ...config.resolve,
-    //   root: config.root,
-    //   isProduction: config.isProduction,
-    //   isBuild,
-    //   packageCache: config.packageCache,
-    //   ssrConfig: config.ssr,
-    //   asSrc: true
-    // }),
+    resolvePlugin({
+      ...config.resolve,
+      root: config.root,
+      isProduction: config.isProduction,
+      isBuild,
+      packageCache: config.packageCache,
+      ssrConfig: config.ssr,
+      asSrc: true
+    }),
     // config.build.ssr ? ssrRequireHookPlugin(config) : null,
     // htmlInlineScriptProxyPlugin(config),
     // cssPlugin(config),
@@ -51,9 +54,9 @@ async function resolvePlugins(
     // ...postPlugins,
     // ...buildPlugins.post,
     // internal server-only plugins are always applied after everything else
-    // ...(isBuild
-    //   ? []
-    //   : [clientInjectionsPlugin(config), importAnalysisPlugin(config)])
+    ...(isBuild
+      ? []
+      : [clientInjectionsPlugin(config), importAnalysisPlugin(config)])
   ].filter(Boolean)
 }
 

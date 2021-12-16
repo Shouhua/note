@@ -1,7 +1,7 @@
 const fs = require('fs')
 const path = require('path')
 const MagicString = require('magic-string')
-const { CLIENT_PUBLIC_PATH, FS_PREFIX } = require('../../constant')
+const { CLIENT_PUBLIC_PATH, FS_PREFIX } = require('../../constants')
 const { cleanUrl, fsPathFromId, normalizePath, injectQuery } = require('../../utils') 
 const { send } = require('../send')
 

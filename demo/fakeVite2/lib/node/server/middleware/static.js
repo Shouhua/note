@@ -1,5 +1,5 @@
 const { normalizePath, isImportRequest, isInternalRequest, cleanUrl, isFileReadable, ensureLeadingSlash, fsPathFromId } = require('../../utils')
-const { FS_PREFIX } = require('../../constant')
+const { FS_PREFIX } = require('../../constants')
 const { isMatch } = require('micromatch')
 const sirv = require('sirv')
 const path = require('path')

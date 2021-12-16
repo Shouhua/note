@@ -7,9 +7,10 @@ const {
 	combineSourcemaps,
 	timeFrom,
 	prettifyUrl,
-	isExternalUrl
+	isExternalUrl,
+  isObject
 } = require('../utils')
-const { FS_PREFIX } = require('../constant')
+const { FS_PREFIX } = require('../constants')
 const path = require('path')
 const fs = require('fs')
 const acorn = require('acorn')
@@ -22,12 +23,12 @@ async function createPluginContainer(
 ) {
 	const isDebug = process.env.DEBUG
 	const seenResolves = {}
-	const debugResolve = createDebugger('vite:resolve')
-	const debugPluginResolve = createDebugger('vite:plugin-resolve', {
-    onlyWhenFocused: 'vite:plugin'
+	const debugResolve = createDebugger('fakeVite:resolve')
+	const debugPluginResolve = createDebugger('fakeVite:plugin-resolve', {
+    onlyWhenFocused: 'fakeVite:plugin'
   })
-  const debugPluginTransform = createDebugger('vite:plugin-transform', {
-    onlyWhenFocused: 'vite:plugin'
+  const debugPluginTransform = createDebugger('fakeVite:plugin-transform', {
+    onlyWhenFocused: 'fakeVite:plugin'
   })
 
 	const watchFiles = new Set()
@@ -98,7 +99,7 @@ async function createPluginContainer(
 				...options
 			})
 		}
-		async resolve(id, importer, options) {
+		async resolve(id, importer, options={}) {
 			let skip
 			if(options.skipSelf && this._activePlugin) {
 				skip = new Set(this._resolveSkips)

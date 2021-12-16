@@ -1,7 +1,7 @@
 const { extname } = require('path')
 const { isDirectCSSRequest } = require('../plugins/css')
 const { cleanUrl, normalizePath, removeImportQuery, removeTimestampQuery } = require('../utils')
-const { FS_PREFIX } = require('../constant')
+const { FS_PREFIX } = require('../constants')
 
 class ModuleNode {
   /**

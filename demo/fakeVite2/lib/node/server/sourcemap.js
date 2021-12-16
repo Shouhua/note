@@ -47,3 +47,7 @@ async function injectSourcesContent(map, file, logger) {
     isDebug && debug(`Missing sources:\n  ` + missingSources.join(`\n  `))
   }
 }
+
+module.exports = {
+  injectSourcesContent
+}

@@ -1,15 +1,16 @@
-const { isObject, timeFrom, cleanUrl, prettifyUrl, createDebugger, removeTimestampQuery } = require('../utils')
+const { ensureWatchedFile, isObject, timeFrom, cleanUrl, prettifyUrl, createDebugger, removeTimestampQuery } = require('../utils')
 const { isFileServingAllowed } = require('./middleware/static')
-const fs = require('fs')
+const { promises: fs } = require('fs')
 const convertSourceMap = require('convert-source-map')
 const { checkPublicFile } = require('../plugins/asset')
 const chalk = require('chalk')
 const { injectSourcesContent } = require('./sourcemap')
 const getEtag = require('etag')
+const path = require('path')
 
-const debugLoad = createDebugger('vite:load')
-const debugTransform = createDebugger('vite:transform')
-const debugCache = createDebugger('vite:cache')
+const debugLoad = createDebugger('fakeVite:load')
+const debugTransform = createDebugger('fakeVite:transform')
+const debugCache = createDebugger('fakeVite:cache')
 const isDebug = !!process.env.DEBUG
 
 function transformRequest(url, server, options) {
@@ -78,10 +79,10 @@ async function doTransform(url, server, options) {
 		}
 		if (code) {
 			try {
-				map = (
-					convertSourceMap.fromSource(code) ||
-					convertSourceMap.fromMapFileSource(code, path.dirname(file))
-				).toObject()
+				const mapObject = convertSourceMap.fromSource(code) || convertSourceMap.fromMapFileSource(code, path.dirname(file));
+				if(mapObject) {
+					map = mapObject.toObject()
+				}
 			} catch (e) {
 				logger.warn(`Failed to load source map for ${url}.`, {
 					timestamp: true

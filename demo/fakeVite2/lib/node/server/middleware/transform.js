@@ -1,6 +1,6 @@
 const path = require('path')
 const { injectQuery, createDebugger, prettifyUrl, unwrapId, normalizePath, removeTimestampQuery, cleanUrl, isCSSRequest, isImportRequest, isJSRequest, removeImportQuery } = require('../../utils')
-const { CLIENT_PUBLIC_PATH, NULL_BYTE_PLACEHOLDER, DEP_VERSION_RE } = require('../../constant')
+const { CLIENT_PUBLIC_PATH, NULL_BYTE_PLACEHOLDER, DEP_VERSION_RE } = require('../../constants')
 const { send } = require('../send')
 const chalk = require('chalk')
 const { isHTMLProxy } = require('../../plugins/html')
@@ -9,7 +9,7 @@ const { transformRequest } = require('../transformRequest')
 
 const knownIgnoreList = new Set(['/', '/favicon.ico'])
 const NEW_DEPENDENCY_BUILD_TIMEOUT = 1000
-const debugCache = createDebugger('vite:cache')
+const debugCache = createDebugger('fakeVite:cache')
 const isDebug = !!process.env.DEBUG
 
 function transformMiddleware(server) {

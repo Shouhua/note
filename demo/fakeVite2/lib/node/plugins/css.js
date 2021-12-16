@@ -18,5 +18,6 @@ const isDirectRequest = (request) =>
 
 module.exports = {
 	isDirectCSSRequest,
-	isDirectRequest
+	isDirectRequest,
+  isCSSRequest
 }

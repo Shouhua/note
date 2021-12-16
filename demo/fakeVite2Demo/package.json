@@ -4,12 +4,14 @@
   "description": "",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "fakeVite2 serve"
+    "dev": "fakeVite2 serve",
+    "real": "vite serve"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "fakevite2": "link: ../fakeVite2"
+    "fakevite2": "link: ../fakeVite2",
+    "vite": "link: ../vite/packages/vite"
   }
 }

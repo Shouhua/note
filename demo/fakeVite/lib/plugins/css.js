@@ -11,6 +11,11 @@ const cssPreprocessLangRE = /\.(less|sass|scss|styl|stylus|postcss)$/
 const cssModuleRE = /\.module\.(less|sass|scss|styl|stylus|postcss|css)$/
 const externalRE = /^(https?:)?\/\//
 const isExternalUrl = (url) => externalRE.test(url)
+const cssLangs = `\\.(css|less|sass|scss|styl|stylus|pcss|postcss)($|\\?)`
+const cssLangRE = new RegExp(cssLangs)
+const directRequestRE = /(\?|&)direct\b/
+const isDirectCSSRequest = (request) =>
+  cssLangRE.test(request) && directRequestRE.test(request)
 
 const debug = require('debug')('fakeVite:css')
 
@@ -104,5 +109,7 @@ const cssPlugin = ({ app, root }) => {
 module.exports = {
 	cssPlugin,
 	rewriteCssUrls,
-	codegenCss
+	codegenCss,
+	isDirectCSSRequest,
+	isCSSRequest
 }

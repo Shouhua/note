@@ -9,7 +9,7 @@ const dotenvExpand = require('dotenv-expand')
 const { resolveBuildOptions } = require('./build')
 const aliasPlugin = require('@rollup/plugin-alias')
 const { resolvePlugin } = require('./plugins/resolve')
-const { DEFAULT_ASSETS_RE } = require('./constant')
+const { DEFAULT_ASSETS_RE } = require('./constants')
 const { searchForWorkspaceRoot } = require('./server/searchRoot')
 const { resolvePlugins } = require('./plugins')
 const {

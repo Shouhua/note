@@ -72,3 +72,23 @@ debug=123 && ./run.sh # empty
 ## vite 2.x
 1. virtual module
 @my-virtual-module -> (custome plugin resolve id)\0@my-virtual-module -> (builtin transform)@id/__x00__@my-virtual-module
+2. [source-map-support](https://github.com/evanw/node-source-map-support)
+node开发中根据compiled code去定位发生错误的原始位置, 示例代码已经很能说明用途
+3. prebundling dep optimization: Support adding some-lib > nested-lib to optimizeDeps.include. Allowing nested-lib to be optimized if we exclude some-lib from optimization. For example:
+// Dependency tree:
+some-lib (excluded)
+├─ nested-lib (will be included and optimized)
+4. optimizeDeps
+vite中使用包只能是esm，optimizeDeps的作用之一就是将cjs转化为esm，但是有些cjs包有named export转化不了，导致在esm使用named import会报错。
+https://github.com/vitejs/vite/pull/825
+比如faskclick这样的库，转化后还是只有module.export的导出(https://github.com/vitejs/vite/issues/815).
+正对这个问题，@rollup/plugin-commonjs也做了点调整(https://github.com/rollup/plugins/pull/604/files), 在this.getModuleInfo或moduleParsed阶段暴露isCommonJS的判断
+vitejs正对以上问题，在importAnalysis阶段做了tranformCjsImport函数去处理这些cjs依赖，这个讨论社区总共有2个方案，详情见讨论的issue，最终的方案是在转化的code中做了对named export添加了一些代码，可以让用户无感知的的使用named export，比如上面提到的fastclick，在包转化方面没有什么其他的变化。在业务代码转化中添加了：
+```js
+// biz source code
+import { FastClick } from 'fastclick'
+// transformed code by import Analysis
+import __vite__cjsImport0_fastclick from "/node_modules/.vite/fastclick.js?v=e8a488f6";
+const FastClick = __vite__cjsImport0_fastclick["FastClick"]
+```
+总体来说，vite还是在推进包转向使用esm标准规范

@@ -5,13 +5,18 @@ const os = require('os')
 const { URL, pathToFileURL } = require('url')
 const remapping = require('@ampproject/remapping')
 const chalk = require('chalk')
-const { FS_PREFIX, CLIENT_PUBLIC_PATH, ENV_PUBLIC_PATH, VALID_ID_PREFIX } = require('./constant')
+const { DEFAULT_EXTENSIONS, FS_PREFIX, CLIENT_PUBLIC_PATH, ENV_PUBLIC_PATH, VALID_ID_PREFIX } = require('./constants')
+const { builtinModules } = require('module')
+const resolve = require('resolve')
 
 const queryRE = /\?.*$/s
 const hashRE = /#.*$/s
 
 const cleanUrl = (url) =>
   url.replace(hashRE, '').replace(queryRE, '')
+
+const dataUrlRE = /^\s*data:/i
+const isDataUrl = (url) => dataUrlRE.test(url)
 
 const externalRE = /^(https?:)?\/\//
 const isExternalUrl = (url) => externalRE.test(url)
@@ -425,6 +430,86 @@ function ensureWatchedFile(watcher, file, root) {
   }
 }
 
+//TODO: revisit later to see if the edge case that "compiling using node v12 code to be run in node v16 in the server" is what we intend to support.
+const builtins = new Set([
+  ...builtinModules,
+  'assert/strict',
+  'diagnostics_channel',
+  'dns/promises',
+  'fs/promises',
+  'path/posix',
+  'path/win32',
+  'readline/promises',
+  'stream/consumers',
+  'stream/promises',
+  'stream/web',
+  'timers/promises',
+  'util/types',
+  'wasi'
+])
+
+function isBuiltin(id) {
+  return builtins.has(id.replace(/^node:/, ''))
+}
+
+function moduleListContains(
+  moduleList,
+  id
+) {
+  return moduleList?.some((m) => m === id || id.startsWith(m + '/'))
+}
+
+function ensureVolumeInPath(file) {
+  return isWindows ? path.resolve(file) : file
+}
+
+let isRunningWithYarnPnp
+try {
+  isRunningWithYarnPnp = Boolean(require('pnpapi'))
+} catch {}
+
+const ssrExtensions = ['.js', '.cjs', '.json', '.node']
+
+function resolveFrom(
+  id,
+  basedir,
+  preserveSymlinks = false,
+  ssr = false
+) {
+  return resolve.sync(id, {
+    basedir,
+    extensions: ssr ? ssrExtensions : DEFAULT_EXTENSIONS,
+    // necessary to work with pnpm
+    preserveSymlinks: preserveSymlinks || isRunningWithYarnPnp || false
+  })
+}
+
+/**
+ * like `resolveFrom` but supports resolving `>` path in `id`,
+ * for example: `foo > bar > baz`
+ */
+function nestedResolveFrom(
+  id,
+  basedir,
+  preserveSymlinks = false
+) {
+  const pkgs = id.split('>').map((pkg) => pkg.trim())
+  try {
+    for (const pkg of pkgs) {
+      basedir = resolveFrom(pkg, basedir, preserveSymlinks)
+    }
+  } catch {}
+  return basedir
+}
+
+const knownTsRE = /\.(ts|mts|cts|tsx)$/
+const knownTsOutputRE = /\.(js|mjs|cjs|jsx)$/
+const isTsRequest = (url) => knownTsRE.test(cleanUrl(url))
+const isPossibleTsOutput = (url) =>
+  knownTsOutputRE.test(cleanUrl(url))
+const getTsSrcPath = (filename) =>
+  filename.replace(/\.([cm])?(js)(x?)(\?|$)/, '.$1ts$3')
+
 module.exports = {
 	createDebugger,
 	lookupFile,
@@ -459,5 +544,15 @@ module.exports = {
   isCSSRequest,
   unwrapId,
   ensureWatchedFile,
-  pad
+  pad,
+  isBuiltin,
+  moduleListContains,
+  isDataUrl,
+  slash,
+  ensureVolumeInPath,
+  resolveFrom,
+  nestedResolveFrom,
+  isTsRequest,
+  isPossibleTsOutput,
+  getTsSrcPath
 }
