@@ -46,6 +46,7 @@ function transformMiddleware(server) {
 			NULL_BYTE_PLACEHOLDER,
 			'\0'
 		)
+		console.log(chalk.red(`[MIDDLEWARE transform begin]: ${req.url}, ${url}`))
 		const withoutQuery = cleanUrl(url)
 		try {
 			const isSourceMap = withoutQuery.endsWith('.map')

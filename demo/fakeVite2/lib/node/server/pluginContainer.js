@@ -362,6 +362,7 @@ async function createPluginContainer(
         if (!plugin.load) continue
         ctx._activePlugin = plugin
         const result = await plugin.load.call(ctx, id, { ssr })
+        console.log(`[load plugin]${plugin.name}, ${id}, ${result}`)
         if (result != null) {
           if (isObject(result)) {
             updateModuleInfo(id, result)
