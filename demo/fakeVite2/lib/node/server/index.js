@@ -236,7 +236,7 @@ async function createServer(inlineConfig) {
 
   // hmr reconnect ping
   // Keep the named function. The name is visible in debug logs via `DEBUG=connect:dispatcher ...`
-  middlewares.use('/__vite_ping', function viteHMRPingMiddleware(_, res) {
+  middlewares.use('/__fakeVite_ping', function viteHMRPingMiddleware(_, res) {
     res.end('pong')
   })
 

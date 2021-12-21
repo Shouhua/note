@@ -1,6 +1,8 @@
 const path = require('path')
 const { CLIENT_ENTRY, ENV_ENTRY } = require('../constants')
-const { normalizePath, isObject } = require('../utils')
+const { normalizePath, isObject, createDebugger } = require('../utils')
+
+const debug = createDebugger('fakeVite:clientInjections')
 
 // ids in transform are normalized to unix style
 const normalizedClientEntry = normalizePath(CLIENT_ENTRY)
@@ -37,7 +39,6 @@ function clientInjectionsPlugin(config) {
         if (hmrBase !== '/') {
           port = path.posix.normalize(`${port}${hmrBase}`)
         }
-
         return code
           .replace(`__MODE__`, JSON.stringify(config.mode))
           .replace(`__BASE__`, JSON.stringify(config.base))

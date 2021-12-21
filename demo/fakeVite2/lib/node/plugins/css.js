@@ -1,5 +1,4 @@
 const { registerAssetToChunk, checkPublicFile, fileToUrl, getAssetFilename } = require('./asset')
-const postcssrc = require('postcss-load-config')
 const { dataToEsm } = require('@rollup/pluginutils')
 const path = require('path')
 const { transform, formatMessages } = require('esbuild')
@@ -7,12 +6,23 @@ const { CLIENT_PUBLIC_PATH } = require('../constants')
 const MagicString = require('magic-string')
 const { isExternalUrl, isDataUrl, asyncReplace, isObject, createDebugger } = require('../utils')
 const glob = require('fast-glob')
+const postcss = require('postcss')
+const postcssrc = require('postcss-load-config')
+const postcssImport = require('postcss-import')
+const postcssModules = require('postcss-modules')
 
 const debug = createDebugger('fakeVite:css')
 
 const directRequestRE = /(\?|&)direct\b/
+// package包内部依赖的css样式不用计入最后的打的包内部
+// 这个标记来自于@rollup/plugin-commonjs(https://github.com/rollup/plugins/blob/5fe760bd931c334fc28d199497dfdb76d888ef67/packages/commonjs/src/generate-imports.js#L165)
 const commonjsProxyRE = /\?commonjs-proxy/
-const inlineRE = /(\?|&)inline\b/
+/**
+ * @vite/plugin-vue custom element将会在生成的css文件中附带inline
+ * https://github.com/vitejs/vite/compare/plugin-vue@1.3.0...plugin-vue@1.4.0#diff-1263a1ca33a7684182f903fadc5c39eb3c7cbe38269571e354d882d0fa436b4fR87
+ * defineCustomElement vue3.2引入的API用于自定义HTML元素，解释了使用inline的原因(https://v3.cn.vuejs.org/guide/web-components.html#definecustomelement)
+ */
+const inlineRE = /(\?|&)inline\b/ 
 const usedRE = /(\?|&)used\b/
 const cssUrlRE =
   /(?<=^|[^\w\-\u0080-\uffff])url\(\s*('[^']+'|"[^"]+"|[^'")]+)\s*\)/
@@ -21,6 +31,14 @@ const cssImageSetRE = /image-set\(([^)]+)\)/
 const cssLangs = `\\.(css|less|sass|scss|styl|stylus|pcss|postcss)($|\\?)`
 const cssLangRE = new RegExp(cssLangs)
 const cssModuleRE = new RegExp(`\\.module${cssLangs}`)
+
+const PreprocessLang = {
+  less: 'less',
+  sass: 'sass',
+  scss: 'scss',
+  styl: 'styl',
+  stylus: 'stylus'
+}
 
 const isCSSRequest = (request) =>
   cssLangRE.test(request)
@@ -63,6 +81,7 @@ function cssPlugin(config) {
       if(!isCSSRequest(id) || commonjsProxyRE.test(id)) {
         return
       }
+      // url替换，如果是public就加上base前缀，其他就转化为request url
       const urlReplacer = async (url, importer) => {
         if(checkPublicFile(url, config)) {
           return config.base + url.slice(1)
@@ -395,6 +414,12 @@ function cssPlugin(config) {
     }
   }
 }
+
+function getCssResolversKeys(resolvers) {
+  return Object.keys(resolvers)
+}
+
+// 使用postcss和postcss plugin能力处理
 async function compileCSS(id, code, config, urlReplacer, atImportResolvers, server) {
   const { modules: modulesOptions, preprocessorOptions } = config.css || {}
   const isModule = modulesOptions !== false && cssModuleRE.test(id)
@@ -417,15 +442,108 @@ async function compileCSS(id, code, config, urlReplacer, atImportResolvers, serv
   let modules
   const deps = new Set()
 
+  // 2. pre-processors: sass etc.
+  if (isPreProcessor(lang)) {
+    const preProcessor = preProcessors[lang]
+    let opts = (preprocessorOptions && preprocessorOptions[lang]) || {}
+    // support @import from node dependencies by default
+    switch (lang) {
+      case PreprocessLang.scss:
+      case PreprocessLang.sass:
+        opts = {
+          includePaths: ['node_modules'],
+          alias: config.resolve.alias,
+          ...opts
+        }
+        break
+      case PreprocessLang.less:
+      case PreprocessLang.styl:
+      case PreprocessLang.stylus:
+        opts = {
+          paths: ['node_modules'],
+          alias: config.resolve.alias,
+          ...opts
+        }
+    }
+    // important: set this for relative import resolving
+    opts.filename = cleanUrl(id)
+    const preprocessResult = await preProcessor(
+      code,
+      config.root,
+      opts,
+      atImportResolvers
+    )
+    if (preprocessResult.errors.length) {
+      throw preprocessResult.errors[0]
+    }
+
+    code = preprocessResult.code
+    map = preprocessResult.map
+    if (preprocessResult.deps) {
+      preprocessResult.deps.forEach((dep) => {
+        // sometimes sass registers the file itself as a dep
+        if (normalizePath(dep) !== normalizePath(opts.filename)) {
+          deps.add(dep)
+        }
+      })
+    }
+  }
+
+  // 3. postcss
   const postcssOptions = (postcssConfig && postcssConfig.options) || {}
   const postcssPlugins =
     postcssConfig && postcssConfig.plugins ? postcssConfig.plugins.slice() : []
 
+  if (needInlineImport) {
+    postcssPlugins.unshift(
+      postcssImport({
+        async resolve(id, basedir) {
+          const resolved = await atImportResolvers.css(
+            id,
+            path.join(basedir, '*')
+          )
+          if (resolved) {
+            return path.resolve(resolved)
+          }
+          return id
+        }
+      })
+    )
+  }
+
+  // 处理css中url(./cx.jpeg)
   postcssPlugins.push(
     UrlRewritePostcssPlugin({
       replacer: urlReplacer
     })
   )
+  if (isModule) {
+    postcssPlugins.unshift(
+      postcssModules({
+        ...modulesOptions,
+        getJSON(
+          cssFileName,
+          _modules,
+          outputFileName
+        ) {
+          modules = _modules
+          if (modulesOptions && typeof modulesOptions.getJSON === 'function') {
+            modulesOptions.getJSON(cssFileName, _modules, outputFileName)
+          }
+        },
+        async resolve(id) {
+          for (const key of getCssResolversKeys(atImportResolvers)) {
+            const resolved = await atImportResolvers[key](id)
+            if (resolved) {
+              return path.resolve(resolved)
+            }
+          }
+
+          return id
+        }
+      })
+    )
+  }
 
   if (!postcssPlugins.length) {
     return {
@@ -435,7 +553,7 @@ async function compileCSS(id, code, config, urlReplacer, atImportResolvers, serv
   }
 
   // postcss is an unbundled dep and should be lazy imported
-  const postcssResult = await (await import('postcss'))
+  const postcssResult = await postcss
     .default(postcssPlugins)
     .process(code, {
       ...postcssOptions,
@@ -673,6 +791,298 @@ async function minifyCSS(css, config) {
   }
   return code
 }
+
+function isPreProcessor(lang) {
+  return lang && lang in preProcessors
+}
+
+const loadedPreprocessors = {}
+
+function loadPreprocessor(lang, root) {
+  if (lang in loadedPreprocessors) {
+    return loadedPreprocessors[lang]
+  }
+  try {
+    // Search for the preprocessor in the root directory first, and fall back
+    // to the default require paths.
+    const fallbackPaths = require.resolve.paths(lang) || []
+    const resolved = require.resolve(lang, { paths: [root, ...fallbackPaths] })
+    return (loadedPreprocessors[lang] = require(resolved))
+  } catch (e) {
+    if (e.code === 'MODULE_NOT_FOUND') {
+      throw new Error(
+        `Preprocessor dependency "${lang}" not found. Did you install it?`
+      )
+    } else {
+      const message = new Error(
+        `Preprocessor dependency "${lang}" failed to load:\n${e.message}`
+      )
+      message.stack = e.stack + '\n' + message.stack
+      throw message
+    }
+  }
+}
+
+// .scss/.sass processor
+const scss = async (
+  source,
+  root,
+  options,
+  resolvers
+) => {
+  const render = loadPreprocessor(PreprocessLang.sass, root).render
+  const internalImporter = (url, importer, done) => {
+    resolvers.sass(url, importer).then((resolved) => {
+      if (resolved) {
+        rebaseUrls(resolved, options.filename, options.alias)
+          .then((data) => done?.(data))
+          .catch((data) => done?.(data))
+      } else {
+        done?.(null)
+      }
+    })
+  }
+  const importer = [internalImporter]
+  if (options.importer) {
+    Array.isArray(options.importer)
+      ? importer.push(...options.importer)
+      : importer.push(options.importer)
+  }
+
+  const finalOptions = {
+    ...options,
+    data: await getSource(source, options.filename, options.additionalData),
+    file: options.filename,
+    outFile: options.filename,
+    importer
+  }
+
+  try {
+    const result = await new Promise((resolve, reject) => {
+      render(finalOptions, (err, res) => {
+        if (err) {
+          reject(err)
+        } else {
+          resolve(res)
+        }
+      })
+    })
+    const deps = result.stats.includedFiles
+
+    return {
+      code: result.css.toString(),
+      errors: [],
+      deps
+    }
+  } catch (e) {
+    // normalize SASS error
+    e.id = e.file
+    e.frame = e.formatted
+    return { code: '', errors: [e], deps: [] }
+  }
+}
+
+const sass = (source, root, options, aliasResolver) =>
+  scss(
+    source,
+    root,
+    {
+      ...options,
+      indentedSyntax: true
+    },
+    aliasResolver
+  )
+
+/**
+ * relative url() inside \@imported sass and less files must be rebased to use
+ * root file as base.
+ */
+async function rebaseUrls(file, rootFile, alias) {
+  file = path.resolve(file) // ensure os-specific flashes
+  // in the same dir, no need to rebase
+  const fileDir = path.dirname(file)
+  const rootDir = path.dirname(rootFile)
+  if (fileDir === rootDir) {
+    return { file }
+  }
+  // no url()
+  const content = fs.readFileSync(file, 'utf-8')
+  if (!cssUrlRE.test(content)) {
+    return { file }
+  }
+  const rebased = await rewriteCssUrls(content, (url) => {
+    if (url.startsWith('/')) return url
+    // match alias, no need to rewrite
+    for (const { find } of alias) {
+      const matches =
+        typeof find === 'string' ? url.startsWith(find) : find.test(url)
+      if (matches) {
+        return url
+      }
+    }
+    const absolute = path.resolve(fileDir, url)
+    const relative = path.relative(rootDir, absolute)
+    return normalizePath(relative)
+  })
+  return {
+    file,
+    contents: rebased
+  }
+}
+
+// .less
+const less = async (source, root, options, resolvers) => {
+  const nodeLess = loadPreprocessor(PreprocessLang.less, root)
+  const viteResolverPlugin = createViteLessPlugin(
+    nodeLess,
+    options.filename,
+    options.alias,
+    resolvers
+  )
+  source = await getSource(source, options.filename, options.additionalData)
+
+  let result
+  try {
+    result = await nodeLess.render(source, {
+      ...options,
+      plugins: [viteResolverPlugin, ...(options.plugins || [])]
+    })
+  } catch (e) {
+    const error = e
+    // normalize error info
+    const normalizedError = new Error(error.message || error.type)
+    normalizedError.loc = {
+      file: error.filename || options.filename,
+      line: error.line,
+      column: error.column
+    }
+    return { code: '', errors: [normalizedError], deps: [] }
+  }
+  return {
+    code: result.css.toString(),
+    deps: result.imports,
+    errors: []
+  }
+}
+
+/**
+ * Less manager, lazy initialized
+ */
+let ViteLessManager
+
+function createViteLessPlugin(less, rootFile, alias, resolvers) {
+  if (!ViteLessManager) {
+    ViteLessManager = class ViteManager extends less.FileManager {
+      resolvers
+      rootFile
+      alias
+      constructor(
+        rootFile,
+        resolvers,
+        alias
+      ) {
+        super()
+        this.rootFile = rootFile
+        this.resolvers = resolvers
+        this.alias = alias
+      }
+      supports() {
+        return true
+      }
+      supportsSync() {
+        return false
+      }
+      async loadFile(
+        filename,
+        dir,
+        opts,
+        env
+      ) {
+        const resolved = await this.resolvers.less(
+          filename,
+          path.join(dir, '*')
+        )
+        if (resolved) {
+          const result = await rebaseUrls(resolved, this.rootFile, this.alias)
+          let contents
+          if (result && 'contents' in result) {
+            contents = result.contents
+          } else {
+            contents = fs.readFileSync(resolved, 'utf-8')
+          }
+          return {
+            filename: path.resolve(resolved),
+            contents
+          }
+        } else {
+          return super.loadFile(filename, dir, opts, env)
+        }
+      }
+    }
+  }
+
+  return {
+    install(_, pluginManager) {
+      pluginManager.addFileManager(
+        new ViteLessManager(rootFile, resolvers, alias)
+      )
+    },
+    minVersion: [3, 0, 0]
+  }
+}
+
+// .styl
+const styl = async (source, root, options) => {
+  const nodeStylus = loadPreprocessor(PreprocessLang.stylus, root)
+  // Get source with preprocessor options.additionalData. Make sure a new line separator
+  // is added to avoid any render error, as added stylus content may not have semi-colon separators
+  source = await getSource(
+    source,
+    options.filename,
+    options.additionalData,
+    '\n'
+  )
+  // Get preprocessor options.imports dependencies as stylus
+  // does not return them with its builtin `.deps()` method
+  const importsDeps = (options.imports ?? []).map((dep) =>
+    path.resolve(dep)
+  )
+  try {
+    const ref = nodeStylus(source, options)
+
+    // if (map) ref.set('sourcemap', { inline: false, comment: false })
+
+    const result = ref.render()
+
+    // Concat imports deps with computed deps
+    const deps = [...ref.deps(), ...importsDeps]
+
+    return { code: result, errors: [], deps }
+  } catch (e) {
+    return { code: '', errors: [e], deps: [] }
+  }
+}
+
+function getSource(
+  source,
+  filename,
+  additionalData,
+  sep = ''
+) {
+  if (!additionalData) return source
+  if (typeof additionalData === 'function') {
+    return additionalData(source, filename)
+  }
+  return additionalData + sep + source
+}
+
+const preProcessors = Object.freeze({
+  [PreprocessLang.less]: less,
+  [PreprocessLang.sass]: sass,
+  [PreprocessLang.scss]: scss,
+  [PreprocessLang.styl]: styl,
+  [PreprocessLang.stylus]: styl
+})
 
 module.exports = {
 	isDirectCSSRequest,
