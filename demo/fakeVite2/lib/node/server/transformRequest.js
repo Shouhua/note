@@ -16,9 +16,9 @@ const isDebug = !!process.env.DEBUG
 function transformRequest(url, server, options) {
 	const cacheKey = (options.ssr ? 'ssr:' : options.html ? 'html:' : '') + url	
 	let request = server._pendingRequests.get(cacheKey)
-	console.log(chalk.red(`transformRequest cache key: ${cacheKey}, ${request}`));
+	// console.log(chalk.red(`transformRequest cache key: ${cacheKey}, ${request}`));
 	if(request) {
-		console.log(chalk.red(`server._pendingRequests.get(${cacheKey}) is not null`));
+		// console.log(chalk.red(`server._pendingRequests.get(${cacheKey}) is not null`));
 	}
 	if(!request) {
 		request = doTransform(url, server, options)
@@ -39,7 +39,7 @@ async function doTransform(url, server, options) {
   const module = await server.moduleGraph.getModuleByUrl(url)
 	  // check if we have a fresh cache
 	const cached = module && (ssr ? module.ssrTransformResult : module.transformResult)
-	console.log(chalk.red(`cached: ${cached}`));
+	// console.log(chalk.red(`cached: ${cached}`));
   if (cached) {
     // TODO: check if the module is "partially invalidated" - i.e. an import
     // down the chain has been fully invalidated, but this current module's
@@ -51,7 +51,7 @@ async function doTransform(url, server, options) {
     return cached
   }
 
-	console.log(`transformRequest->doTransform [before resolveId]: ${url}`);
+	// console.log(`transformRequest->doTransform [before resolveId]: ${url}`);
   // resolve
 	const resolveResult = await pluginContainer.resolveId(url)
   const id = (resolveResult && resolveResult.id) || url
@@ -61,7 +61,7 @@ async function doTransform(url, server, options) {
   let map
 	// load
 	const loadStart = isDebug ? performance.now() : 0
-	console.log(`transformRequest->doTransform [before load]: ${id}`);
+	// console.log(`transformRequest->doTransform [before load]: ${id}`);
 	const loadResult = await pluginContainer.load(id, { ssr })
 	if (loadResult == null) {
 		// if this is an html request and there is no load result, skip ahead to
@@ -123,7 +123,7 @@ async function doTransform(url, server, options) {
 	ensureWatchedFile(watcher, mod.file, root)
 	// transform
 	const transformStart = isDebug ? performance.now() : 0
-	console.log(`transformRequest->doTransform [before transform]: ${id}`);	
+	// console.log(`transformRequest->doTransform [before transform]: ${id}`);	
 	const transformResult = await pluginContainer.transform(code, id, {
 		inMap: map,
 		ssr

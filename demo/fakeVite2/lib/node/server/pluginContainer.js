@@ -319,7 +319,7 @@ async function createPluginContainer(
 				ctx._activePlugin = plugin
 				const pluginResolveStart = isDebug ? performance.now() : 0
 				const result = await plugin.resolveId.call(ctx, rawId, importer, { ssr })
-        console.log(`[resolve plugin]${plugin.name}, ${rawId}, ${result}`)
+        // console.log(`[resolve plugin]${plugin.name}, ${rawId}, ${result}`)
 				if(!result) continue
 				if(typeof result === 'string') {
 					id = result
@@ -362,7 +362,7 @@ async function createPluginContainer(
         if (!plugin.load) continue
         ctx._activePlugin = plugin
         const result = await plugin.load.call(ctx, id, { ssr })
-        console.log(`[load plugin]${plugin.name}, ${id}, ${result}`)
+        // console.log(`[load plugin]${plugin.name}, ${id}, ${result}`)
         if (result != null) {
           if (isObject(result)) {
             updateModuleInfo(id, result)

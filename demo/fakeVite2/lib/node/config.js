@@ -12,6 +12,7 @@ const { resolvePlugin } = require('./plugins/resolve')
 const { DEFAULT_ASSETS_RE } = require('./constants')
 const { searchForWorkspaceRoot } = require('./server/searchRoot')
 const { resolvePlugins } = require('./plugins')
+const { createPluginContainer } = require('./server/pluginContainer')
 const {
 	createDebugger,
 	lookupFile,

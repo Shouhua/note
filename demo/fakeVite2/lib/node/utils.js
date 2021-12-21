@@ -510,6 +510,47 @@ const isPossibleTsOutput = (url) =>
 const getTsSrcPath = (filename) =>
   filename.replace(/\.([cm])?(js)(x?)(\?|$)/, '.$1ts$3')
 
+async function asyncReplace(input, re, replacer) {
+  let match
+  let remaining = input
+  let rewritten = ''
+  while ((match = re.exec(remaining))) {
+    rewritten += remaining.slice(0, match.index)
+    rewritten += await replacer(match)
+    remaining = remaining.slice(match.index + match[0].length)
+  }
+  rewritten += remaining
+  return rewritten
+}
+
+const escapedSpaceCharacters = /( |\\t|\\n|\\f|\\r)+/g
+async function processSrcSet(srcs, replacer) {
+  const imageCandidates = srcs.split(',')
+    .map((s) => {
+      const [url, descriptor] = s
+        .replace(escapedSpaceCharacters, ' ')
+        .trim()
+        .split(' ', 2)
+      return { url, descriptor }
+    })
+    .filter(({ url }) => !!url)
+
+  const ret = await Promise.all(
+    imageCandidates.map(async ({ url, descriptor }) => {
+      return {
+        url: await replacer({ url, descriptor }),
+        descriptor
+      }
+    })
+  )
+
+  return ret.reduce((prev, { url, descriptor }, index) => {
+    descriptor = descriptor || ''
+    return (prev +=
+      url + ` ${descriptor}${index === ret.length - 1 ? '' : ', '}`)
+  }, '')
+}
+
 module.exports = {
 	createDebugger,
 	lookupFile,
@@ -554,5 +595,7 @@ module.exports = {
   nestedResolveFrom,
   isTsRequest,
   isPossibleTsOutput,
-  getTsSrcPath
+  getTsSrcPath,
+  asyncReplace,
+  processSrcSet
 }

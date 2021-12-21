@@ -92,3 +92,5 @@ import __vite__cjsImport0_fastclick from "/node_modules/.vite/fastclick.js?v=e8a
 const FastClick = __vite__cjsImport0_fastclick["FastClick"]
 ```
 总体来说，vite还是在推进包转向使用esm标准规范
+5. [pendingRequest](https://github.com/vitejs/vite/pull/5037)
+默认情况下，请求进来后，先经过pipeline，pipeline里面有个主要的流程是transform(transform->transformRequest->doTransform)，其中会跳用多个plugin流程(resolveId->load->transform)，其中比较重要的是default transform的importAnalysis，里面会有多个操作，比如import嵌套分析(见importAnalysis.ts中的pre-transform known direct imports部分)，随着模块越多，类似的循环分析越多，导致服务器请求利用率不高，所以这里没有使用同步的分支，使用await transformRequest，而是直接在transformRequest中的doTransform就直接返回了，将request handler保存，待下次进入的时候直接重复利用

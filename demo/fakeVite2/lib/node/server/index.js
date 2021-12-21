@@ -17,6 +17,7 @@ const { timeMiddleware } = require('./middleware/time')
 const { transformMiddleware } = require('./middleware/transform')
 const { errorMiddleware } = require('./middleware/error')
 const { invalidatePackageData } = require('../packages')
+const { normalizePath } = require('../utils')
 
 async function createServer(inlineConfig) {
 	const config = await resolveConfig(inlineConfig, 'serve', 'development')

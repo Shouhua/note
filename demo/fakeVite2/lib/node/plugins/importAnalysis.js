@@ -378,7 +378,7 @@ function importAnalysisPlugin(config) {
 			if (!isCSSRequest(importer)) {
 				// attached by pluginContainer.addWatchFile
 				const pluginImports = this._addedImports
-        console.log(`import analysis: ${pluginImports}`)
+        // console.log(`import analysis: ${pluginImports}`)
 				if (pluginImports) {
 					;(
 						await Promise.all(
@@ -412,7 +412,7 @@ function importAnalysisPlugin(config) {
 
 			// pre-transform known direct imports
 			if (staticImportedUrls.size) {
-        console.log(chalk.red(`import analysis static imported urls: ${Array.from(staticImportedUrls||[]).join(', ')}`));
+        // console.log(chalk.red(`import analysis static imported urls: ${Array.from(staticImportedUrls||[]).join(', ')}`));
 				staticImportedUrls.forEach((url) => {
 					transformRequest(unwrapId(removeImportQuery(url)), server, { ssr })
 				})

@@ -4,6 +4,8 @@ const { jsonPlugin } = require('./json')
 const { importAnalysisPlugin } = require('./importAnalysis')
 const { clientInjectionsPlugin } = require('./clientInjections')
 const { resolvePlugin } = require('./resolve')
+const { cssPlugin, cssPostPlugin } = require('./css')
+const { assetPlugin } = require('./asset')
 
 async function resolvePlugins(
   config,
@@ -35,7 +37,7 @@ async function resolvePlugins(
     }),
     // config.build.ssr ? ssrRequireHookPlugin(config) : null,
     // htmlInlineScriptProxyPlugin(config),
-    // cssPlugin(config),
+    cssPlugin(config),
     // config.esbuild !== false ? esbuildPlugin(config.esbuild) : null,
     jsonPlugin(
       {
@@ -46,10 +48,10 @@ async function resolvePlugins(
     ),
     // wasmPlugin(config),
     // webWorkerPlugin(config),
-    // assetPlugin(config),
+    assetPlugin(config),
     ...normalPlugins,
     // definePlugin(config),
-    // cssPostPlugin(config),
+    cssPostPlugin(config),
     // ...buildPlugins.pre,
     // ...postPlugins,
     // ...buildPlugins.post,
