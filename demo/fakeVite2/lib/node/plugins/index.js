@@ -6,6 +6,7 @@ const { clientInjectionsPlugin } = require('./clientInjections')
 const { resolvePlugin } = require('./resolve')
 const { cssPlugin, cssPostPlugin } = require('./css')
 const { assetPlugin } = require('./asset')
+const { htmlInlineScriptProxyPlugin } = require('./html')
 
 async function resolvePlugins(
   config,
@@ -36,7 +37,7 @@ async function resolvePlugins(
       asSrc: true
     }),
     // config.build.ssr ? ssrRequireHookPlugin(config) : null,
-    // htmlInlineScriptProxyPlugin(config),
+    htmlInlineScriptProxyPlugin(config),
     cssPlugin(config),
     // config.esbuild !== false ? esbuildPlugin(config.esbuild) : null,
     jsonPlugin(

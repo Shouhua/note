@@ -72,7 +72,7 @@ async function handleMessage(payload) {
       })
       break
     case 'custom': {
-      notifyListeners(payload.event as CustomEventName<any>, payload.data)
+      notifyListeners(payload.event, payload.data)
       break
     }
     case 'full-reload':

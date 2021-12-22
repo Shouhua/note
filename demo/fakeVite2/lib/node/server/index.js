@@ -12,7 +12,7 @@ const { resolveHostname } = require('../utils')
 const { printCommonServerUrls } = require('../logger')
 const { servePublicMiddleware, serveRawFsMiddleware, serveStaticMiddleware } = require('./middleware/static')
 const { spaFallbackMiddleware } = require('./middleware/spaFallback')
-const { indexHtmlMiddleware } = require('./middleware/indexHtml')
+const { indexHtmlMiddleware, createDevHtmlTransformFn } = require('./middleware/indexHtml')
 const { timeMiddleware } = require('./middleware/time')
 const { transformMiddleware } = require('./middleware/transform')
 const { errorMiddleware } = require('./middleware/error')
@@ -138,8 +138,7 @@ async function createServer(inlineConfig) {
     _pendingRequests: new Map()
   }
 
-	// TODO
-	// server.transformIndexHtml = createDevHtmlTransformFn(server)
+	server.transformIndexHtml = createDevHtmlTransformFn(server)
 
 	exitProcess = async () => {
     try {

@@ -16,6 +16,7 @@
     "@ampproject/remapping": "^1.0.2",
     "@rollup/plugin-alias": "^3.1.8",
     "@rollup/pluginutils": "^4.1.1",
+    "@vue/compiler-dom": "^3.2.26",
     "acorn": "^8.6.0",
     "cac": "^6.7.12",
     "chalk": "^4.0.0",
