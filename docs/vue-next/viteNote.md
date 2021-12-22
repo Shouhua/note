@@ -94,3 +94,6 @@ const FastClick = __vite__cjsImport0_fastclick["FastClick"]
 总体来说，vite还是在推进包转向使用esm标准规范
 5. [pendingRequest](https://github.com/vitejs/vite/pull/5037)
 默认情况下，请求进来后，先经过pipeline，pipeline里面有个主要的流程是transform(transform->transformRequest->doTransform)，其中会跳用多个plugin流程(resolveId->load->transform)，其中比较重要的是default transform的importAnalysis，里面会有多个操作，比如import嵌套分析(见importAnalysis.ts中的pre-transform known direct imports部分)，随着模块越多，类似的循环分析越多，导致服务器请求利用率不高，所以这里没有使用同步的分支，使用await transformRequest，而是直接在transformRequest中的doTransform就直接返回了，将request handler保存，待下次进入的时候直接重复利用
+6. NULL_BYTE_PLACEHOLDER and '\0'
+'\0'是rollup内部惯例，一般用于virtual module上，添加这个前缀防止其他插件(比如node resolution)处理，还可以在sourcemaps中区分virtual module和常规文件
+'\0'不是合法的import url字符，因此importAnalysis中rewrite带有这种字符的import url，使用NULL_BYTE_PLACEHOLDER替换，并且使用'/@id/'前缀；在transform middleware中，进入plugin system前，将转化的含有NULL_BYTE_PLACEHOLDER还原，比如'/@id/__NULL_BYTE_PLACEHOLDER__@virtual-module' -> '\0virtual-module'

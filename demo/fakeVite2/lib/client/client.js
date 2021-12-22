@@ -119,7 +119,7 @@ async function handleMessage(payload) {
       break
     }
     default: {
-      const check: never = payload
+      const check = payload
       return check
     }
   }
@@ -266,7 +266,7 @@ async function fetchUpdate({ path, acceptedPath, timestamp }) {
   const isSelfUpdate = path === acceptedPath
 
   // make sure we only import each dep once
-  const modulesToUpdate = new Set<string>()
+  const modulesToUpdate = new Set()
   if (isSelfUpdate) {
     // self update - only update self
     modulesToUpdate.add(path)

@@ -42,6 +42,9 @@ function transformMiddleware(server) {
 			})
 			return
 		}
+		// 此时此地还是进入plugin系统之前，'\0'作为import url是不合法的，在importAnalysis中替换为NULL_BYTE_PLACEHOLDER
+		// 但是rollup有个习惯，使用'\0'作为virtual module的前缀，可以保证virtual module不被rollup builtin plugin处理或者
+		// sourcemap中区分virtual module或者真实模块, 可以参见constant.js中的NULL_BYTE_PLACEHOLDER注释
 		let url = decodeURI(removeTimestampQuery(req.url)).replace(
 			NULL_BYTE_PLACEHOLDER,
 			'\0'
@@ -91,6 +94,8 @@ function transformMiddleware(server) {
 				url = removeImportQuery(url)
 				// Strip valid id prefix. This is prepended to resolved Ids that are
 				// not valid browser import specifiers by the importAnalysis plugin.
+				// 这个跟上面转换为'\0'的注释一致，在进入plugin系统之前先剥离'/@id/', 如果是virtual module, 原来是
+				// '/@id/__NULL_BYTE_PLACEHOLDER@virtual-module', 2次剥离后进入plugin系统就是'\0@virtual-module'
 				url = unwrapId(url)
 
 				// for CSS, we need to differentiate between normal CSS requests and
