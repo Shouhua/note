@@ -18,6 +18,7 @@ const { transformMiddleware } = require('./middleware/transform')
 const { errorMiddleware } = require('./middleware/error')
 const { invalidatePackageData } = require('../packages')
 const { normalizePath } = require('../utils')
+const { handleHMRUpdate } = require('./hmr')
 
 async function createServer(inlineConfig) {
 	const config = await resolveConfig(inlineConfig, 'serve', 'development')
@@ -172,8 +173,7 @@ async function createServer(inlineConfig) {
     moduleGraph.onFileChange(file)
     if (serverConfig.hmr !== false) {
       try {
-        // TODO
-        // await handleHMRUpdate(file, server)
+        await handleHMRUpdate(file, server)
       } catch (err) {
         ws.send({
           type: 'error',

@@ -5,4 +5,4 @@ import foo from '@foo'
 // import text from './helo.txt'
 // console.log(text)
 foo()
-console.log('helo, world!')
+console.log('helo, worldddddddddddddddddddddddddd!')
