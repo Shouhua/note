@@ -358,5 +358,6 @@ function error(pos) {
 module.exports = {
 	lexAcceptedHmrDeps,
 	handlePrunedModules,
-  handleHMRUpdate
+  handleHMRUpdate,
+  debugHmr
 }

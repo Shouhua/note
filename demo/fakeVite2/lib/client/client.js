@@ -1,3 +1,4 @@
+import { ErrorOverlay, overlayId } from './overlay'
 import '@fakeVite/env'
 
 console.log('[fakeVite] connecting...')
@@ -25,6 +26,24 @@ socket.addEventListener('message', async ({ data }) => {
 })
 
 let isFirstUpdate = true
+
+const enableOverlay = __HMR_ENABLE_OVERLAY__
+
+function createErrorOverlay(err) {
+  if (!enableOverlay) return
+  clearErrorOverlay()
+  document.body.appendChild(new ErrorOverlay(err))
+}
+
+function clearErrorOverlay() {
+  document
+    .querySelectorAll(overlayId)
+    .forEach((n) => n.close())
+}
+
+function hasErrorOverlay() {
+  return document.querySelectorAll(overlayId).length
+}
 
 async function handleMessage(payload) {
   switch (payload.type) {
@@ -137,20 +156,6 @@ function notifyListeners(event, data) {
   if (cbs) {
     cbs.forEach((cb) => cb(data))
   }
-}
-
-const enableOverlay = __HMR_ENABLE_OVERLAY__
-
-function createErrorOverlay(err) {
-  if (!enableOverlay) return
-  clearErrorOverlay()
-  document.body.appendChild(new ErrorOverlay(err))
-}
-
-function clearErrorOverlay() {
-  document
-    .querySelectorAll(overlayId)
-    .forEach((n) => n.close())
 }
 
 let pending = false

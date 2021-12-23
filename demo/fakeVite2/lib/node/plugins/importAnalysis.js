@@ -11,6 +11,7 @@ const { parse: parseJs } = require('acorn')
 const { handlePrunedModules, lexAcceptedHmrDeps } = require('../server/hmr')
 const { transformImportGlob } = require('../importGlob')
 const { transformRequest } = require('../server/transformRequest')
+const { debugHmr } = require('../server/hmr')
 
 const isDebug = process.env.DEBUG
 const debug = createDebugger('fakeVite:import-analysis')
