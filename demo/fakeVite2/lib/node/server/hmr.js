@@ -65,7 +65,7 @@ async function handleHMRUpdate(file, server) {
       })
       ws.send({
         type: 'full-reload',
-        path: config.server.middlewareMode ? '*' : '/' + normalizePath(path.relative(config.root), file)
+        path: config.server.middlewareMode ? '*' : '/' + normalizePath(path.relative(config.root, file))
       })
     } else {
       debugHmr(`[no modules matched] ${chalk.dim(shortFile)}`)

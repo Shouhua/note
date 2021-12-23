@@ -64,5 +64,6 @@ function errorMiddleware(server, allowNext = false
 }
 
 module.exports = {
-	errorMiddleware
+	errorMiddleware,
+  prepareError
 }
