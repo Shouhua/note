@@ -1,8 +1,12 @@
 const path = require('path')
+const { watchPackageDataPlugin } = require('./packages')
+const { buildHtmlPlugin } = require('./plugins/html')
+const commonjsPlugin = require('@rollup/plugin-commonjs').default
 
 function resolveBuildOptions(
   root,
-  raw
+  raw,
+  isBuild
 ) {
   const resolved = {
     target: 'modules',
@@ -106,6 +110,18 @@ function resolveBuildOptions(
   }
 
   return resolved
+}
+
+function resolveBuildPlugins(config) {
+  const options = config.build
+  return {
+    pre: [
+      watchPackageDataPlugin(config),
+      buildHtmlPlugin(config),
+      commonjsPlugin(options.commonjsOptions),
+      // dataURIPlugin(),
+    ]
+  }
 }
 
 module.exports = {

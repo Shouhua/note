@@ -316,6 +316,339 @@ function htmlInlineScriptProxyPlugin(config) {
   }
 }
 
+const isAsyncScriptMap = new WeakMap()
+
+/**
+ * Compiles index.html into an entry js module
+ */
+ function buildHtmlPlugin(config) {
+  const [preHooks, postHooks] = resolveHtmlTransforms(config.plugins)
+  const processedHtml = new Map()
+  const isExcludedUrl = (url) =>
+    url.startsWith('#') ||
+    isExternalUrl(url) ||
+    isDataUrl(url) ||
+    checkPublicFile(url, config)
+
+  return {
+    name: 'fakeVite:build-html',
+
+    buildStart() {
+      isAsyncScriptMap.set(config, new Map())
+    },
+
+    async transform(html, id) {
+      if (id.endsWith('.html')) {
+        const publicPath = `/${slash(path.relative(config.root, id))}`
+        // pre-transform
+        html = await applyHtmlTransforms(html, preHooks, {
+          path: publicPath,
+          filename: id
+        })
+
+        let js = ''
+        const s = new MagicString(html)
+        const assetUrls = []
+        let inlineModuleIndex = -1
+
+        let everyScriptIsAsync = true
+        let someScriptsAreAsync = false
+        let someScriptsAreDefer = false
+
+        await traverseHtml(html, id, (node) => {
+          if (node.type !== 6/*NodeTypes.ELEMENT*/) {
+            return
+          }
+
+          let shouldRemove = false
+
+          // script tags
+          if (node.tag === 'script') {
+            const { src, isModule, isAsync } = getScriptInfo(node)
+
+            const url = src && src.value && src.value.content
+            const isPublicFile = !!(url && checkPublicFile(url, config))
+            if (isPublicFile) {
+              // referencing public dir url, prefix with base
+              s.overwrite(
+                src!.value!.loc.start.offset,
+                src!.value!.loc.end.offset,
+                `"${config.base + url.slice(1)}"`
+              )
+            }
+
+            if (isModule) {
+              inlineModuleIndex++
+              if (url && !isExcludedUrl(url)) {
+                // <script type="module" src="..."/>
+                // add it as an import
+                js += `\nimport ${JSON.stringify(url)}`
+                shouldRemove = true
+              } else if (node.children.length) {
+                const contents = node.children
+                  .map((child: any) => child.content || '')
+                  .join('')
+                // <script type="module">...</script>
+                const filePath = id.replace(normalizePath(config.root), '')
+                addToHTMLProxyCache(
+                  config,
+                  filePath,
+                  inlineModuleIndex,
+                  contents
+                )
+                js += `\nimport "${id}?html-proxy&index=${inlineModuleIndex}.js"`
+                shouldRemove = true
+              }
+
+              everyScriptIsAsync &&= isAsync
+              someScriptsAreAsync ||= isAsync
+              someScriptsAreDefer ||= !isAsync
+            } else if (url && !isPublicFile) {
+              config.logger.warn(
+                `<script src="${url}"> in "${publicPath}" can't be bundled without type="module" attribute`
+              )
+            }
+          }
+
+          // For asset references in index.html, also generate an import
+          // statement for each - this will be handled by the asset plugin
+          const assetAttrs = assetAttrsConfig[node.tag]
+          if (assetAttrs) {
+            for (const p of node.props) {
+              if (
+                p.type === 6 /*NodeTypes.ATTRIBUTE*/ &&
+                p.value &&
+                assetAttrs.includes(p.name)
+              ) {
+                const url = p.value.content
+                if (!isExcludedUrl(url)) {
+                  if (node.tag === 'link' && isCSSRequest(url)) {
+                    // CSS references, convert to import
+                    js += `\nimport ${JSON.stringify(url)}`
+                    shouldRemove = true
+                  } else {
+                    assetUrls.push(p)
+                  }
+                } else if (checkPublicFile(url, config)) {
+                  s.overwrite(
+                    p.value.loc.start.offset,
+                    p.value.loc.end.offset,
+                    `"${config.base + url.slice(1)}"`
+                  )
+                }
+              }
+            }
+          }
+
+          if (shouldRemove) {
+            // remove the script tag from the html. we are going to inject new
+            // ones in the end.
+            s.remove(node.loc.start.offset, node.loc.end.offset)
+          }
+        })
+
+        isAsyncScriptMap.get(config) && isAsyncScriptMap.get(config).set(id, everyScriptIsAsync)
+
+        if (someScriptsAreAsync && someScriptsAreDefer) {
+          config.logger.warn(
+            `\nMixed async and defer script modules in ${id}, output script will fallback to defer. Every script, including inline ones, need to be marked as async for your output script to be async.`
+          )
+        }
+
+        // for each encountered asset url, rewrite original html so that it
+        // references the post-build location.
+        for (const attr of assetUrls) {
+          const value = attr.value!
+          try {
+            const url =
+              attr.name === 'srcset'
+                ? await processSrcSet(value.content, ({ url }) =>
+                    urlToBuiltUrl(url, id, config, this)
+                  )
+                : await urlToBuiltUrl(value.content, id, config, this)
+
+            s.overwrite(
+              value.loc.start.offset,
+              value.loc.end.offset,
+              `"${url}"`
+            )
+          } catch (e) {
+            // #1885 preload may be pointing to urls that do not exist
+            // locally on disk
+            if (e.code !== 'ENOENT') {
+              throw e
+            }
+          }
+        }
+
+        processedHtml.set(id, s.toString())
+
+        // inject module preload polyfill only when configured and needed
+        if (
+          config.build.polyfillModulePreload &&
+          (someScriptsAreAsync || someScriptsAreDefer)
+        ) {
+          js = `import "${modulePreloadPolyfillId}";\n${js}`
+        }
+
+        return js
+      }
+    },
+
+    async generateBundle(options, bundle) {
+      const analyzedChunk = new Map()
+      const getImportedChunks = (
+        chunk,
+        seen = new Set()
+      ) => {
+        const chunks = []
+        chunk.imports.forEach((file) => {
+          const importee = bundle[file] || {}
+          if (importee.type === 'chunk' && !seen.has(file)) {
+            seen.add(file)
+
+            // post-order traversal
+            chunks.push(...getImportedChunks(importee, seen))
+            chunks.push(importee)
+          }
+        })
+        return chunks
+      }
+
+      const toScriptTag = (
+        chunk,
+        isAsync
+      ) => ({
+        tag: 'script',
+        attrs: {
+          ...(isAsync ? { async: true } : {}),
+          type: 'module',
+          crossorigin: true,
+          src: toPublicPath(chunk.fileName, config)
+        }
+      })
+
+      const toPreloadTag = (chunk) => ({
+        tag: 'link',
+        attrs: {
+          rel: 'modulepreload',
+          href: toPublicPath(chunk.fileName, config)
+        }
+      })
+
+      const getCssTagsForChunk = (
+        chunk,
+        seen = new Set()
+      ) => {
+        const tags = []
+        if (!analyzedChunk.has(chunk)) {
+          analyzedChunk.set(chunk, 1)
+          chunk.imports.forEach((file) => {
+            const importee = bundle[file]
+            if (importee?.type === 'chunk') {
+              tags.push(...getCssTagsForChunk(importee, seen))
+            }
+          })
+        }
+
+        const cssFiles = chunkToEmittedCssFileMap.get(chunk)
+        if (cssFiles) {
+          cssFiles.forEach((file) => {
+            if (!seen.has(file)) {
+              seen.add(file)
+              tags.push({
+                tag: 'link',
+                attrs: {
+                  rel: 'stylesheet',
+                  href: toPublicPath(file, config)
+                }
+              })
+            }
+          })
+        }
+        return tags
+      }
+
+      for (const [id, html] of processedHtml) {
+        const isAsync = (isAsyncScriptMap.get(config) || new WeakMap()).get(id)
+
+        // resolve asset url references
+        let result = html.replace(assetUrlRE, (_, fileHash, postfix = '') => {
+          return config.base + getAssetFilename(fileHash, config) + postfix
+        })
+
+        // find corresponding entry chunk
+        const chunk = Object.values(bundle).find(
+          (chunk) =>
+            chunk.type === 'chunk' &&
+            chunk.isEntry &&
+            chunk.facadeModuleId === id
+        )
+
+        let canInlineEntry = false
+
+        // inject chunk asset links
+        if (chunk) {
+          // an entry chunk can be inlined if
+          //  - it's an ES module (e.g. not generated by the legacy plugin)
+          //  - it contains no meaningful code other than import statements
+          if (options.format === 'es' && isEntirelyImport(chunk.code)) {
+            canInlineEntry = true
+          }
+
+          // when not inlined, inject <script> for entry and modulepreload its dependencies
+          // when inlined, discard entry chunk and inject <script> for everything in post-order
+          const imports = getImportedChunks(chunk)
+          const assetTags = canInlineEntry
+            ? imports.map((chunk) => toScriptTag(chunk, isAsync))
+            : [toScriptTag(chunk, isAsync), ...imports.map(toPreloadTag)]
+
+          assetTags.push(...getCssTagsForChunk(chunk))
+
+          result = injectToHead(result, assetTags)
+        }
+
+        // inject css link when cssCodeSplit is false
+        if (!config.build.cssCodeSplit) {
+          const cssChunk = Object.values(bundle).find(
+            (chunk) => chunk.type === 'asset' && chunk.name === 'style.css'
+          ) as OutputAsset | undefined
+          if (cssChunk) {
+            result = injectToHead(result, [
+              {
+                tag: 'link',
+                attrs: {
+                  rel: 'stylesheet',
+                  href: toPublicPath(cssChunk.fileName, config)
+                }
+              }
+            ])
+          }
+        }
+
+        const shortEmitName = path.posix.relative(config.root, id)
+        result = await applyHtmlTransforms(result, postHooks, {
+          path: '/' + shortEmitName,
+          filename: id,
+          bundle,
+          chunk
+        })
+
+        if (chunk && canInlineEntry) {
+          // all imports from entry have been inlined to html, prevent rollup from outputting it
+          delete bundle[chunk.fileName]
+        }
+
+        this.emitFile({
+          type: 'asset',
+          fileName: shortEmitName,
+          source: result
+        })
+      }
+    }
+  }
+}
+
 module.exports = {
 	isHTMLProxy,
 	resolveHtmlTransforms,
@@ -324,5 +657,6 @@ module.exports = {
   getScriptInfo,
   addToHTMLProxyCache,
   assetAttrsConfig,
-  htmlInlineScriptProxyPlugin
+  htmlInlineScriptProxyPlugin,
+  buildHtmlPlugin
 }
