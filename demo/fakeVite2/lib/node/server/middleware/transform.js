@@ -53,7 +53,6 @@ function transformMiddleware(server) {
 		// console.log(chalk.red(`[MIDDLEWARE transform begin]: ${req.url}, ${url}`))
 		const withoutQuery = cleanUrl(url)
 		try {
-			// TODO 待求证 esbuild plugin会产生sourcemap，所有这里会响应map请求
 			const isSourceMap = withoutQuery.endsWith('.map')
 			if(isSourceMap) {
 				let map

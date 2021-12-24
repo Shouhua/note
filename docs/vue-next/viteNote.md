@@ -106,3 +106,13 @@ transformRequest中使用convert-source-map扫描文件中是否有sourcemap链�
 ```
 请求时会将main.js.map内容注入到main.js内存中返回到浏览器
 另外如果使用esbuild产生sourcemap也是会注入到原文件中的
+9. define plugin and env
+client中的env.js只是将config.define中定义对象挂在在browser的全局(比如window)变量下
+define plugin用于将业务代码中的以下数据替换：
+- processNodeEnv: process.env.NODE_ENV etc
+- userDefine: config.define
+- importMetaKeys: 主要用于build环境中，dev环境由importAnalysis处理; 包括import.meta.env(来自.env -> config.env), import.meta.hot
+- processEnv: 主要用于webworker中，比如process.env./global.process.env./globalThis.process.env.
+10. 类似的库
+- https://github.com/Krutsch/html-bundle
+- https://github.com/remorses/bundless

@@ -8,6 +8,8 @@ const { cssPlugin, cssPostPlugin } = require('./css')
 const { assetPlugin } = require('./asset')
 const { htmlInlineScriptProxyPlugin } = require('./html')
 const { esbuildPlugin } = require('./esbuild')
+const { definePlugin } = require('./define')
+const { modulePreloadPolyfillPlugin } = require('./modulePreloadPolyfill')
 
 async function resolvePlugins(
   config,
@@ -25,9 +27,9 @@ async function resolvePlugins(
     isBuild ? null : preAliasPlugin(),
     aliasPlugin({ entries: config.resolve.alias }),
     ...prePlugins,
-    // config.build.polyfillModulePreload
-    //   ? modulePreloadPolyfillPlugin(config)
-    //   : null,
+    config.build.polyfillModulePreload
+      ? modulePreloadPolyfillPlugin(config)
+      : null,
     resolvePlugin({
       ...config.resolve,
       root: config.root,
@@ -52,11 +54,11 @@ async function resolvePlugins(
     // webWorkerPlugin(config),
     assetPlugin(config),
     ...normalPlugins,
-    // definePlugin(config),
+    definePlugin(config),
     cssPostPlugin(config),
-    // ...buildPlugins.pre,
-    // ...postPlugins,
-    // ...buildPlugins.post,
+    ...buildPlugins.pre,
+    ...postPlugins,
+    ...buildPlugins.post,
     // internal server-only plugins are always applied after everything else
     ...(isBuild
       ? []
