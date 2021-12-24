@@ -99,4 +99,10 @@ const FastClick = __vite__cjsImport0_fastclick["FastClick"]
 '\0'不是合法的import url字符，因此importAnalysis中rewrite带有这种字符的import url，使用NULL_BYTE_PLACEHOLDER替换，并且使用'/@id/'前缀；在transform middleware中，进入plugin system前，将转化的含有NULL_BYTE_PLACEHOLDER还原，比如'/@id/__NULL_BYTE_PLACEHOLDER__@virtual-module' -> '\0virtual-module'
 7. [launch-editor-middleware](https://github.com/yyx990803/launch-editor)
 主要是用于服务器catch到的error，通过websocket传到client，使用overlay显示后，用户点击错误文件激活editor定位到文件的定位行
-8.
+8. sourcemap支持
+transformRequest中使用convert-source-map扫描文件中是否有sourcemap链接，如果有使用injectSourcesContent注入到请求文件中，比如main.js文件中使用
+```js
+//# sourceMappingURL=main.js.map
+```
+请求时会将main.js.map内容注入到main.js内存中返回到浏览器
+另外如果使用esbuild产生sourcemap也是会注入到原文件中的

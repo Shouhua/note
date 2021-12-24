@@ -551,6 +551,10 @@ async function processSrcSet(srcs, replacer) {
   }, '')
 }
 
+function toUpperCaseDriveLetter(pathName) {
+  return pathName.replace(/^\w:/, (letter) => letter.toUpperCase())
+}
+
 module.exports = {
 	createDebugger,
 	lookupFile,
@@ -597,5 +601,6 @@ module.exports = {
   isPossibleTsOutput,
   getTsSrcPath,
   asyncReplace,
-  processSrcSet
+  processSrcSet,
+  toUpperCaseDriveLetter
 }

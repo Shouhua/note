@@ -10,6 +10,7 @@ const { transformRequest } = require('../transformRequest')
 const knownIgnoreList = new Set(['/', '/favicon.ico'])
 const NEW_DEPENDENCY_BUILD_TIMEOUT = 1000
 const debugCache = createDebugger('fakeVite:cache')
+const debug = createDebugger('fakeVite:transform')
 const isDebug = !!process.env.DEBUG
 
 function transformMiddleware(server) {
@@ -52,6 +53,7 @@ function transformMiddleware(server) {
 		// console.log(chalk.red(`[MIDDLEWARE transform begin]: ${req.url}, ${url}`))
 		const withoutQuery = cleanUrl(url)
 		try {
+			// TODO 待求证 esbuild plugin会产生sourcemap，所有这里会响应map请求
 			const isSourceMap = withoutQuery.endsWith('.map')
 			if(isSourceMap) {
 				let map

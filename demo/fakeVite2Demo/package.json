@@ -13,5 +13,9 @@
   "dependencies": {
     "fakevite2": "link: ../fakeVite2",
     "vite": "link: ../vite/packages/vite"
+  },
+  "devDependencies": {
+    "rollup": "^2.61.1",
+    "rollup-plugin-terser": "^7.0.2"
   }
 }

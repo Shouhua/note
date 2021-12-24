@@ -86,6 +86,7 @@ async function doTransform(url, server, options) {
 		}
 		if (code) {
 			try {
+				// 这里通过convert-source-map扫描，如果文件中有sourcemap链接的，inject到文件中injectSourcesContent
 				const mapObject = convertSourceMap.fromSource(code) || convertSourceMap.fromMapFileSource(code, path.dirname(file));
 				if(mapObject) {
 					map = mapObject.toObject()

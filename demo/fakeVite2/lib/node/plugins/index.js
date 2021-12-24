@@ -7,6 +7,7 @@ const { resolvePlugin } = require('./resolve')
 const { cssPlugin, cssPostPlugin } = require('./css')
 const { assetPlugin } = require('./asset')
 const { htmlInlineScriptProxyPlugin } = require('./html')
+const { esbuildPlugin } = require('./esbuild')
 
 async function resolvePlugins(
   config,
@@ -39,7 +40,7 @@ async function resolvePlugins(
     // config.build.ssr ? ssrRequireHookPlugin(config) : null,
     htmlInlineScriptProxyPlugin(config),
     cssPlugin(config),
-    // config.esbuild !== false ? esbuildPlugin(config.esbuild) : null,
+    config.esbuild !== false ? esbuildPlugin(config.esbuild) : null,
     jsonPlugin(
       {
         namedExports: true,

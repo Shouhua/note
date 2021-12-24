@@ -1,0 +1,2 @@
+import"@my-virtual-module";import o from"@foo";o(),console.log("foo000000000dsfadfasdsdasd"),console.log("helo, world!"),import.meta.hot.accept("./foo",(o=>{console.log("hmr foo updated"),o.default()}));
+//# sourceMappingURL=main.js.map
