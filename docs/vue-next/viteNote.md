@@ -97,3 +97,6 @@ const FastClick = __vite__cjsImport0_fastclick["FastClick"]
 6. NULL_BYTE_PLACEHOLDER and '\0'
 '\0'是rollup内部惯例，一般用于virtual module上，添加这个前缀防止其他插件(比如node resolution)处理，还可以在sourcemaps中区分virtual module和常规文件
 '\0'不是合法的import url字符，因此importAnalysis中rewrite带有这种字符的import url，使用NULL_BYTE_PLACEHOLDER替换，并且使用'/@id/'前缀；在transform middleware中，进入plugin system前，将转化的含有NULL_BYTE_PLACEHOLDER还原，比如'/@id/__NULL_BYTE_PLACEHOLDER__@virtual-module' -> '\0virtual-module'
+7. [launch-editor-middleware](https://github.com/yyx990803/launch-editor)
+主要是用于服务器catch到的error，通过websocket传到client，使用overlay显示后，用户点击错误文件激活editor定位到文件的定位行
+8.

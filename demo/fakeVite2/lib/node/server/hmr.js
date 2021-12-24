@@ -65,6 +65,8 @@ async function handleHMRUpdate(file, server) {
       })
       ws.send({
         type: 'full-reload',
+        // 测试launch-editor-middleware，ws server报告问题改client，由overlay显示，点击激活浏览器(https://github.com/yyx990803/launch-editor)
+        // path: config.server.middlewareMode ? '*' : '/' + normalizePath(path.relative(config.root), file)
         path: config.server.middlewareMode ? '*' : '/' + normalizePath(path.relative(config.root, file))
       })
     } else {

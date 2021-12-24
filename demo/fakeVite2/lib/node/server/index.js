@@ -19,6 +19,8 @@ const { errorMiddleware, prepareError } = require('./middleware/error')
 const { invalidatePackageData } = require('../packages')
 const { normalizePath } = require('../utils')
 const { handleHMRUpdate } = require('./hmr')
+const launchEditorMiddleware = require('launch-editor-middleware')
+const openBrowser = require('./openBrowser')
 
 async function createServer(inlineConfig) {
 	const config = await resolveConfig(inlineConfig, 'serve', 'development')
@@ -231,7 +233,7 @@ async function createServer(inlineConfig) {
   // }
 
   // open in editor support
-  // middlewares.use('/__open-in-editor', launchEditorMiddleware())
+  middlewares.use('/__open-in-editor', launchEditorMiddleware())
 
   // hmr reconnect ping
   // Keep the named function. The name is visible in debug logs via `DEBUG=connect:dispatcher ...`
@@ -427,14 +429,11 @@ async function startServer(
 
   if (options.open && !isRestart) {
     const path = typeof options.open === 'string' ? options.open : base
-		// TODO
-    // openBrowser(
-    //   path.startsWith('http')
-    //     ? path
-    //     : `${protocol}://${hostname.name}:${serverPort}${path}`,
-    //   true,
-    //   server.config.logger
-    // )
+    openBrowser(
+      path.startsWith('http')
+        ? path
+        : `${protocol}://${hostname.name}:${serverPort}${path}`
+    )
   }
 
   return server

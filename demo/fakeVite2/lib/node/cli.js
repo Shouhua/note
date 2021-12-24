@@ -12,11 +12,41 @@ cli
 	.option('-l, --logLevel <level>', `[string] info | warn | error | silent`)
 	.option('-m, --mode <mode>', `[string] set env mode`)
 
+/**
+ * removing global flags before passing as command specific sub-configs
+ */
+function cleanOptions(options) {
+  const ret = { ...options }
+  delete ret['--']
+  delete ret.c
+  delete ret.config
+  delete ret.base
+  delete ret.l
+  delete ret.logLevel
+  delete ret.clearScreen
+  delete ret.d
+  delete ret.debug
+  delete ret.f
+  delete ret.filter
+  delete ret.m
+  delete ret.mode
+  return ret
+}
+
 cli
 	.command('[root]')
 	.alias('serve')
 	.alias('dev')
-	.option('--force', `[boolean] force the optimizer to ignore the cache and re-bundle`)
+  .option('--host [host]', `[string] specify hostname`)
+  .option('--port <port>', `[number] specify port`)
+  .option('--https', `[boolean] use TLS + HTTP/2`)
+  .option('--open [path]', `[boolean | string] open browser on startup`)
+  .option('--cors', `[boolean] enable CORS`)
+  .option('--strictPort', `[boolean] exit if specified port is already in use`)
+  .option(
+    '--force',
+    `[boolean] force the optimizer to ignore the cache and re-bundle`
+  )
 	.action(async (root, options) => {
 		const { createServer } = require('./server')
 		try {
@@ -25,7 +55,8 @@ cli
 				mode: options.mode,
 				logLevel: options.logLevel,
 				clearScreen: options.clearScreen,
-				configFile: options.config
+				configFile: options.config,
+				server: cleanOptions(options)
 			})
 			if(!server.httpServer) {
 				throw new Error('HTTP server not available')
