@@ -53,7 +53,7 @@ function loadPackageData(pkgPath, preserveSymlinks, packageCache) {
   }
 
   let cached
-  if ((cached = packageCache.get(pkgPath))) {
+  if (packageCache && (cached = packageCache.get(pkgPath))) {
     return cached
   }
 
@@ -91,7 +91,7 @@ function loadPackageData(pkgPath, preserveSymlinks, packageCache) {
     }
   }
 
-  packageCache.set(pkgPath, pkg)
+  packageCache && packageCache.set(pkgPath, pkg)
   return pkg
 }
 

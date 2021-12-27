@@ -119,3 +119,5 @@ define plugin用于将业务代码中的以下数据替换：
 11. data uri 支持
 https://github.com/vitejs/vite/issues/1428#issuecomment-757033808
 浏览器支持例如import batman from "data:text/javascript;, export default 'hi, batmannnn'"，但是build会有问题
+12. prebundling处理debug时出现问题
+跟package bundling没有关系，是packageCache没有判断的问题

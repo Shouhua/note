@@ -452,15 +452,8 @@ function isBuiltin(id) {
   return builtins.has(id.replace(/^node:/, ''))
 }
 
-function moduleListContains(
-  moduleList,
-  id
-) {
-  return moduleList?.some((m) => m === id || id.startsWith(m + '/'))
-}
-
-function ensureVolumeInPath(file) {
-  return isWindows ? path.resolve(file) : file
+function moduleListContains(moduleList, id) {
+  return moduleList && moduleList.some((m) => m === id || id.startsWith(m + '/'))
 }
 
 let isRunningWithYarnPnp
@@ -468,6 +461,9 @@ try {
   isRunningWithYarnPnp = Boolean(require('pnpapi'))
 } catch {}
 
+function ensureVolumeInPath(file) {
+  return isWindows ? path.resolve(file) : file
+}
 const ssrExtensions = ['.js', '.cjs', '.json', '.node']
 
 function resolveFrom(
@@ -555,6 +551,62 @@ function toUpperCaseDriveLetter(pathName) {
   return pathName.replace(/^\w:/, (letter) => letter.toUpperCase())
 }
 
+const multilineCommentsRE = /\/\*(.|[\r\n])*?\*\//gm
+const singlelineCommentsRE = /\/\/.*/g
+const virtualModuleRE = /^virtual-module:.*/
+const virtualModulePrefix = 'virtual-module:'
+
+/**
+ * Delete every file and subdirectory. **The given directory must exist.**
+ * Pass an optional `skip` array to preserve files in the root directory.
+ */
+function emptyDir(dir, skip) {
+  for (const file of fs.readdirSync(dir)) {
+    if (skip && skip.includes(file)) {
+      continue
+    }
+    const abs = path.resolve(dir, file)
+    // baseline is Node 12 so can't use rmSync :(
+    if (fs.lstatSync(abs).isDirectory()) {
+      emptyDir(abs)
+      fs.rmdirSync(abs)
+    } else {
+      fs.unlinkSync(abs)
+    }
+  }
+}
+
+function copyDir(srcDir, destDir) {
+  fs.mkdirSync(destDir, { recursive: true })
+  for (const file of fs.readdirSync(srcDir)) {
+    const srcFile = path.resolve(srcDir, file)
+    if (srcFile === destDir) {
+      continue
+    }
+    const destFile = path.resolve(destDir, file)
+    const stat = fs.statSync(srcFile)
+    if (stat.isDirectory()) {
+      copyDir(srcFile, destFile)
+    } else {
+      fs.copyFileSync(srcFile, destFile)
+    }
+  }
+}
+
+function writeFile(filename, content) {
+  const dir = path.dirname(filename)
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true })
+  }
+  fs.writeFileSync(filename, content)
+}
+
+const flattenId = (id) =>
+  id.replace(/(\s*>\s*)/g, '__').replace(/[\/\.]/g, '_')
+
+const normalizeId = (id) =>
+  id.replace(/(\s*>\s*)/g, ' > ')
+
 module.exports = {
 	createDebugger,
 	lookupFile,
@@ -602,5 +654,19 @@ module.exports = {
   getTsSrcPath,
   asyncReplace,
   processSrcSet,
-  toUpperCaseDriveLetter
+  toUpperCaseDriveLetter,
+  externalRE,
+  isExternalUrl,
+  dataUrlRE,
+  isDataUrl,
+  multilineCommentsRE,
+  singlelineCommentsRE,
+  virtualModulePrefix,
+  virtualModuleRE,
+  emptyDir,
+  copyDir,
+  writeFile,
+  flattenId,
+  normalizeId,
+  isRunningWithYarnPnp
 }

@@ -53,7 +53,7 @@ function resolvePlugin(baseOptions) {
 	return {
 		name: 'fakeVite:resolve',
 		configureServer(_server) {
-			server = server
+			server = _server
 		},
 		resolveId(id, importer, resolveOpts) {
       const ssr = resolveOpts.ssr === true
@@ -171,13 +171,13 @@ function resolvePlugin(baseOptions) {
       }
 
       // bare package imports, perform node resolve
+      // console.log(`resolveeeeeee: ${id}, ${importer}`)
       if (bareImportRE.test(id)) {
         if (
           asSrc &&
           server &&
-          !ssr
-					// TODO
-          // && (res = tryOptimizedResolve(id, server, importer))
+          !ssr &&
+          (res = tryOptimizedResolve(id, server, importer))
         ) {
 					isDebug && debug(`[bare import regex] ${chalk.cyan(id)}`)
           return res
@@ -462,7 +462,7 @@ function resolvePackageEntry(id, { dir, data, setResolvedCache, getResolvedCache
 
     // make sure we don't get scripts when looking for sass
     if (
-      options.mainFields[0] === 'sass' &&
+      options.mainFields && options.mainFields[0] === 'sass' &&
       !options.extensions.includes(path.extname(entryPoint))
     ) {
       entryPoint = ''
@@ -759,6 +759,57 @@ function resolveDeepImport(id, { webResolvedImports, setResolvedCache, getResolv
         debug(`[node/deep-import] ${chalk.cyan(id)} -> ${chalk.dim(resolved)}`)
       setResolvedCache(id, resolved, targetWeb)
       return resolved
+    }
+  }
+}
+
+function tryOptimizedResolve(id, server, importer) {
+  const cacheDir = server.config.cacheDir
+  const depData = server._optimizeDepsMetadata
+
+  if (!cacheDir || !depData) return
+
+  const getOptimizedUrl = (optimizedData) => {
+    return (
+      optimizedData.file +
+      `?v=${depData.browserHash}${
+        optimizedData.needsInterop ? `&es-interop` : ``
+      }`
+    )
+  }
+
+  // check if id has been optimized
+  const isOptimized = depData.optimized[id]
+  if (isOptimized) {
+    return getOptimizedUrl(isOptimized)
+  }
+
+  if (!importer) return
+
+  // further check if id is imported by nested dependency
+  let resolvedSrc
+
+  for (const [pkgPath, optimizedData] of Object.entries(depData.optimized)) {
+    // check for scenarios, e.g.
+    //   pkgPath  => "my-lib > foo"
+    //   id       => "foo"
+    // this narrows the need to do a full resolve
+    if (!pkgPath.endsWith(id)) continue
+
+    // lazily initialize resolvedSrc
+    if (resolvedSrc == null) {
+      try {
+        // this may throw errors if unable to resolve, e.g. aliased id
+        resolvedSrc = normalizePath(resolveFrom(id, path.dirname(importer)))
+      } catch {
+        // this is best-effort only so swallow errors
+        break
+      }
+    }
+
+    // match by src to correctly identify if id belongs to nested dependency
+    if (optimizedData.src === resolvedSrc) {
+      return getOptimizedUrl(optimizedData)
     }
   }
 }

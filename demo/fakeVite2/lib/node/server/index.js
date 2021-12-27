@@ -21,6 +21,8 @@ const { normalizePath } = require('../utils')
 const { handleHMRUpdate } = require('./hmr')
 const launchEditorMiddleware = require('launch-editor-middleware')
 const openBrowser = require('./openBrowser')
+const { optimizeDeps } = require('../optimizer')
+const { createMissingImporterRegisterFn } = require('../optimizer/registerMissing')
 
 async function createServer(inlineConfig) {
 	const config = await resolveConfig(inlineConfig, 'serve', 'development')
@@ -279,42 +281,42 @@ async function createServer(inlineConfig) {
   // error handler
   middlewares.use(errorMiddleware(server, !!middlewareMode))
 
-  // const runOptimize = async () => {
-  //   if (config.cacheDir) {
-  //     server._isRunningOptimizer = true
-  //     try {
-  //       server._optimizeDepsMetadata = await optimizeDeps(
-  //         config,
-  //         config.server.force || server._forceOptimizeOnRestart
-  //       )
-  //     } finally {
-  //       server._isRunningOptimizer = false
-  //     }
-  //     server._registerMissingImport = createMissingImporterRegisterFn(server)
-  //   }
-  // }
+  const runOptimize = async () => {
+    if (config.cacheDir) {
+      server._isRunningOptimizer = true
+      try {
+        server._optimizeDepsMetadata = await optimizeDeps(
+          config,
+          config.server.force || server._forceOptimizeOnRestart
+        )
+      } finally {
+        server._isRunningOptimizer = false
+      }
+      server._registerMissingImport = createMissingImporterRegisterFn(server)
+    }
+  }
 
-  // if (!middlewareMode && httpServer) {
-  //   let isOptimized = false
-  //   // overwrite listen to run optimizer before server start
-  //   const listen = httpServer.listen.bind(httpServer)
-  //   httpServer.listen = (async (port: number, ...args: any[]) => {
-  //     if (!isOptimized) {
-  //       try {
-  //         await container.buildStart({})
-  //         await runOptimize()
-  //         isOptimized = true
-  //       } catch (e) {
-  //         httpServer.emit('error', e)
-  //         return
-  //       }
-  //     }
-  //     return listen(port, ...args)
-  //   }) as any
-  // } else {
-  //   await container.buildStart({})
-  //   await runOptimize()
-  // }
+  if (!middlewareMode && httpServer) {
+    let isOptimized = false
+    // overwrite listen to run optimizer before server start
+    const listen = httpServer.listen.bind(httpServer)
+    httpServer.listen = (async (port, ...args) => {
+      if (!isOptimized) {
+        try {
+          await container.buildStart({})
+          await runOptimize()
+          isOptimized = true
+        } catch (e) {
+          httpServer.emit('error', e)
+          return
+        }
+      }
+      return listen(port, ...args)
+    })
+  } else {
+    await container.buildStart({})
+    await runOptimize()
+  }
 
 	return server
 }

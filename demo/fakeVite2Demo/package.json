@@ -4,14 +4,16 @@
   "description": "",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "fakeVite2 serve",
+    "dev": "fakeVite2 serve --force",
     "real": "vite serve"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "debug": "4.3.2",
     "fakevite2": "link: ../fakeVite2",
+    "lodash-es": "^4.17.21",
     "vite": "link: ../vite/packages/vite"
   },
   "devDependencies": {
