@@ -2,6 +2,9 @@ const path = require('path')
 const { watchPackageDataPlugin } = require('./packages')
 const { buildHtmlPlugin } = require('./plugins/html')
 const commonjsPlugin = require('@rollup/plugin-commonjs').default
+const { dataURIPlugin } = require('./plugins/dataUri')
+const { loadFallbackPlugin } = require('./plugins/loadFallback')
+const dynamicImportVars = require('@rollup/plugin-dynamic-import-vars').default
 
 function resolveBuildOptions(
   root,
@@ -119,11 +122,26 @@ function resolveBuildPlugins(config) {
       watchPackageDataPlugin(config),
       buildHtmlPlugin(config),
       commonjsPlugin(options.commonjsOptions),
-      // dataURIPlugin(),
+      dataURIPlugin(),
+      dynamicImportVars(options.dynamicImportVarsOptions),
+      // assetImportMetaUrlPlugin(config),
+      // ...(options.rollupOptions.plugins
+      //   ? (options.rollupOptions.plugins.filter(Boolean) as Plugin[])
+      //   : [])
+    ],
+    post: [
+      // buildImportAnalysisPlugin(config),
+      // buildEsbuildPlugin(config),
+      // ...(options.minify === 'terser' ? [terserPlugin(config)] : []),
+      // ...(options.manifest ? [manifestPlugin(config)] : []),
+      // ...(options.ssrManifest ? [ssrManifestPlugin(config)] : []),
+      // buildReporterPlugin(config),
+      loadFallbackPlugin()
     ]
   }
 }
 
 module.exports = {
-	resolveBuildOptions
+	resolveBuildOptions,
+  resolveBuildPlugins
 }

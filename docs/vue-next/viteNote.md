@@ -116,3 +116,6 @@ define plugin用于将业务代码中的以下数据替换：
 10. 类似的库
 - https://github.com/Krutsch/html-bundle
 - https://github.com/remorses/bundless
+11. data uri 支持
+https://github.com/vitejs/vite/issues/1428#issuecomment-757033808
+浏览器支持例如import batman from "data:text/javascript;, export default 'hi, batmannnn'"，但是build会有问题

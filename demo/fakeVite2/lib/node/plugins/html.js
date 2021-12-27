@@ -371,8 +371,8 @@ const isAsyncScriptMap = new WeakMap()
             if (isPublicFile) {
               // referencing public dir url, prefix with base
               s.overwrite(
-                src!.value!.loc.start.offset,
-                src!.value!.loc.end.offset,
+                src.value.loc.start.offset,
+                src.value.loc.end.offset,
                 `"${config.base + url.slice(1)}"`
               )
             }
@@ -386,7 +386,7 @@ const isAsyncScriptMap = new WeakMap()
                 shouldRemove = true
               } else if (node.children.length) {
                 const contents = node.children
-                  .map((child: any) => child.content || '')
+                  .map((child) => child.content || '')
                   .join('')
                 // <script type="module">...</script>
                 const filePath = id.replace(normalizePath(config.root), '')
@@ -458,7 +458,7 @@ const isAsyncScriptMap = new WeakMap()
         // for each encountered asset url, rewrite original html so that it
         // references the post-build location.
         for (const attr of assetUrls) {
-          const value = attr.value!
+          const value = attr.value
           try {
             const url =
               attr.name === 'srcset'
@@ -612,7 +612,7 @@ const isAsyncScriptMap = new WeakMap()
         if (!config.build.cssCodeSplit) {
           const cssChunk = Object.values(bundle).find(
             (chunk) => chunk.type === 'asset' && chunk.name === 'style.css'
-          ) as OutputAsset | undefined
+          )
           if (cssChunk) {
             result = injectToHead(result, [
               {

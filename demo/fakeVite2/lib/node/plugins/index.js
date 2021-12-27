@@ -10,6 +10,7 @@ const { htmlInlineScriptProxyPlugin } = require('./html')
 const { esbuildPlugin } = require('./esbuild')
 const { definePlugin } = require('./define')
 const { modulePreloadPolyfillPlugin } = require('./modulePreloadPolyfill')
+const { resolveBuildPlugins } = require('../build')
 
 async function resolvePlugins(
   config,
