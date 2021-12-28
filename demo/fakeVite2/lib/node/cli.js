@@ -1,6 +1,7 @@
 const cac = require('cac')
 const chalk = require('chalk')
 const { createLogger } = require('./logger')
+const { build } = require('./build')
 
 const cli = cac('fakeVite')
 
@@ -84,6 +85,61 @@ cli
       process.exit(1)
 		}
 	})
+
+	// build
+cli
+.command('build [root]')
+.option('--target <target>', `[string] transpile target (default: 'modules')`)
+.option('--outDir <dir>', `[string] output directory (default: dist)`)
+.option(
+	'--assetsDir <dir>',
+	`[string] directory under outDir to place assets in (default: _assets)`
+)
+.option(
+	'--assetsInlineLimit <number>',
+	`[number] static asset base64 inline threshold in bytes (default: 4096)`
+)
+.option(
+	'--ssr [entry]',
+	`[string] build specified entry for server-side rendering`
+)
+.option(
+	'--sourcemap',
+	`[boolean] output source maps for build (default: false)`
+)
+.option(
+	'--minify [minifier]',
+	`[boolean | "terser" | "esbuild"] enable/disable minification, ` +
+		`or specify minifier to use (default: esbuild)`
+)
+.option('--manifest', `[boolean] emit build manifest json`)
+.option('--ssrManifest', `[boolean] emit ssr manifest json`)
+.option(
+	'--emptyOutDir',
+	`[boolean] force empty outDir when it's outside of root`
+)
+.option('-w, --watch', `[boolean] rebuilds when modules have changed on disk`)
+.action(async (root, options) => {
+	const buildOptions = cleanOptions(options)
+
+	try {
+		await build({
+			root,
+			base: options.base,
+			mode: options.mode,
+			configFile: options.config,
+			logLevel: options.logLevel,
+			clearScreen: options.clearScreen,
+			build: buildOptions
+		})
+	} catch (e) {
+		createLogger(options.logLevel).error(
+			chalk.red(`error during build:\n${e.stack}`),
+			{ error: e }
+		)
+		process.exit(1)
+	}
+})
 
 cli.help()
 cli.version(require('../../package.json').version)

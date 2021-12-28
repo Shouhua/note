@@ -5,7 +5,9 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "fakeVite2 serve --force",
-    "real": "vite serve"
+    "real": "vite serve",
+    "build": "fakeVite2 build",
+    "prod": "vite build"
   },
   "keywords": [],
   "author": "",
@@ -13,6 +15,8 @@
   "dependencies": {
     "debug": "4.3.2",
     "fakevite2": "link: ../fakeVite2",
+    "koa": "^2.13.4",
+    "koa-static": "^5.0.0",
     "lodash-es": "^4.17.21",
     "vite": "link: ../vite/packages/vite"
   },

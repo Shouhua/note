@@ -121,3 +121,8 @@ https://github.com/vitejs/vite/issues/1428#issuecomment-757033808
 浏览器支持例如import batman from "data:text/javascript;, export default 'hi, batmannnn'"，但是build会有问题
 12. prebundling处理debug时出现问题
 跟package bundling没有关系，是packageCache没有判断的问题
+13. commonjs与import的区别之一是cjs顺序执行，如果有互相引用，但是函数还没有加载，会提示没有函数
+14. build时候，配置文件中使用了define时，引用lodash，commonjs plugin会报unexpected token问题  
+这个是因为define中的配置会做替换，定义了```count: 0```，_shortOut.js文件中有个```var count = 0```，那这个在cjs plugin中会报错
+https://cn.vitejs.dev/config/#define，如官方文档写的"建议只对CONSTANTS使用define"，比如版本号等
+issues也有提出类似问题: https://github.com/vitejs/vite/issues/2700

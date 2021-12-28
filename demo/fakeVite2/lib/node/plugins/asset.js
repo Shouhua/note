@@ -295,5 +295,6 @@ module.exports = {
   fileToUrl,
   getAssetFilename,
   registerAssetToChunk,
-  assetPlugin
+  assetPlugin,
+  assetUrlRE
 }

@@ -1,7 +1,12 @@
-const { isExternalUrl, generateCodeFrame } = require('../utils')
+const { isDataUrl, isExternalUrl, generateCodeFrame, slash } = require('../utils')
+const { assetUrlRE, getAssetFilename, checkPublicFile } = require('../plugins/asset')
 const htmlProxyRE = /\?html-proxy&index=(\d+)\.js$/
 const isHTMLProxy = (id) => htmlProxyRE.test(id)
 const { parse, transform } = require('@vue/compiler-dom')
+const path = require('path')
+const MagicString = require('magic-string')
+const { chunkToEmittedCssFileMap, isCSSRequest } = require('../plugins/css')
+const { modulePreloadPolyfillId } = require('./modulePreloadPolyfill')
 
 function resolveHtmlTransforms(plugins) {
   const preHooks = []
@@ -356,7 +361,7 @@ const isAsyncScriptMap = new WeakMap()
         let someScriptsAreDefer = false
 
         await traverseHtml(html, id, (node) => {
-          if (node.type !== 6/*NodeTypes.ELEMENT*/) {
+          if (node.type !== 1 /*NodeTypes.ELEMENT*/) {
             return
           }
 

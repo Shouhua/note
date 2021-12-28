@@ -10,7 +10,7 @@ const { htmlInlineScriptProxyPlugin } = require('./html')
 const { esbuildPlugin } = require('./esbuild')
 const { definePlugin } = require('./define')
 const { modulePreloadPolyfillPlugin } = require('./modulePreloadPolyfill')
-const { resolveBuildPlugins } = require('../build')
+const { resolveBuildPlugins } = require('../buildConfig')
 
 async function resolvePlugins(
   config,
@@ -21,7 +21,7 @@ async function resolvePlugins(
   const isBuild = config.command === 'build'
 
   const buildPlugins = isBuild
-    ? (await import('../build')).resolveBuildPlugins(config)
+    ? resolveBuildPlugins(config)
     : { pre: [], post: [] }
 
   return [

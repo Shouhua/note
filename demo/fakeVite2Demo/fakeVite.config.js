@@ -8,9 +8,9 @@ export default {
 			'/@/': '/src/'
 		}
 	},
-	define: {
-		count: 0
-	},
+	// define: {
+	// 	count: 0
+	// },
 	server: {
 		https: {
 			cert: path.resolve(__dirname, 'cert/server-cert.pem'),

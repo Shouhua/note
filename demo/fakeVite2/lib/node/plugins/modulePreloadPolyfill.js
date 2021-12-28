@@ -98,5 +98,6 @@ function polyfill() {
 }
 
 module.exports = {
-  modulePreloadPolyfillPlugin
+  modulePreloadPolyfillPlugin,
+  modulePreloadPolyfillId
 }

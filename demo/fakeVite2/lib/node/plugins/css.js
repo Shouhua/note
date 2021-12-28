@@ -1,4 +1,4 @@
-const { registerAssetToChunk, checkPublicFile, fileToUrl, getAssetFilename } = require('./asset')
+const { assetUrlRE, registerAssetToChunk, checkPublicFile, fileToUrl, getAssetFilename } = require('./asset')
 const { dataToEsm } = require('@rollup/pluginutils')
 const path = require('path')
 const { transform, formatMessages } = require('esbuild')
@@ -52,6 +52,8 @@ const isDirectRequest = (request) =>
 const cssModulesCache = new WeakMap()
 const removedPureCssFilesCache = new WeakMap()
 const postcssConfigCache = new WeakMap()
+
+const chunkToEmittedCssFileMap = new WeakMap()
 
 /**
  * css plugin transform：
@@ -1089,5 +1091,6 @@ module.exports = {
 	isDirectRequest,
   isCSSRequest,
   cssPlugin,
-  cssPostPlugin
+  cssPostPlugin,
+  chunkToEmittedCssFileMap
 }

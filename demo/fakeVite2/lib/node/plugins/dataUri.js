@@ -14,6 +14,7 @@ function dataURIPlugin() {
 			if(!dataUriRE.test(id)){
 				return null
 			}
+			console.log(`data uriiiiiiiiiiiiiiiiiii: ${id}`);
 			const uri = new URL(id)
 			if(uri.protocol !== 'data:') {
 				return null
