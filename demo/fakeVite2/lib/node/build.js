@@ -31,7 +31,7 @@ async function doBuild(inlineConfig) {
   const libOptions = options.lib
   config.logger.info(
     chalk.cyan(
-      `fakeVite v${require('fakevite2/package.json').version} ${chalk.green(
+      `fakeVite2 v${require('fakevite2/package.json').version} ${chalk.green(
         `building ${ssr ? `SSR bundle ` : ``}for ${config.mode}...`
       )}`
     )

@@ -1,12 +1,13 @@
-const { isDataUrl, isExternalUrl, generateCodeFrame, slash } = require('../utils')
-const { assetUrlRE, getAssetFilename, checkPublicFile } = require('../plugins/asset')
-const htmlProxyRE = /\?html-proxy&index=(\d+)\.js$/
-const isHTMLProxy = (id) => htmlProxyRE.test(id)
+const { isDataUrl, isExternalUrl, generateCodeFrame, slash, processSrcSet } = require('../utils')
+const { assetUrlRE, getAssetFilename, checkPublicFile, urlToBuiltUrl } = require('../plugins/asset')
 const { parse, transform } = require('@vue/compiler-dom')
 const path = require('path')
 const MagicString = require('magic-string')
 const { chunkToEmittedCssFileMap, isCSSRequest } = require('../plugins/css')
 const { modulePreloadPolyfillId } = require('./modulePreloadPolyfill')
+
+const htmlProxyRE = /\?html-proxy&index=(\d+)\.js$/
+const isHTMLProxy = (id) => htmlProxyRE.test(id)
 
 function resolveHtmlTransforms(plugins) {
   const preHooks = []
@@ -80,7 +81,7 @@ async function applyHtmlTransforms(html, hooks, ctx) {
   return html
 }
 
-
+// import 'foo'
 const importRE = /\bimport\s*("[^"]*[^\\]"|'[^']*[^\\]');*/g
 const commentRE = /\/\*[\s\S]*?\*\/|\/\/.*$/gm
 function isEntirelyImport(code) {
@@ -267,7 +268,12 @@ function getScriptInfo(node) {
   return { src, isModule, isAsync }
 }
 
-const htmlProxyMap = new Map()
+// HTML Proxy Caches are stored by config -> filePath -> index
+// export const htmlProxyMap = new WeakMap<
+//   ResolvedConfig,
+//   Map<string, Array<string>>
+// >()
+const htmlProxyMap = new WeakMap()
 
 /** Add script to cache */
 function addToHTMLProxyCache(config, filePath, index, code) {
@@ -292,7 +298,7 @@ const assetAttrsConfig = {
 
 function htmlInlineScriptProxyPlugin(config) {
   return {
-    name: 'vite:html-inline-script-proxy',
+    name: 'fakeVite:html-inline-script-proxy',
 
     resolveId(id) {
       if (htmlProxyRE.test(id)) {
@@ -360,6 +366,8 @@ const isAsyncScriptMap = new WeakMap()
         let someScriptsAreAsync = false
         let someScriptsAreDefer = false
 
+        // 1. 处理script, 有src属性和没有src属性, 生成js继续过后面的plugin
+        // 2. 处理asssets包括css, css生成import表达式, 其他的放到assetUrls, 再修改assets的url比如是否使用inline base64/或者__VITE_ASSET__开头的url等
         await traverseHtml(html, id, (node) => {
           if (node.type !== 1 /*NodeTypes.ELEMENT*/) {
             return
@@ -382,6 +390,7 @@ const isAsyncScriptMap = new WeakMap()
               )
             }
 
+            // 将type=module类型的script抽出来单独成为js脚本，放在后面继续经过plugins
             if (isModule) {
               inlineModuleIndex++
               if (url && !isExcludedUrl(url)) {
@@ -389,12 +398,13 @@ const isAsyncScriptMap = new WeakMap()
                 // add it as an import
                 js += `\nimport ${JSON.stringify(url)}`
                 shouldRemove = true
-              } else if (node.children.length) {
+              } else if (node.children.length) { 
                 const contents = node.children
                   .map((child) => child.content || '')
                   .join('')
                 // <script type="module">...</script>
                 const filePath = id.replace(normalizePath(config.root), '')
+                // 如果没有src属性，只有js文本，将内容添加进入htmlProxyMap对象中, 后面html-inline-script-proxy plugin将会处理
                 addToHTMLProxyCache(
                   config,
                   filePath,
@@ -464,6 +474,8 @@ const isAsyncScriptMap = new WeakMap()
         // references the post-build location.
         for (const attr of assetUrls) {
           const value = attr.value
+          // TODO 不懂， processSrcSet
+          // urlToBuiltUrl函数里面的fileToBuiltUrl根据config中的配置生成是否使用base64或者__VITE_ASSET__开头的url等
           try {
             const url =
               attr.name === 'srcset'
@@ -578,6 +590,8 @@ const isAsyncScriptMap = new WeakMap()
         const isAsync = (isAsyncScriptMap.get(config) || new WeakMap()).get(id)
 
         // resolve asset url references
+        // 替换上面transfor步骤生成的asset url中的__VITE_ASSET__成为类似assets/abc.png
+        // TODO 为什么要先写成__VITE_ASSET__，然后再在generateBundle中替换呢？
         let result = html.replace(assetUrlRE, (_, fileHash, postfix = '') => {
           return config.base + getAssetFilename(fileHash, config) + postfix
         })
@@ -603,11 +617,13 @@ const isAsyncScriptMap = new WeakMap()
 
           // when not inlined, inject <script> for entry and modulepreload its dependencies
           // when inlined, discard entry chunk and inject <script> for everything in post-order
+          // 获取chunk中的imports作为依赖项，生成script标签，并且将依赖项作为moduleProload导入
           const imports = getImportedChunks(chunk)
           const assetTags = canInlineEntry
             ? imports.map((chunk) => toScriptTag(chunk, isAsync))
             : [toScriptTag(chunk, isAsync), ...imports.map(toPreloadTag)]
 
+          // 处理assets导入
           assetTags.push(...getCssTagsForChunk(chunk))
 
           result = injectToHead(result, assetTags)
@@ -632,6 +648,7 @@ const isAsyncScriptMap = new WeakMap()
         }
 
         const shortEmitName = path.posix.relative(config.root, id)
+        // NOTICE 这个时候进行html post hooks tranform
         result = await applyHtmlTransforms(result, postHooks, {
           path: '/' + shortEmitName,
           filename: id,

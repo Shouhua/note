@@ -172,6 +172,7 @@ async function fileToBuiltUrl(id, config, pluginContext, skipPublicCheck = false
       // defaults to '<assetsDir>/[name].[hash][extname]'
       // slightly different from rollup's one ('assets/[name]-[hash][extname]')
       path.posix.join(config.build.assetsDir, '[name].[hash][extname]')
+    // 替换url里面的placeholders
     const fileName = assetFileNamesToFileName(
       assetFileNames,
       file,
@@ -228,6 +229,7 @@ function getAssetHash(content) {
  * @param content content of the asset. passed to `assetFileNames` if `assetFileNames` is a function
  * @returns output filename
  */
+// 简单点就是将asset url中的placeholders, 比如hash等换成真实的
 function assetFileNamesToFileName(assetFileNames, file, contentHash, content) {
   const basename = path.basename(file)
 
@@ -289,6 +291,22 @@ function registerAssetToChunk(chunk, file) {
   emitted.add(cleanUrl(file))
 }
 
+async function urlToBuiltUrl(url, importer, config, pluginContext) {
+  if (checkPublicFile(url, config)) {
+    return config.base + url.slice(1)
+  }
+  const file = url.startsWith('/')
+    ? path.join(config.root, url)
+    : path.join(path.dirname(importer), url)
+  return fileToBuiltUrl(
+    file,
+    config,
+    pluginContext,
+    // skip public check since we just did it above
+    true
+  )
+}
+
 module.exports = {
 	checkPublicFile,
   getAssetHash,
@@ -296,5 +314,6 @@ module.exports = {
   getAssetFilename,
   registerAssetToChunk,
   assetPlugin,
-  assetUrlRE
+  assetUrlRE,
+  urlToBuiltUrl
 }
