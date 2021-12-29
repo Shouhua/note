@@ -126,3 +126,10 @@ https://github.com/vitejs/vite/issues/1428#issuecomment-757033808
 这个是因为define中的配置会做替换，定义了```count: 0```，_shortOut.js文件中有个```var count = 0```，那这个在cjs plugin中会报错
 https://cn.vitejs.dev/config/#define，如官方文档写的"建议只对CONSTANTS使用define"，比如版本号等
 issues也有提出类似问题: https://github.com/vitejs/vite/issues/2700
+15. sirv包
+sirv会根据req.url去匹配文件夹中的文件，如果没有匹配有next会执行next(), 如果没有会执行isNotFound(), 源码很好理解
+```js
+sirv('src', options) // /index.html会执行扫描/src/index.html，有没有这个文件
+```
+16. 总共2处generateBundle:
+fakeVite:build-html plugin在fakeVite:css后面，generateBundle是async, sequential，先执行css的generateBundle，最后执行html的generateBundle

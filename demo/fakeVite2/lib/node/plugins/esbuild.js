@@ -88,5 +88,6 @@ function prettifyMessage(m, code) {
 }
 
 module.exports = {
-	esbuildPlugin
+	esbuildPlugin,
+	transformWithEsbuild
 }

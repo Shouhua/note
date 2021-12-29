@@ -18,11 +18,15 @@ const { transformMiddleware } = require('./middleware/transform')
 const { errorMiddleware, prepareError } = require('./middleware/error')
 const { invalidatePackageData } = require('../packages')
 const { normalizePath } = require('../utils')
-const { handleHMRUpdate } = require('./hmr')
+const { handleHMRUpdate, handleFileAddUnlink } = require('./hmr')
 const launchEditorMiddleware = require('launch-editor-middleware')
 const openBrowser = require('./openBrowser')
 const { optimizeDeps } = require('../optimizer')
 const { createMissingImporterRegisterFn } = require('../optimizer/registerMissing')
+const { baseMiddleware } = require('./middleware/base')
+const { transformRequest } = require('./transformRequest')
+const { transformWithEsbuild } = require('../plugins/esbuild')
+const corsMiddleware = require('cors')
 
 async function createServer(inlineConfig) {
 	const config = await resolveConfig(inlineConfig, 'serve', 'development')
@@ -76,11 +80,10 @@ async function createServer(inlineConfig) {
     pluginContainer: container,
     ws,
     moduleGraph,
-		// TODO
-    // transformWithEsbuild,
-    // transformRequest(url, options) {
-    //   return transformRequest(url, server, options)
-    // },
+    transformWithEsbuild,
+    transformRequest(url, options) {
+      return transformRequest(url, server, options)
+    },
     transformIndexHtml: null, // to be immediately set
     // ssrLoadModule(url) {
     //   server._ssrExternals ||= resolveSSRExternal(
@@ -187,13 +190,17 @@ async function createServer(inlineConfig) {
     }
   })
 
-  // watcher.on('add', (file) => {
-  //   handleFileAddUnlink(normalizePath(file), server)
-  // })
+  // hmr for glob import
+  // 添加文件
+  watcher.on('add', (file) => {
+    handleFileAddUnlink(normalizePath(file), server)
+  })
 
-  // watcher.on('unlink', (file) => {
-  //   handleFileAddUnlink(normalizePath(file), server, true)
-  // })
+  // hmr for glob import
+  // 删除文件
+  watcher.on('unlink', (file) => {
+    handleFileAddUnlink(normalizePath(file), server, true)
+  })
 
   if (!middlewareMode && httpServer) {
     httpServer.once('listening', () => {
@@ -218,10 +225,10 @@ async function createServer(inlineConfig) {
   }
 
   // cors (enabled by default)
-  // const { cors } = serverConfig
-  // if (cors !== false) {
-  //   middlewares.use(corsMiddleware(typeof cors === 'boolean' ? {} : cors))
-  // }
+  const { cors } = serverConfig
+  if (cors !== false) {
+    middlewares.use(corsMiddleware(typeof cors === 'boolean' ? {} : cors))
+  }
 
   // proxy
   // const { proxy } = serverConfig
@@ -230,9 +237,9 @@ async function createServer(inlineConfig) {
   // }
 
   // base
-  // if (config.base !== '/') {
-  //   middlewares.use(baseMiddleware(server))
-  // }
+  if (config.base !== '/') {
+    middlewares.use(baseMiddleware(server))
+  }
 
   // open in editor support
   middlewares.use('/__open-in-editor', launchEditorMiddleware())
@@ -246,26 +253,28 @@ async function createServer(inlineConfig) {
   // serve static files under /public
   // this applies before the transform middleware so that these files are served
   // as-is without transforms.
+  // sirv和connect history的用法，可以参见sirv-demo
   if (config.publicDir) {
-    middlewares.use(servePublicMiddleware(config.publicDir))
+    middlewares.use(servePublicMiddleware(config.publicDir)) // 处理'/public'
   }
 
   // main transform middleware
-  middlewares.use(transformMiddleware(server))
+  middlewares.use(transformMiddleware(server)) // 使用plugins处理各种文件
 
   // serve static files
-  middlewares.use(serveRawFsMiddleware(server))
-  middlewares.use(serveStaticMiddleware(root, server))
+  middlewares.use(serveRawFsMiddleware(server)) // 处理'/@fs/'
+  middlewares.use(serveStaticMiddleware(root, server)) // 处理其他静态文件
 
   // spa fallback
   if (!middlewareMode || middlewareMode === 'html') {
-    middlewares.use(spaFallbackMiddleware(root))
+    // rewrite request url to '*/index.html' when ends with '/'
+    middlewares.use(spaFallbackMiddleware(root)) 
   }
 
   // run post config hooks
   // This is applied before the html middleware so that user middleware can
   // serve custom content instead of index.html.
-  postHooks.forEach((fn) => fn && fn())
+  postHooks.forEach((fn) => fn && fn()) // 执行configureServer返回函数组成的posthooks
 
   if (!middlewareMode || middlewareMode === 'html') {
     // transform index.html

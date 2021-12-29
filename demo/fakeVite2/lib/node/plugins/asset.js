@@ -185,6 +185,7 @@ async function fileToBuiltUrl(id, config, pluginContext, skipPublicCheck = false
     const emittedSet = emittedHashMap.get(config)
     if (!emittedSet || !emittedSet.has(contentHash)) {
       const name = normalizePath(path.relative(config.root, file))
+      // 这里的pluginContext是rollup plugin context，仅用于build
       pluginContext.emitFile({
         name,
         fileName,

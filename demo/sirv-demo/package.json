@@ -1,0 +1,17 @@
+{
+  "name": "sirv-demo",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "connect": "^3.7.0",
+    "connect-history-api-fallback": "^1.6.0",
+    "sirv": "^1.0.19"
+  }
+}

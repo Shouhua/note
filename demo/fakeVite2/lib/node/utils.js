@@ -261,10 +261,10 @@ function timeFrom(start, subtract = 0) {
 
 const importQueryRE = /(\?|&)import=?(?:&|$)/
 const internalPrefixes = [
-  FS_PREFIX,
-  VALID_ID_PREFIX,
-  CLIENT_PUBLIC_PATH,
-  ENV_PUBLIC_PATH
+  FS_PREFIX, // /@fs/
+  VALID_ID_PREFIX, // /@id/
+  CLIENT_PUBLIC_PATH, // /@fakeVite/client
+  ENV_PUBLIC_PATH // /@fakeVite/env
 ]
 const InternalPrefixRE = new RegExp(`^(?:${internalPrefixes.join('|')})`)
 const isImportRequest = (url) => importQueryRE.test(url)

@@ -73,7 +73,7 @@ function pluginTest() {
 		options(opts) {
 			// console.log('[options]');
 			// console.log(opts);
-			console.log(this.meta);
+			// console.log(this.meta);
 		},
 		configResolved(_config) {
 			config = _config

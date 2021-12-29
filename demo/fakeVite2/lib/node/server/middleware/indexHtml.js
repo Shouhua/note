@@ -5,12 +5,13 @@ const { CLIENT_PUBLIC_PATH, FS_PREFIX } = require('../../constants')
 const { injectQuery, cleanUrl, fsPathFromId, normalizePath } = require('../../utils') 
 const { send } = require('../send')
 const { assetAttrsConfig, resolveHtmlTransforms, applyHtmlTransforms, traverseHtml, getScriptInfo, addToHTMLProxyCache } = require('../../plugins/html')
-const { NodeTypes } = require('@vue/compiler-dom')
 
 function createDevHtmlTransformFn(server) {
+  // 提取用户plugin中的transformIndexHtml部分, pre和post的分界是核心plugin执行前后
   const [preHooks, postHooks] = resolveHtmlTransforms(server.config.plugins)
 
   return (url, html, originalUrl) => {
+    // 这里主要是执行devHtmlHook
     return applyHtmlTransforms(html, [...preHooks, devHtmlHook, ...postHooks], {
       path: url,
       filename: getHtmlFilename(url, server),
@@ -29,6 +30,7 @@ function getHtmlFilename(url, server) {
 }
 
 const startsWithSingleSlashRE = /^\/(?!\/)/
+// 改写src中的url，添加相应的前缀
 const processNodeUrl = (
   node,
   s,
@@ -72,12 +74,14 @@ const processNodeUrl = (
     )
   }
 }
+
+// 主要处理script和asset标签，如果是src，改写；如果是content，添加htmlProxyMap
 const devHtmlHook = (html, { path: htmlPath, server, originalUrl }) => {
   const { config, moduleGraph } = server
   const base = config.base || '/'
 
   const s = new MagicString(html)
-  let scriptModuleIndex = -1
+  let scriptModuleIndex = -1 // 用于后面使用的http-proxy，cache后根据index随时取出来
   const filePath = cleanUrl(htmlPath)
 
   traverseHtml(html, htmlPath, (node) => {
@@ -88,13 +92,13 @@ const devHtmlHook = (html, { path: htmlPath, server, originalUrl }) => {
     // script tags
     if (node.tag === 'script') {
       const { src, isModule } = getScriptInfo(node)
-      if (isModule) {
+      if (isModule) { // 只适用于module
         scriptModuleIndex++
       }
 
       if (src) {
         processNodeUrl(src, s, config, htmlPath, originalUrl, moduleGraph)
-      } else if (isModule) {
+      } else if (isModule) { // inline script
         const url = filePath.replace(normalizePath(config.root), '')
 
         const contents = node.children
@@ -105,6 +109,7 @@ const devHtmlHook = (html, { path: htmlPath, server, originalUrl }) => {
         addToHTMLProxyCache(config, url, scriptModuleIndex, contents)
 
         // inline js module. convert to src="proxy"
+        // 比如: <script type="module" src="/index.html?html-proxy&index=0.js"</script>
         s.overwrite(
           node.loc.start.offset,
           node.loc.end.offset,
@@ -135,7 +140,7 @@ const devHtmlHook = (html, { path: htmlPath, server, originalUrl }) => {
   return {
     html,
     tags: [
-      {
+      { // NOTICE 注入'/@fakeVite/client'
         tag: 'script',
         attrs: {
           type: 'module',

@@ -50,6 +50,7 @@ function serveStaticMiddleware(dir, server) {
 
     // apply aliases to static requests as well
     let redirected
+    // NOTICE 注意这里会将url使用alias处理
     for (const { find, replacement } of server.config.resolve.alias) {
       const matches =
         typeof find === 'string' ? url.startsWith(find) : find.test(url)
@@ -82,6 +83,7 @@ function serveStaticMiddleware(dir, server) {
 }
 
 function serveRawFsMiddleware(server) {
+  // 此处使用电脑的根目录处理'/@fs/'，需要注意使用权限，所以在后面使用ensureServingAcess
   const serveFromRoot = sirv('/', sirvOptions)
 
   // Keep the named function. The name is visible in debug logs via `DEBUG=connect:dispatcher ...`
@@ -107,7 +109,7 @@ function serveRawFsMiddleware(server) {
       url = url.slice(FS_PREFIX.length)
       if (isWindows) url = url.replace(/^[A-Z]:/i, '')
 
-      req.url = url
+      req.url = url // 重写req.url
       serveFromRoot(req, res, next)
     } else {
       next()

@@ -47,8 +47,7 @@ function logError(server, err) {
   })
 }
 
-function errorMiddleware(server, allowNext = false
-) {
+function errorMiddleware(server, allowNext = false) {
   // note the 4 args must be kept for connect to treat this as error middleware
   // Keep the named function. The name is visible in debug logs via `DEBUG=connect:dispatcher ...`
   return function fakeViteErrorMiddleware(err, _req, res, next) {

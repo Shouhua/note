@@ -13,6 +13,7 @@ specifiers:
   connect: ^3.7.0
   connect-history-api-fallback: ^1.6.0
   convert-source-map: ^1.8.0
+  cors: ^2.8.5
   cross-spawn: ^7.0.3
   debug: ^4.3.3
   dotenv: ^10.0.0
@@ -50,6 +51,7 @@ dependencies:
   connect: 3.7.0
   connect-history-api-fallback: 1.6.0
   convert-source-map: 1.8.0
+  cors: 2.8.5
   cross-spawn: 7.0.3
   debug: 4.3.3
   dotenv: 10.0.0
@@ -292,6 +294,14 @@ packages:
     resolution: {integrity: sha512-+OQdjP49zViI/6i7nIJpA8rAl4sV/JdPfU9nZs3VqOwGIgizICvuN2ru6fMd+4llL0tar18UYJXfZ/TWtmhUjA==}
     dependencies:
       safe-buffer: 5.1.2
+    dev: false
+
+  /cors/2.8.5:
+    resolution: {integrity: sha512-KIHbLJqu73RGr/hnbrO9uBeixNGuvSQjul/jdFvS/KFSIH1hWVd1ng7zOHx+YrEfInLG7q4n6GHQ9cDtxv/P6g==}
+    engines: {node: '>= 0.10'}
+    dependencies:
+      object-assign: 4.1.1
+      vary: 1.1.2
     dev: false
 
   /cross-spawn/7.0.3:
@@ -797,6 +807,11 @@ packages:
     engines: {node: '>=0.10.0'}
     dev: false
 
+  /object-assign/4.1.1:
+    resolution: {integrity: sha1-IQmtx5ZYh8/AXLvUQsrIv7s2CGM=}
+    engines: {node: '>=0.10.0'}
+    dev: false
+
   /on-finished/2.3.0:
     resolution: {integrity: sha1-IPEzZIGwg811M3mSoWlxqi2QaUc=}
     engines: {node: '>= 0.8'}
@@ -1114,6 +1129,11 @@ packages:
   /utils-merge/1.0.1:
     resolution: {integrity: sha1-n5VxD1CiZ5R7LMwSR0HBAoQn5xM=}
     engines: {node: '>= 0.4.0'}
+    dev: false
+
+  /vary/1.1.2:
+    resolution: {integrity: sha1-IpnwLG3tMNSllhsLn3RSShj2NPw=}
+    engines: {node: '>= 0.8'}
     dev: false
 
   /which/2.0.2:

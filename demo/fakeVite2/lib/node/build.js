@@ -321,6 +321,7 @@ function staticImportedByEntry(
     return false
   }
 
+  // console.log(`mod is entry: ${mod.isEntry}`);
   if (mod.isEntry) {
     cache.set(id, true)
     return true
@@ -385,6 +386,7 @@ function prepareOutDir(outDir, emptyOutDir, config) {
       emptyDir(outDir, ['.git'])
     }
   }
+  // NOTICE build情况下，默认会将public文件复制到根目录中，所以在html plugin中将publicDir前缀变更为base前缀
   if (config.publicDir && fs.existsSync(config.publicDir)) {
     copyDir(config.publicDir, outDir)
   }

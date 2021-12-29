@@ -407,6 +407,7 @@ function cssPlugin(config) {
         if (config.build.minify) {
           extractedCss = await minifyCSS(extractedCss, config)
         }
+        // 这里的this是rollup plugin context，仅用于build
         this.emitFile({
           name: 'style.css',
           type: 'asset',

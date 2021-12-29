@@ -9,6 +9,7 @@ const alias = {
   json: 'application/json'
 }
 
+// 可以参考sirv的send函数
 function send(req, res, content, type, etag = getEtag(content, { weak: true }), cacheControl = 'no-cache', map) {
   if (res.writableEnded) {
     return

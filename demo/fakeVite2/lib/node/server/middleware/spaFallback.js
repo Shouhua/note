@@ -3,6 +3,7 @@ const history = require('connect-history-api-fallback')
 const path = require('path')
 const { createDebugger } = require('../../utils')
 
+// 根据规则rewrite request url
 function spaFallbackMiddleware(root) {
   const historySpaFallbackMiddleware = history({
     logger: createDebugger('fakeVite:spa-fallback'),
