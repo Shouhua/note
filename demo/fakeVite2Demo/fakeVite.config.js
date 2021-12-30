@@ -1,8 +1,8 @@
 import path from 'path'
 
 export default {
-	input: './index.js',
-	output: 'out.js',
+	// input: './index.js',
+	// output: 'out.js',
 	resolve: {
 		alias: {
 			'/@/': '/src/'
@@ -25,7 +25,10 @@ export default {
 	},
 	build: {
 		rollupOptions: {
-		}
+			input: ['index.html']
+		},
+		// sourcemap: true,
+		cssCodeSplit: false
 	},
 	optimizeDeps: {
 

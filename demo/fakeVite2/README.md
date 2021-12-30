@@ -32,9 +32,13 @@ spaFallbackMiddleware: rewrite 以‘/’结尾的request为‘/index.html’
 - plugins部分, 主体包括pluginContainer和moduleGraph, 类似rollup的插件系统，不同于v1推出这一部分，主要是为了dev和build共用处理过程，尽量保证dev和build环境一致性，moduleGraph主要是存储module的各种import和importer关系，用于plugins中分析使用，具体不分析了，可以看代码，下面重点记录上面2个重点middleware处理流程
 1) indexHtmlMiddleware
 主要部分和关系存储均放在html plugin中(assetAttrsConfig, resolveHtmlTransforms, applyHtmlTransforms, traverseHtml, getScriptInfo, addToHTMLProxyCache)，这个middleware主要是分析里面的script和assets标签，如果是src就相应的rewrite url，如果是content，就使用htmlProxyMap存储，最后注入'/@fakeVite/client'
+2) css  
+这个没什么好说的，dev环境做了相应的事情编译了css
 
 3. build执行过程
 前面说过dev和build共用了大部分的plugins，尽量保证环境一致
 1) buildHtmlPlugin
 不同于传统的打包工具，比如webpack，在build中，默认是将html文件作为入口文件的。首要步骤就是transform分析html，主体根dev大致一致, 返回js，供后面js和assests分析，这个js，rollup会自动生成类似于index.123.js, transform过程跟dev比较一致，关键是抽取了js，删除了script和css标签。  
 generateBundle默认情况下html会生成index.123.js, 其他有3个地方手动asset类型emitFile, css/asset/html
+2) css
+注意到config.build.cssCodeSplit, 如果为false，那就是将所有的css会成一个style.css，然后加载在html中；如果为true，就会每个chunk生成一个css文件，加载在html中。默认值是!lib

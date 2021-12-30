@@ -1,5 +1,3 @@
-import { d as debug, f as flatMap } from './vendor.35f48e57.js';
-
 const p = function polyfill() {
   const relList = document.createElement('link').relList;
   if (relList && relList.supports && relList.supports('modulepreload')) {
@@ -42,19 +40,47 @@ const p = function polyfill() {
     const fetchOpts = getFetchOpts(link);
     fetch(link.href, fetchOpts);
   }
-};__VITE_IS_MODERN__&&p();
+};true&&p();
 
-var foo$2 = '';
+var foo = '';
 
-function foo$1() {console.log('foo from virtual module');}
+const scriptRel = 'moduleproload';const seen = {};const base = '/';const __vitePreload = function preload(baseModule, deps) {
+  if (!true || !deps || deps.length === 0) {
+    return baseModule()
+  }
 
-function foo() {
-	console.log('foo000000000dsfadfasdsdasd');
-}
+  return Promise.all(
+    deps.map((dep) => {
+      dep = `${base}${dep}`;
+      if (dep in seen) return
+      seen[dep] = true;
+      const isCss = dep.endsWith('.css');
+      const cssSelector = isCss ? '[rel="stylesheet"]' : '';
+      // check if the file is already preloaded by SSR markup
+      if (document.querySelector(`link[href="${dep}"]${cssSelector}`)) {
+        return
+      }
+      const link = document.createElement('link');
+      link.rel = isCss ? 'stylesheet' : scriptRel;
+      if (!isCss) {
+        link.as = 'script';
+        link.crossOrigin = '';
+      }
+      link.href = dep;
+      document.head.appendChild(link);
+      if (isCss) {
+        return new Promise((res, rej) => {
+          link.addEventListener('load', res);
+          link.addEventListener('error', rej);
+        })
+      }
+    })
+  ).then(() => baseModule())
+};
 
-let log = debug("app:logging");
-log("testing logging");
-foo$1();
-foo();
-console.log("helo, world!");
-console.log(`flatmap: ${flatMap(["1", [2, 3]])}`);
+__vitePreload(() => import('./foo.2867ed38.js'),true?[]:void 0).then((m) => {
+  m.default();
+});
+console.log("helo, main");
+
+export { __vitePreload as _ };

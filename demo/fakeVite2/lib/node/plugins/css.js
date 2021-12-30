@@ -74,7 +74,7 @@ function cssPlugin(config) {
     configureServer(_server) {
       server = _server
     },
-    buildServer() {
+    buildStart() {
       moduleCache = new Map()
       cssModulesCache.set(config, moduleCache)
       removedPureCssFilesCache.set(config, new Map())
@@ -114,9 +114,11 @@ function cssPlugin(config) {
       if (server) {
         // server only logic for handling CSS @import dependency hmr
         const { moduleGraph } = server
+        // transformRquest执行load后保证生成了对应的module node
         const thisModule = moduleGraph.getModuleById(id)
         if (thisModule) {
           // CSS modules cannot self-accept since it exports values
+          // CSS modules更新文件会更新导出内容，css module更新会更新整个模块
           const isSelfAccepting = !modules && !inlineRE.test(id)
           if (deps) {
             // record deps in the module graph so edits to @import css can trigger
@@ -124,13 +126,13 @@ function cssPlugin(config) {
             const depModules = new Set()
             for (const file of deps) {
               depModules.add(
-                isCSSRequest(file)
+                isCSSRequest(file) // css or asset
                   ? moduleGraph.createFileOnlyEntry(file)
                   : await moduleGraph.ensureEntryFromUrl(
                       (
                         await fileToUrl(file, config, this)
                       ).replace(
-                        (config.server?.origin ?? '') + config.base,
+                        (config.server && config.server.origin || '') + config.base,
                         '/'
                       )
                     )
@@ -245,13 +247,14 @@ function cssPlugin(config) {
       let chunkCSS = ''
       let isPureCssChunk = true
       const ids = Object.keys(chunk.modules)
+      // console.log(JSON.stringify(ids.filter(id => !/node_modules/.test(id)).join(', ')))
       for (const id of ids) {
         if (
           !isCSSRequest(id) ||
           cssModuleRE.test(id) ||
           commonjsProxyRE.test(id)
         ) {
-          isPureCssChunk = false
+          isPureCssChunk = false // pure css chunk的情况很少
         }
         if (styles.has(id)) {
           chunkCSS += styles.get(id)

@@ -1,11 +1,6 @@
 const path = require('path')
-const { cleanUrl } = require('./utils')
+const { cleanUrl, isModernFlag, preloadMethod, preloadMarker } = require('./utils')
 const glob = require('fast-glob')
-const {
-  isModernFlag,
-  preloadMethod,
-  preloadMarker
-} = require('./plugins/importAnalysisBuild')
 
 async function transformImportGlob(source, pos, importer, importIndex, root, normalizeUrl, preload = true) {
   const isEager = source.slice(pos, pos + 21) === 'import.meta.globEager'

@@ -1,0 +1,3 @@
+测试rollup各种参数
+chunk
+this.emitFile

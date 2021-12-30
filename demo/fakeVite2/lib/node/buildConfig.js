@@ -1,10 +1,11 @@
+const path = require('path')
 const { watchPackageDataPlugin } = require('./packages')
 const { buildHtmlPlugin } = require('./plugins/html')
 const commonjsPlugin = require('@rollup/plugin-commonjs')
 const { dataURIPlugin } = require('./plugins/dataUri')
 const { loadFallbackPlugin } = require('./plugins/loadFallback')
 const dynamicImportVars = require('@rollup/plugin-dynamic-import-vars').default
-const path = require('path')
+const { buildImportAnalysisPlugin } = require('./plugins/importAnalysisBuild')
 
 function resolveBuildOptions(root, raw, isBuild) { 
   const resolved = {
@@ -125,7 +126,7 @@ function resolveBuildPlugins(config) {
       //   : [])
     ],
     post: [
-      // buildImportAnalysisPlugin(config),
+      buildImportAnalysisPlugin(config),
       // buildEsbuildPlugin(config),
       // ...(options.minify === 'terser' ? [terserPlugin(config)] : []),
       // ...(options.manifest ? [manifestPlugin(config)] : []),
