@@ -133,3 +133,4 @@ sirv('src', options) // /index.html会执行扫描/src/index.html，有没有这
 ```
 16. 总共2处generateBundle:
 fakeVite:build-html plugin在fakeVite:css后面，generateBundle是async, sequential，先执行css的generateBundle，最后执行html的generateBundle
+17. 假设现在框架完事了，需要添加支持某个特性的plugin，比如assetImportMetaUrl的功能，业务功能(https://cn.vitejs.dev/guide/assets.html#new-url-url-import-meta-url)

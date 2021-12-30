@@ -19,16 +19,16 @@
 // console.log(batman)
 // console.log(`flatmap: ${flatMap(['1', [2, 3]])}`)
 
-// const ms = import.meta.globEager('./foo*.js')
-// for(const p in ms) {
-// 	ms[p]().then(mod => {
-// 		mod.default()
-// 	})
-// }
+const ms = import.meta.globEagerDefault('./foo*.js')
+for(const p in ms) {
+	ms[p]().then(mod => {
+		mod.default()
+	})
+}
 
-import('./foo').then(m => {
-	m.default()
-})
+// import('./foo').then(m => {
+// 	m.default()
+// })
 
 
 console.log('helo, main')

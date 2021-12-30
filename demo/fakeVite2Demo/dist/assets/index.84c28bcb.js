@@ -42,7 +42,7 @@ const p = function polyfill() {
   }
 };true&&p();
 
-var foo = '';
+var foo$1 = '';
 
 const scriptRel = 'moduleproload';const seen = {};const base = '/';const __vitePreload = function preload(baseModule, deps) {
   if (!true || !deps || deps.length === 0) {
@@ -78,9 +78,27 @@ const scriptRel = 'moduleproload';const seen = {};const base = '/';const __viteP
   ).then(() => baseModule())
 };
 
-__vitePreload(() => import('./foo.2867ed38.js'),true?[]:void 0).then((m) => {
-  m.default();
-});
-console.log("helo, main");
+function foo() {
+	console.log('foo000000000dsfadfasdsdasd');
+	__vitePreload(() => Promise.resolve().then(function () { return foobar; }),true?void 0:void 0).then(m => {
+		m.default();
+	});
+}
 
-export { __vitePreload as _ };
+function __glob_0_1() {
+	console.log('foobar');
+}
+
+var foobar = /*#__PURE__*/Object.freeze({
+  __proto__: null,
+  [Symbol.toStringTag]: 'Module',
+  'default': __glob_0_1
+});
+
+const ms = { "./foo.js": foo, "./foobar.js": __glob_0_1,};
+for (const p in ms) {
+  ms[p]().then((mod) => {
+    mod.default();
+  });
+}
+console.log("helo, main");
