@@ -1,0 +1,21 @@
+{
+  "name": "multi-entry",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev": "vite serve",
+    "build": "vite build"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^2.1.0",
+    "vite": "^2.7.13",
+    "vue": "^3.2.29"
+  },
+  "dependencies": {
+    "vue-router": "^4.0.12"
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "name": "multi-entry",
+  "version": "1.0.0",
+  "description": "",
+  "main": "batman.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "rollup -c rollup.config.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@rollup/plugin-multi-entry": "^4.1.0",
+    "rollup": "^2.64.0"
+  }
+}
