@@ -134,3 +134,84 @@ sirv('src', options) // /index.html会执行扫描/src/index.html，有没有这
 16. 总共2处generateBundle:
 fakeVite:build-html plugin在fakeVite:css后面，generateBundle是async, sequential，先执行css的generateBundle，最后执行html的generateBundle
 17. 假设现在框架完事了，需要添加支持某个特性的plugin，比如assetImportMetaUrl的功能，业务功能(https://cn.vitejs.dev/guide/assets.html#new-url-url-import-meta-url)
+
+### vue2+webpack迁移vite技术栈遇到的问题
+1. 首先对于大的工程首次加载似乎增益不大，编译是很快，但是打开页面后需要加载很多文件，导致网络阻塞，时间不能接受，这个看能不能优化（h2可能会好点，但是api使用的是h1.1）
+2. 修改vite的入口为public/index.html，或者在根目录新建index.html并且添加main.js的引用，注意添加```type="module"```属性
+3. 添加vite-plugin-vue2和vite包：```npm i -D vite-plugin-vue2 vite```，添加vite.config.js文件
+4. webpack配置中对应切换：
+- alias  
+```js
+resolve: {
+	alias: {
+		'@': path.resolve(__dirname, './src'),
+		'vue': 'vue/dist/vue.esm.js'
+	},
+}
+```
+- extensions
+```js
+resolve: {
+	extensions: ['.vue', '.ts', '.tsx', '.js', '.jsx', '.mjs', '.svg'],
+}
+```
+- DefinePlugin
+```js
+import { defineConfig } from 'vite'
+import pkg from './package.json'
+import pkgLock from './package-lock.json'
+export default defineConfig({
+	define: {
+		projectName: JSON.stringify(pkg.name),
+		pkgInfo: {
+			'vue': JSON.stringify(pkgLock.dependencies['vue'].version),
+			'vue-router': JSON.stringify(pkgLock.dependencies['vue-router'].version),
+		}
+	}
+})
+```
+- ProvidePlugin提供全局引入变量的功能，不需要在每个页面都引入。比如:
+```js    
+new webpack.ProvidePlugin({
+	'$': 'jquery/dist/jquery.min.js',
+})
+```  
+在vite环境中目前还没有相应的全局引入方式，在每个需要的页面引入，这样可以更好的实现tree-shaking
+- jsx
+```js
+plugins: [
+	createVuePlugin({
+		jsx: true
+	})
+]
+```
+需要注意的是，vue中的script需要使用属性```lang="jsx"```, 如果是js文件则需要更改扩展名为jsx
+- webpack-virtual-modules/require.context
+```js
+const modules = import.meta.glob('../modules/**/export.js');
+Object.keys(modules).forEach((key) => {
+	const moduleNames = key.match(/^\.\.\/modules\/(.+)\/export\.js/);
+	if (moduleNames) {
+		existModulesContextMap[moduleNames[1]] = modules[key];
+	}
+});
+```
+5. 使用require引用或者输出模块场景不能使用，使用esm方式引入或者导出
+6. 图片引入
+```html
+<div :style="{backgroundImage: `url('${backgroundImage}')`}"></div>
+```
+```js
+// before
+computed: {
+	backgroundUrl() {
+		return require('@/assets/images/login/background.png');
+	} 
+}
+// after
+computed: {
+	backgroundUrl() {
+		return new URL('../../../assets/images/login/background.png', import.meta.url).href;
+	} 
+}
+```
