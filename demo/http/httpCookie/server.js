@@ -40,10 +40,10 @@ app.use((ctx, next) => {
         path: '/index',       // 写cookie所在的路径
         maxAge: 10 * 60 * 1000, // cookie有效时长
         expires: new Date('2020-7-15'),  // cookie失效时间
-        httpOnly: false,  // 是否只用于http请求中获取
+        httpOnly: false,  // 是否能通过javascript获取(document.cookie)
         overwrite: false,  // 是否允许重写
-        sameSite: true,
-        // secure: true
+        sameSite: 'Lax', // Strict, Lax, None, 是否能被跨域传输, lax相较于strict更便捷，跳转过去的页面可以携带第三方cookie
+        secure: false // 是否必须通过https传输
       }
     )
     ctx.body = fs.readFileSync(path.resolve(__dirname, './index.js'), 'utf8')

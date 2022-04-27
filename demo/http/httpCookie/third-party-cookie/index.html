@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Document</title>
+</head>
+<body>
+	<h1>CORS Cookie Testing</h1>	
+	<script type="module">
+		function get(url) {
+			const xhr = new XMLHttpRequest()
+			xhr.open('GET', `http://10.122.48.111:3000/${url}`)
+			xhr.withCredentials = true;
+			xhr.onreadystatechange = function handleReadyStateChange(event) {
+				if(xhr.readyState === xhr.DONE) {
+					if(xhr.status === 200) {
+						const resHeaders = xhr.getAllResponseHeaders() 
+						const headers = resHeaders.split(/\r\n/).filter(Boolean)
+						headers.forEach(item => {
+							const h = item.split(':')
+							console.log('Headers:-----------')
+							console.log(`${h[0]}:${h[1]}`)
+						})
+						console.log('response:----------- ')
+						console.log(xhr.responseType, xhr.response)
+					}
+				}
+			}	
+			xhr.send()
+		}
+
+		get('login');
+		setTimeout(() => {
+			get('getSth')	
+		}, 1000);
+		// const xhr = new XMLHttpRequest()
+		// xhr.open('GET', 'http://10.122.48.111:3000/login', true)
+		// xhr.withCredentials = true;
+		// xhr.onreadystatechange = function handleReadyStateChange(event) {
+		// 	if(xhr.readyState === xhr.DONE) {
+		// 		if(xhr.status === 200) {
+		// 			const resHeaders = xhr.getAllResponseHeaders() 
+		// 			const headers = resHeaders.split(/\r\n/).filter(Boolean)
+		// 			headers.forEach(item => {
+		// 				const h = item.split(':')
+		// 				console.log('Headers:-----------')
+		// 				console.log(`${h[0]}:${h[1]}`)
+		// 			})
+		// 			console.log('response:----------- ')
+		// 			console.log(xhr.responseType, xhr.response)
+
+
+		// 		}
+		// 	}
+		// }	
+		// xhr.send()
+		// const login = await fetch('http://10.122.48.111:3000/login', {
+		// 	credentials: "include"
+		// })
+		// const loginData = await login.json()
+
+		// console.log(loginData);
+		// const sth = await fetch('http://10.122.48.111:3000/getSth', {
+		// 	credentials: "include"
+		// })
+		// const sthData = await sth.json()
+
+		// console.log(sthData);
+	</script>
+</body>
+</html>
