@@ -1,12 +1,11 @@
-import { isArray, isString, isObject, hyphenate } from './'
-import { isNoUnitNumericStyleProp } from './domAttrConfig'
+import { hyphenate, isArray, isObject, isString } from './general'
 
 export type NormalizedStyle = Record<string, string | number>
 
 // {foo: bar} || [{foo: bar}, {fooBar: foobar}] ==>
 // {foo: bar; foo-bar: foobar}
 export function normalizeStyle(
-  value: unknown
+  value: unknown,
 ): NormalizedStyle | string | undefined {
   if (isArray(value)) {
     const res: NormalizedStyle = {}
@@ -22,16 +21,15 @@ export function normalizeStyle(
       }
     }
     return res
-  } else if (isString(value)) {
-    return value
-  } else if (isObject(value)) {
+  } else if (isString(value) || isObject(value)) {
     return value
   }
 }
 
 // foo: bar; foobar: fooBar) 这种情况的；是匹配不出的
 const listDelimiterRE = /;(?![^(]*\))/g
-const propertyDelimiterRE = /:(.+)/
+const propertyDelimiterRE = /:([^]+)/
+const styleCommentRE = /\/\*[^]*?\*\//g
 
 /**
  * 主要是将style string转化成对象
@@ -39,12 +37,15 @@ const propertyDelimiterRE = /:(.+)/
  */
 export function parseStringStyle(cssText: string): NormalizedStyle {
   const ret: NormalizedStyle = {}
-  cssText.split(listDelimiterRE).forEach(item => {
-    if (item) {
-      const tmp = item.split(propertyDelimiterRE)
-      tmp.length > 1 && (ret[tmp[0].trim()] = tmp[1].trim())
-    }
-  })
+  cssText
+    .replace(styleCommentRE, '')
+    .split(listDelimiterRE)
+    .forEach(item => {
+      if (item) {
+        const tmp = item.split(propertyDelimiterRE)
+        tmp.length > 1 && (ret[tmp[0].trim()] = tmp[1].trim())
+      }
+    })
   return ret
 }
 
@@ -55,7 +56,7 @@ export function parseStringStyle(cssText: string): NormalizedStyle {
  * 2. 驼峰key转化成kebab
  */
 export function stringifyStyle(
-  styles: NormalizedStyle | string | undefined
+  styles: NormalizedStyle | string | undefined,
 ): string {
   let ret = ''
   if (!styles || isString(styles)) {
@@ -63,11 +64,8 @@ export function stringifyStyle(
   }
   for (const key in styles) {
     const value = styles[key]
-    const normalizedKey = key.startsWith(`--`) ? key : hyphenate(key)
-    if (
-      isString(value) ||
-      (typeof value === 'number' && isNoUnitNumericStyleProp(normalizedKey))
-    ) {
+    if (isString(value) || typeof value === 'number') {
+      const normalizedKey = key.startsWith(`--`) ? key : hyphenate(key)
       // only render valid values
       ret += `${normalizedKey}:${value};`
     }

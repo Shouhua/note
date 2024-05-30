@@ -1,10 +1,10 @@
-import { h, reactive, createApp, ref } from 'vue'
-import { CompilerOptions } from '@vue/compiler-dom'
+import { createApp, h, reactive, ref } from 'vue'
+import type { CompilerOptions } from '@vue/compiler-dom'
 import { BindingTypes } from '@vue/compiler-core'
 
 export const ssrMode = ref(false)
 
-export const compilerOptions: CompilerOptions = reactive({
+export const defaultOptions: CompilerOptions = {
   mode: 'module',
   filename: 'Foo.vue',
   prefixIdentifiers: false,
@@ -22,9 +22,13 @@ export const compilerOptions: CompilerOptions = reactive({
     setupLet: BindingTypes.SETUP_LET,
     setupMaybeRef: BindingTypes.SETUP_MAYBE_REF,
     setupProp: BindingTypes.PROPS,
-    vMySetupDir: BindingTypes.SETUP_CONST
-  }
-})
+    vMySetupDir: BindingTypes.SETUP_CONST,
+  },
+}
+
+export const compilerOptions: CompilerOptions = reactive(
+  Object.assign({}, defaultOptions),
+)
 
 const App = {
   setup() {
@@ -39,19 +43,19 @@ const App = {
         h(
           'a',
           {
-            href: `https://github.com/vuejs/vue-next/tree/${__COMMIT__}`,
-            target: `_blank`
+            href: `https://github.com/vuejs/core/tree/${__COMMIT__}`,
+            target: `_blank`,
           },
-          `@${__COMMIT__}`
+          `@${__COMMIT__}`,
         ),
         ' | ',
         h(
           'a',
           {
             href: 'https://app.netlify.com/sites/vue-next-template-explorer/deploys',
-            target: `_blank`
+            target: `_blank`,
           },
-          'History'
+          'History',
         ),
 
         h('div', { id: 'options-wrapper' }, [
@@ -67,7 +71,7 @@ const App = {
                 checked: isModule,
                 onChange() {
                   compilerOptions.mode = 'module'
-                }
+                },
               }),
               h('label', { for: 'mode-module' }, 'module'),
               ' ',
@@ -78,9 +82,9 @@ const App = {
                 checked: !isModule,
                 onChange() {
                   compilerOptions.mode = 'function'
-                }
+                },
               }),
-              h('label', { for: 'mode-function' }, 'function')
+              h('label', { for: 'mode-function' }, 'function'),
             ]),
 
             // whitespace handling
@@ -93,7 +97,7 @@ const App = {
                 checked: compilerOptions.whitespace === 'condense',
                 onChange() {
                   compilerOptions.whitespace = 'condense'
-                }
+                },
               }),
               h('label', { for: 'whitespace-condense' }, 'condense'),
               ' ',
@@ -104,9 +108,9 @@ const App = {
                 checked: compilerOptions.whitespace === 'preserve',
                 onChange() {
                   compilerOptions.whitespace = 'preserve'
-                }
+                },
               }),
-              h('label', { for: 'whitespace-preserve' }, 'preserve')
+              h('label', { for: 'whitespace-preserve' }, 'preserve'),
             ]),
 
             // SSR
@@ -118,9 +122,9 @@ const App = {
                 checked: ssrMode.value,
                 onChange(e: Event) {
                   ssrMode.value = (e.target as HTMLInputElement).checked
-                }
+                },
               }),
-              h('label', { for: 'ssr' }, 'SSR')
+              h('label', { for: 'ssr' }, 'SSR'),
             ]),
 
             // toggle prefixIdentifiers
@@ -133,9 +137,9 @@ const App = {
                 onChange(e: Event) {
                   compilerOptions.prefixIdentifiers =
                     (e.target as HTMLInputElement).checked || isModule
-                }
+                },
               }),
-              h('label', { for: 'prefix' }, 'prefixIdentifiers')
+              h('label', { for: 'prefix' }, 'prefixIdentifiers'),
             ]),
 
             // toggle hoistStatic
@@ -149,9 +153,9 @@ const App = {
                   compilerOptions.hoistStatic = (
                     e.target as HTMLInputElement
                   ).checked
-                }
+                },
               }),
-              h('label', { for: 'hoist' }, 'hoistStatic')
+              h('label', { for: 'hoist' }, 'hoistStatic'),
             ]),
 
             // toggle cacheHandlers
@@ -165,9 +169,9 @@ const App = {
                   compilerOptions.cacheHandlers = (
                     e.target as HTMLInputElement
                   ).checked
-                }
+                },
               }),
-              h('label', { for: 'cache' }, 'cacheHandlers')
+              h('label', { for: 'cache' }, 'cacheHandlers'),
             ]),
 
             // toggle scopeId
@@ -182,9 +186,9 @@ const App = {
                     isModule && (e.target as HTMLInputElement).checked
                       ? 'scope-id'
                       : null
-                }
+                },
               }),
-              h('label', { for: 'scope-id' }, 'scopeId')
+              h('label', { for: 'scope-id' }, 'scopeId'),
             ]),
 
             // inline mode
@@ -197,9 +201,9 @@ const App = {
                   compilerOptions.inline = (
                     e.target as HTMLInputElement
                   ).checked
-                }
+                },
               }),
-              h('label', { for: 'inline' }, 'inline')
+              h('label', { for: 'inline' }, 'inline'),
             ]),
 
             // compat mode
@@ -214,15 +218,15 @@ const App = {
                   ).checked
                     ? 2
                     : 3
-                }
+                },
               }),
-              h('label', { for: 'compat' }, 'v2 compat mode')
-            ])
-          ])
-        ])
+              h('label', { for: 'compat' }, 'v2 compat mode'),
+            ]),
+          ]),
+        ]),
       ]
     }
-  }
+  },
 }
 
 export function initOptions() {

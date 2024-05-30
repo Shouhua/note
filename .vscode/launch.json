@@ -5,33 +5,15 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "02-test.html",
-      "type": "chrome",
-      "request": "launch",
-      "file": "${workspaceFolder}/packages/vue/examples/02-test.html",
-    },
-    {
-      "type": "node",
-      "name": "vscode-jest-tests",
-      "request": "launch",
-      "args": [
-        // "Map.spec.ts",
-        "componentEmits.spec.ts",
-        "--runInBand"
-      ],
-      "cwd": "${workspaceFolder}",
-      // "console": "integratedTerminal",
-      "internalConsoleOptions": "neverOpen",
-      "disableOptimisticBPs": true,
-      "program": "${workspaceFolder}/node_modules/jest/bin/jest",
-      "outputCapture": "std"
-    },
-    {
       "type": "node",
       "request": "launch",
-      "name": "environment",
-      // "runtimeArgs": ["-r", "esm"],
-      "program": "${workspaceFolder}/scripts/environment.js"
-    },
+      "name": "Vitest - Debug Current Test File",
+      "autoAttachChildProcesses": true,
+      "skipFiles": ["<node_internals>/**", "**/node_modules/**"],
+      "program": "${workspaceRoot}/node_modules/vitest/vitest.mjs",
+      "args": ["run", "${relativeFile}"],
+      "smartStep": true,
+      "console": "integratedTerminal"
+    }
   ]
 }

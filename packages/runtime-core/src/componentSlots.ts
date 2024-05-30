@@ -1,35 +1,62 @@
-import { ComponentInternalInstance, currentInstance } from './component'
+import { type ComponentInternalInstance, currentInstance } from './component'
 import {
-  VNode,
-  VNodeNormalizedChildren,
+  type VNode,
+  type VNodeChild,
+  type VNodeNormalizedChildren,
   normalizeVNode,
-  VNodeChild,
-  InternalObjectKey
 } from './vnode'
 import {
+  EMPTY_OBJ,
+  type IfAny,
+  type Prettify,
+  ShapeFlags,
+  SlotFlags,
+  def,
+  extend,
   isArray,
   isFunction,
-  EMPTY_OBJ,
-  ShapeFlags,
-  extend,
-  def,
-  SlotFlags
 } from '@vue/shared'
 import { warn } from './warning'
 import { isKeepAlive } from './components/KeepAlive'
-import { ContextualRenderFn, withCtx } from './componentRenderContext'
+import { type ContextualRenderFn, withCtx } from './componentRenderContext'
 import { isHmrUpdating } from './hmr'
 import { DeprecationTypes, isCompatEnabled } from './compat/compatConfig'
-import { toRaw } from '@vue/reactivity'
+import { TriggerOpTypes, trigger } from '@vue/reactivity'
+import { createInternalObject } from './internalObject'
 
 // NOTICE: slot定义为函数
-export type Slot = (...args: any[]) => VNode[]
+export type Slot<T extends any = any> = (
+  ...args: IfAny<T, any[], [T] | (T extends undefined ? [] : never)>
+) => VNode[]
 
 export type InternalSlots = {
   [name: string]: Slot | undefined
 }
 
 export type Slots = Readonly<InternalSlots>
+
+declare const SlotSymbol: unique symbol
+export type SlotsType<T extends Record<string, any> = Record<string, any>> = {
+  [SlotSymbol]?: T
+}
+
+export type StrictUnwrapSlotsType<
+  S extends SlotsType,
+  T = NonNullable<S[typeof SlotSymbol]>,
+> = [keyof S] extends [never] ? Slots : Readonly<T> & T
+
+export type UnwrapSlotsType<
+  S extends SlotsType,
+  T = NonNullable<S[typeof SlotSymbol]>,
+> = [keyof S] extends [never]
+  ? Slots
+  : Readonly<
+      Prettify<{
+        [K in keyof T]: NonNullable<T[K]> extends (...args: any[]) => any
+          ? T[K]
+          : Slot<T[K]>
+      }>
+    >
 
 export type RawSlots = {
   [name: string]: unknown
@@ -63,14 +90,22 @@ const normalizeSlotValue = (value: unknown): VNode[] =>
 const normalizeSlot = (
   key: string,
   rawSlot: Function,
-  ctx: ComponentInternalInstance | null | undefined
+  ctx: ComponentInternalInstance | null | undefined,
 ): Slot => {
+  if ((rawSlot as any)._n) {
+    // already normalized - #5353
+    return rawSlot as Slot
+  }
   const normalized = withCtx((...args: any[]) => {
-    if (__DEV__ && currentInstance) {
+    if (
+      __DEV__ &&
+      currentInstance &&
+      (!ctx || ctx.root === currentInstance.root)
+    ) {
       warn(
         `Slot "${key}" invoked outside of the render function: ` +
           `this will not track dependencies used in the slot. ` +
-          `Invoke the slot function inside the render function instead.`
+          `Invoke the slot function inside the render function instead.`,
       )
     }
     return normalizeSlotValue(rawSlot(...args))
@@ -83,7 +118,7 @@ const normalizeSlot = (
 const normalizeObjectSlots = (
   rawSlots: RawSlots,
   slots: InternalSlots,
-  instance: ComponentInternalInstance
+  instance: ComponentInternalInstance,
 ) => {
   const ctx = rawSlots._ctx // vnode.ts中的normalizeChildren已经填充
   for (const key in rawSlots) {
@@ -101,7 +136,7 @@ const normalizeObjectSlots = (
       ) {
         warn(
           `Non-function value encountered for slot "${key}". ` +
-            `Prefer function slots for better performance.`
+            `Prefer function slots for better performance.`,
         )
       }
       const normalized = normalizeSlotValue(value)
@@ -112,7 +147,7 @@ const normalizeObjectSlots = (
 
 const normalizeVNodeSlots = (
   instance: ComponentInternalInstance,
-  children: VNodeNormalizedChildren
+  children: VNodeNormalizedChildren,
 ) => {
   if (
     __DEV__ &&
@@ -121,7 +156,7 @@ const normalizeVNodeSlots = (
   ) {
     warn(
       `Non-function value encountered for default slot. ` +
-        `Prefer function slots for better performance.`
+        `Prefer function slots for better performance.`,
     )
   }
   const normalized = normalizeSlotValue(children)
@@ -131,37 +166,28 @@ const normalizeVNodeSlots = (
 // children包含所有的，slot分为default和其他的命名slot
 export const initSlots = (
   instance: ComponentInternalInstance,
-  children: VNodeNormalizedChildren
+  children: VNodeNormalizedChildren,
 ) => {
+  const slots = (instance.slots = createInternalObject())
   if (instance.vnode.shapeFlag & ShapeFlags.SLOTS_CHILDREN) {
     const type = (children as RawSlots)._ // SlotFlags
     if (type) {
-      // users can get the shallow readonly version of the slots object through `this.$slots`,
-      // we should avoid the proxy object polluting the slots of the internal instance
-      instance.slots = toRaw(children as InternalSlots)
+      extend(slots, children as InternalSlots)
       // make compiler marker non-enumerable
-      def(children as InternalSlots, '_', type)
+      def(slots, '_', type, true)
     } else {
       // children肯定是object了，只不过有可能不是compiled slots
-      normalizeObjectSlots(
-        children as RawSlots,
-        (instance.slots = {}),
-        instance
-      )
+      normalizeObjectSlots(children as RawSlots, slots, instance)
     }
-  } else {
-    instance.slots = {}
-    if (children) {
-      normalizeVNodeSlots(instance, children) // 将children生成VNode，instance.slot.default = () => createVNode(childrent)
-    }
+  } else if (children) {
+    normalizeVNodeSlots(instance, children)
   }
-  def(instance.slots, InternalObjectKey, 1) // InternalObjectKey = __vInternal
 }
 
 export const updateSlots = (
   instance: ComponentInternalInstance,
   children: VNodeNormalizedChildren,
-  optimized: boolean
+  optimized: boolean,
 ) => {
   const { vnode, slots } = instance
   let needDeletionCheck = true
@@ -174,6 +200,7 @@ export const updateSlots = (
         // Parent was HMR updated so slot content may have changed.
         // force update slots and mark instance for hmr as well
         extend(slots, children as Slots)
+        trigger(instance, TriggerOpTypes.SET, '$slots')
       } else if (optimized && type === SlotFlags.STABLE) {
         // compiled AND stable.
         // no need to update, and skip stale slots removal.
@@ -204,7 +231,7 @@ export const updateSlots = (
   // delete stale slots
   if (needDeletionCheck) {
     for (const key in slots) {
-      if (!isInternalKey(key) && !(key in deletionComparisonTarget)) {
+      if (!isInternalKey(key) && deletionComparisonTarget[key] == null) {
         delete slots[key]
       }
     }

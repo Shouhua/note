@@ -1,10 +1,11 @@
-import { RendererOptions } from '@vue/runtime-core'
+import type { RendererOptions } from '@vue/runtime-core'
 
 export const svgNS = 'http://www.w3.org/2000/svg'
+export const mathmlNS = 'http://www.w3.org/1998/Math/MathML'
 
 const doc = (typeof document !== 'undefined' ? document : null) as Document
 
-const staticTemplateCache = new Map<string, DocumentFragment>()
+const templateContainer = doc && /*#__PURE__*/ doc.createElement('template')
 
 export const nodeOps: Omit<RendererOptions<Node, Element>, 'patchProp'> = {
   insert: (child, parent, anchor) => {
@@ -18,10 +19,13 @@ export const nodeOps: Omit<RendererOptions<Node, Element>, 'patchProp'> = {
     }
   },
 
-  createElement: (tag, isSVG, is, props): Element => {
-    const el = isSVG
-      ? doc.createElementNS(svgNS, tag)
-      : doc.createElement(tag, is ? { is } : undefined)
+  createElement: (tag, namespace, is, props): Element => {
+    const el =
+      namespace === 'svg'
+        ? doc.createElementNS(svgNS, tag)
+        : namespace === 'mathml'
+          ? doc.createElementNS(mathmlNS, tag)
+          : doc.createElement(tag, is ? { is } : undefined)
 
     if (tag === 'select' && props && props.multiple != null) {
       ;(el as HTMLSelectElement).setAttribute('multiple', props.multiple)
@@ -52,51 +56,47 @@ export const nodeOps: Omit<RendererOptions<Node, Element>, 'patchProp'> = {
     el.setAttribute(id, '')
   },
 
-  cloneNode(el) {
-    const cloned = el.cloneNode(true)
-    // #3072
-    // - in `patchDOMProp`, we store the actual value in the `el._value` property.
-    // - normally, elements using `:value` bindings will not be hoisted, but if
-    //   the bound value is a constant, e.g. `:value="true"` - they do get
-    //   hoisted.
-    // - in production, hoisted nodes are cloned when subsequent inserts, but
-    //   cloneNode() does not copy the custom property we attached.
-    // - This may need to account for other custom DOM properties we attach to
-    //   elements in addition to `_value` in the future.
-    if (`_value` in el) {
-      ;(cloned as any)._value = (el as any)._value
-    }
-    return cloned
-  },
-
   // __UNSAFE__
   // Reason: innerHTML.
   // Static content here can only come from compiled templates.
   // As long as the user only uses trusted templates, this is safe.
-  insertStaticContent(content, parent, anchor, isSVG) {
+  insertStaticContent(content, parent, anchor, namespace, start, end) {
     // <parent> before | first ... last | anchor </parent>
     const before = anchor ? anchor.previousSibling : parent.lastChild
-    let template = staticTemplateCache.get(content)
-    if (!template) {
-      const t = doc.createElement('template')
-      t.innerHTML = isSVG ? `<svg>${content}</svg>` : content
-      template = t.content
-      if (isSVG) {
-        // remove outer svg wrapper
+    // #5308 can only take cached path if:
+    // - has a single root node
+    // - nextSibling info is still available
+    if (start && (start === end || start.nextSibling)) {
+      // cached
+      while (true) {
+        parent.insertBefore(start!.cloneNode(true), anchor)
+        if (start === end || !(start = start!.nextSibling)) break
+      }
+    } else {
+      // fresh insert
+      templateContainer.innerHTML =
+        namespace === 'svg'
+          ? `<svg>${content}</svg>`
+          : namespace === 'mathml'
+            ? `<math>${content}</math>`
+            : content
+
+      const template = templateContainer.content
+      if (namespace === 'svg' || namespace === 'mathml') {
+        // remove outer svg/math wrapper
         const wrapper = template.firstChild!
         while (wrapper.firstChild) {
           template.appendChild(wrapper.firstChild)
         }
         template.removeChild(wrapper)
       }
-      staticTemplateCache.set(content, template)
+      parent.insertBefore(template, anchor)
     }
-    parent.insertBefore(template.cloneNode(true), anchor)
     return [
       // first
       before ? before.nextSibling! : parent.firstChild!,
       // last
-      anchor ? anchor.previousSibling! : parent.lastChild!
+      anchor ? anchor.previousSibling! : parent.lastChild!,
     ]
-  }
+  },
 }

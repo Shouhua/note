@@ -1,6 +1,6 @@
-import { NodeTransform } from '../transform'
+import type { NodeTransform } from '../transform'
 import { findDir } from '../utils'
-import { ElementNode, ForNode, IfNode, NodeTypes } from '../ast'
+import { type ElementNode, type ForNode, type IfNode, NodeTypes } from '../ast'
 import { SET_BLOCK_TRACKING } from '../runtimeHelpers'
 
 // v-once setBlockTracking(-1),将当前的block不放入dynamicChildren中
@@ -9,7 +9,7 @@ const seen = new WeakSet()
 
 export const transformOnce: NodeTransform = (node, context) => {
   if (node.type === NodeTypes.ELEMENT && findDir(node, 'once', true)) {
-    if (seen.has(node) || context.inVOnce) {
+    if (seen.has(node) || context.inVOnce || context.inSSR) {
       return
     }
     seen.add(node)

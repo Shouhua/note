@@ -1,28 +1,30 @@
 import {
+  type CallExpression,
+  type ComponentNode,
   ConstantTypes,
-  RootNode,
-  NodeTypes,
-  TemplateChildNode,
-  SimpleExpressionNode,
   ElementTypes,
-  PlainElementNode,
-  ComponentNode,
-  TemplateNode,
-  VNodeCall,
-  ParentNode,
-  JSChildNode,
-  CallExpression,
-  createArrayExpression
+  type JSChildNode,
+  NodeTypes,
+  type ParentNode,
+  type PlainElementNode,
+  type RootNode,
+  type SimpleExpressionNode,
+  type TemplateChildNode,
+  type TemplateNode,
+  type VNodeCall,
+  createArrayExpression,
+  getVNodeBlockHelper,
+  getVNodeHelper,
 } from '../ast'
-import { TransformContext } from '../transform'
-import { PatchFlags, isString, isSymbol, isArray } from '@vue/shared'
-import { getVNodeBlockHelper, getVNodeHelper, isSlotOutlet } from '../utils'
+import type { TransformContext } from '../transform'
+import { PatchFlags, isArray, isString, isSymbol } from '@vue/shared'
+import { isSlotOutlet } from '../utils'
 import {
-  OPEN_BLOCK,
   GUARD_REACTIVE_PROPS,
   NORMALIZE_CLASS,
   NORMALIZE_PROPS,
-  NORMALIZE_STYLE
+  NORMALIZE_STYLE,
+  OPEN_BLOCK,
 } from '../runtimeHelpers'
 
 export function hoistStatic(root: RootNode, context: TransformContext) {
@@ -31,13 +33,13 @@ export function hoistStatic(root: RootNode, context: TransformContext) {
     context,
     // Root node is unfortunately non-hoistable due to potential parent
     // fallthrough attributes.
-    isSingleElementRoot(root, root.children[0])
+    isSingleElementRoot(root, root.children[0]),
   )
 }
 
 export function isSingleElementRoot(
   root: RootNode,
-  child: TemplateChildNode
+  child: TemplateChildNode,
 ): child is PlainElementNode | ComponentNode | TemplateNode {
   const { children } = root
   return (
@@ -50,18 +52,8 @@ export function isSingleElementRoot(
 function walk(
   node: ParentNode,
   context: TransformContext,
-  doNotHoistNode: boolean = false
+  doNotHoistNode: boolean = false,
 ) {
-  // Some transforms, e.g. transformAssetUrls from @vue/compiler-sfc, replaces
-  // static bindings with expressions. These expressions are guaranteed to be
-  // constant so they are still eligible for hoisting, but they are only
-  // available at runtime and therefore cannot be evaluated ahead of time.
-  // This is only a concern for pre-stringification (via transformHoist by
-  // @vue/compiler-dom), but doing it here allows us to perform only one full
-  // walk of the AST and allow `stringifyStatic` to stop walking as soon as its
-  // stringification threshold is met.
-  let canStringify = true
-
   const { children } = node
   const originalCount = children.length
   let hoistedCount = 0
@@ -77,9 +69,6 @@ function walk(
         ? ConstantTypes.NOT_CONSTANT
         : getConstantType(child, context)
       if (constantType > ConstantTypes.NOT_CONSTANT) {
-        if (constantType < ConstantTypes.CAN_STRINGIFY) {
-          canStringify = false
-        }
         if (constantType >= ConstantTypes.CAN_HOIST) {
           ;(child.codegenNode as VNodeCall).patchFlag =
             PatchFlags.HOISTED + (__DEV__ ? ` /* HOISTED */` : ``)
@@ -110,17 +99,6 @@ function walk(
           }
         }
       }
-    } else if (child.type === NodeTypes.TEXT_CALL) {
-      const contentType = getConstantType(child.content, context)
-      if (contentType > 0) {
-        if (contentType < ConstantTypes.CAN_STRINGIFY) {
-          canStringify = false
-        }
-        if (contentType >= ConstantTypes.CAN_HOIST) {
-          child.codegenNode = context.hoist(child.codegenNode)
-          hoistedCount++
-        }
-      }
     }
 
     // walk further
@@ -142,13 +120,13 @@ function walk(
         walk(
           child.branches[i],
           context,
-          child.branches[i].children.length === 1
+          child.branches[i].children.length === 1,
         )
       }
     }
   }
 
-  if (canStringify && hoistedCount && context.transformHoist) {
+  if (hoistedCount && context.transformHoist) {
     context.transformHoist(children, context, node)
   }
 
@@ -162,15 +140,22 @@ function walk(
     node.codegenNode.type === NodeTypes.VNODE_CALL &&
     isArray(node.codegenNode.children)
   ) {
-    node.codegenNode.children = context.hoist(
-      createArrayExpression(node.codegenNode.children)
+    const hoisted = context.hoist(
+      createArrayExpression(node.codegenNode.children),
     )
+    // #6978, #7138, #7114
+    // a hoisted children array inside v-for can caused HMR errors since
+    // it might be mutated when mounting the v-for list
+    if (context.hmr) {
+      hoisted.content = `[...${hoisted.content}]`
+    }
+    node.codegenNode.children = hoisted
   }
 }
 
 export function getConstantType(
   node: TemplateChildNode | SimpleExpressionNode,
-  context: TransformContext
+  context: TransformContext,
 ): ConstantTypes {
   const { constantCache } = context
   switch (node.type) {
@@ -184,6 +169,14 @@ export function getConstantType(
       }
       const codegenNode = node.codegenNode!
       if (codegenNode.type !== NodeTypes.VNODE_CALL) {
+        return ConstantTypes.NOT_CONSTANT
+      }
+      if (
+        codegenNode.isBlock &&
+        node.tag !== 'svg' &&
+        node.tag !== 'foreignObject' &&
+        node.tag !== 'math'
+      ) {
         return ConstantTypes.NOT_CONSTANT
       }
       const flag = getPatchFlag(codegenNode)
@@ -241,9 +234,18 @@ export function getConstantType(
         // static then they don't need to be blocks since there will be no
         // nested updates.
         if (codegenNode.isBlock) {
+          // except set custom directives.
+          for (let i = 0; i < node.props.length; i++) {
+            const p = node.props[i]
+            if (p.type === NodeTypes.DIRECTIVE) {
+              constantCache.set(node, ConstantTypes.NOT_CONSTANT)
+              return ConstantTypes.NOT_CONSTANT
+            }
+          }
+
           context.removeHelper(OPEN_BLOCK)
           context.removeHelper(
-            getVNodeBlockHelper(context.inSSR, codegenNode.isComponent)
+            getVNodeBlockHelper(context.inSSR, codegenNode.isComponent),
           )
           codegenNode.isBlock = false
           context.helper(getVNodeHelper(context.inSSR, codegenNode.isComponent))
@@ -295,12 +297,12 @@ const allowHoistedHelperSet = new Set([
   NORMALIZE_CLASS,
   NORMALIZE_STYLE,
   NORMALIZE_PROPS,
-  GUARD_REACTIVE_PROPS
+  GUARD_REACTIVE_PROPS,
 ])
 
 function getConstantTypeOfHelperCall(
   value: CallExpression,
-  context: TransformContext
+  context: TransformContext,
 ): ConstantTypes {
   if (
     value.type === NodeTypes.JS_CALL_EXPRESSION &&
@@ -320,7 +322,7 @@ function getConstantTypeOfHelperCall(
 
 function getGeneratedPropsConstantType(
   node: PlainElementNode,
-  context: TransformContext
+  context: TransformContext,
 ): ConstantTypes {
   let returnType = ConstantTypes.CAN_STRINGIFY
   const props = getNodeProps(node)
@@ -341,7 +343,7 @@ function getGeneratedPropsConstantType(
       } else if (value.type === NodeTypes.JS_CALL_EXPRESSION) {
         // some helper calls can be hoisted,
         // such as the `normalizeProps` generated by the compiler for pre-normalize class,
-        // in this case we need to respect the ConstantType of the helper's argments
+        // in this case we need to respect the ConstantType of the helper's arguments
         valueType = getConstantTypeOfHelperCall(value, context)
       } else {
         valueType = ConstantTypes.NOT_CONSTANT

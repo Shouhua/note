@@ -1,37 +1,17 @@
-import { TrackOpTypes, TriggerOpTypes } from './operations'
-import { extend, isArray, isIntegerKey, isMap } from '@vue/shared'
-import { EffectScope, recordEffectScope } from './effectScope'
+import { NOOP, extend } from '@vue/shared'
+import type { ComputedRefImpl } from './computed'
 import {
-  createDep,
-  Dep,
-  finalizeDepMarkers,
-  initDepMarkers,
-  newTracked,
-  wasTracked
-} from './dep'
+  DirtyLevels,
+  type TrackOpTypes,
+  type TriggerOpTypes,
+} from './constants'
+import type { Dep } from './dep'
+import { type EffectScope, recordEffectScope } from './effectScope'
 
 // 1. WeakMap不同与Map的地方，前者没有将keys和values放在2个数组中，因为这样会一直引用着keys，values，导致
 // GC不能正常回收。
 // 2. WeakMap不能iterate keys or values，并且key必须是对象，不能是原始类型，包括（Symbol）
 // 3. WeakMap只提供了4个API，has/delete/get/set
-// The main WeakMap that stores {target -> key -> dep} connections.
-// Conceptually, it's easier to think of a dependency as a Dep class
-// which maintains a Set of subscribers, but we simply store them as
-// raw Sets to reduce memory overhead.
-type KeyToDepMap = Map<any, Dep>
-const targetMap = new WeakMap<any, KeyToDepMap>()
-
-// The number of effects currently being tracked recursively.
-let effectTrackDepth = 0
-
-export let trackOpBit = 1
-
-/**
- * The bitwise track markers support at most 30 levels op recursion.
- * This value is chosen to enable modern JS engines to use a SMI on all platforms.
- * When recursion depth is greater, fall back to using a full cleanup.
- */
-const maxMarkerBits = 30
 
 export type EffectScheduler = (...args: any[]) => any
 
@@ -48,83 +28,142 @@ export type DebuggerEventExtraInfo = {
   oldTarget?: Map<any, any> | Set<any>
 }
 
-const effectStack: ReactiveEffect[] = []
-let activeEffect: ReactiveEffect | undefined
-
-export const ITERATE_KEY = Symbol(__DEV__ ? 'iterate' : '')
-export const MAP_KEY_ITERATE_KEY = Symbol(__DEV__ ? 'Map key iterate' : '')
+export let activeEffect: ReactiveEffect | undefined
 
 export class ReactiveEffect<T = any> {
   active = true
   deps: Dep[] = []
 
-  // can be attached after creation
-  computed?: boolean
+  /**
+   * Can be attached after creation
+   * @internal
+   */
+  computed?: ComputedRefImpl<T>
+  /**
+   * @internal
+   */
   allowRecurse?: boolean
+
   onStop?: () => void
   // dev only
   onTrack?: (event: DebuggerEvent) => void
   // dev only
   onTrigger?: (event: DebuggerEvent) => void
 
+  /**
+   * @internal
+   */
+  _dirtyLevel = DirtyLevels.Dirty
+  /**
+   * @internal
+   */
+  _trackId = 0
+  /**
+   * @internal
+   */
+  _runnings = 0
+  /**
+   * @internal
+   */
+  _shouldSchedule = false
+  /**
+   * @internal
+   */
+  _depsLength = 0
+
   constructor(
     public fn: () => T,
-    public scheduler: EffectScheduler | null = null,
-    scope?: EffectScope | null
+    public trigger: () => void,
+    public scheduler?: EffectScheduler,
+    scope?: EffectScope,
   ) {
     recordEffectScope(this, scope)
   }
 
+  public get dirty() {
+    if (
+      this._dirtyLevel === DirtyLevels.MaybeDirty_ComputedSideEffect ||
+      this._dirtyLevel === DirtyLevels.MaybeDirty
+    ) {
+      this._dirtyLevel = DirtyLevels.QueryingDirty
+      pauseTracking()
+      for (let i = 0; i < this._depsLength; i++) {
+        const dep = this.deps[i]
+        if (dep.computed) {
+          triggerComputed(dep.computed)
+          if (this._dirtyLevel >= DirtyLevels.Dirty) {
+            break
+          }
+        }
+      }
+      if (this._dirtyLevel === DirtyLevels.QueryingDirty) {
+        this._dirtyLevel = DirtyLevels.NotDirty
+      }
+      resetTracking()
+    }
+    return this._dirtyLevel >= DirtyLevels.Dirty
+  }
+
+  public set dirty(v) {
+    this._dirtyLevel = v ? DirtyLevels.Dirty : DirtyLevels.NotDirty
+  }
+
   run() {
+    this._dirtyLevel = DirtyLevels.NotDirty
     if (!this.active) {
       return this.fn()
     }
-    if (!effectStack.includes(this)) {
-      try {
-        effectStack.push((activeEffect = this))
-        enableTracking()
-
-        trackOpBit = 1 << ++effectTrackDepth
-
-        if (effectTrackDepth <= maxMarkerBits) {
-          initDepMarkers(this)
-        } else {
-          cleanupEffect(this)
-        }
-        return this.fn()
-      } finally {
-        if (effectTrackDepth <= maxMarkerBits) {
-          finalizeDepMarkers(this)
-        }
-
-        trackOpBit = 1 << --effectTrackDepth
-
-        resetTracking()
-        effectStack.pop()
-        const n = effectStack.length
-        activeEffect = n > 0 ? effectStack[n - 1] : undefined
-      }
+    let lastShouldTrack = shouldTrack
+    let lastEffect = activeEffect
+    try {
+      shouldTrack = true
+      activeEffect = this
+      this._runnings++
+      preCleanupEffect(this)
+      return this.fn()
+    } finally {
+      postCleanupEffect(this)
+      this._runnings--
+      activeEffect = lastEffect
+      shouldTrack = lastShouldTrack
     }
   }
 
   stop() {
     if (this.active) {
-      cleanupEffect(this)
-      if (this.onStop) {
-        this.onStop()
-      }
+      preCleanupEffect(this)
+      postCleanupEffect(this)
+      this.onStop && this.onStop()
       this.active = false
     }
   }
 }
 
-function cleanupEffect(effect: ReactiveEffect) {
-  const { deps } = effect
-  if (deps.length) {
-    for (let i = 0; i < deps.length; i++) {
-      deps[i].delete(effect)
+function triggerComputed(computed: ComputedRefImpl<any>) {
+  return computed.value
+}
+
+function preCleanupEffect(effect: ReactiveEffect) {
+  effect._trackId++
+  effect._depsLength = 0
+}
+
+function postCleanupEffect(effect: ReactiveEffect) {
+  if (effect.deps.length > effect._depsLength) {
+    for (let i = effect._depsLength; i < effect.deps.length; i++) {
+      cleanupDepEffect(effect.deps[i], effect)
     }
-    deps.length = 0 // 清空deps数组
+    effect.deps.length = effect._depsLength
+  }
+}
+
+function cleanupDepEffect(dep: Dep, effect: ReactiveEffect) {
+  const trackId = dep.get(effect)
+  if (trackId !== undefined && effect._trackId !== trackId) {
+    dep.delete(effect)
+    if (dep.size === 0) {
+      dep.cleanup()
+    }
   }
 }
 
@@ -146,15 +185,29 @@ export interface ReactiveEffectRunner<T = any> {
   effect: ReactiveEffect
 }
 
+/**
+ * Registers the given function to track reactive updates.
+ *
+ * The given function will be run once immediately. Every time any reactive
+ * property that's accessed within it gets updated, the function will run again.
+ *
+ * @param fn - The function that will track reactive updates.
+ * @param options - Allows to control the effect's behaviour.
+ * @returns A runner that can be used to control the effect after creation.
+ */
 export function effect<T = any>(
   fn: () => T,
-  options?: ReactiveEffectOptions
+  options?: ReactiveEffectOptions,
 ): ReactiveEffectRunner {
-  if ((fn as ReactiveEffectRunner).effect) {
+  if ((fn as ReactiveEffectRunner).effect instanceof ReactiveEffect) {
     fn = (fn as ReactiveEffectRunner).effect.fn
   }
 
-  const _effect = new ReactiveEffect(fn)
+  const _effect = new ReactiveEffect(fn, NOOP, () => {
+    if (_effect.dirty) {
+      _effect.run()
+    }
+  })
   if (options) {
     extend(_effect, options)
     if (options.scope) recordEffectScope(_effect, options.scope)
@@ -167,192 +220,115 @@ export function effect<T = any>(
   return runner
 }
 
+/**
+ * Stops the effect associated with the given runner.
+ *
+ * @param runner - Association with the effect to stop tracking.
+ */
 export function stop(runner: ReactiveEffectRunner) {
   runner.effect.stop()
 }
 
-let shouldTrack = true
+export let shouldTrack = true
+export let pauseScheduleStack = 0
+
 const trackStack: boolean[] = []
 
+/**
+ * Temporarily pauses tracking.
+ */
 export function pauseTracking() {
   trackStack.push(shouldTrack)
   shouldTrack = false
 }
 
+/**
+ * Re-enables effect tracking (if it was paused).
+ */
 export function enableTracking() {
   trackStack.push(shouldTrack)
   shouldTrack = true
 }
 
+/**
+ * Resets the previous global effect tracking state.
+ */
 export function resetTracking() {
   const last = trackStack.pop()
   shouldTrack = last === undefined ? true : last
 }
 
-// targetMap: target(WeakMap)->key(Any)->effects(Set)
-export function track(target: object, type: TrackOpTypes, key: unknown) {
-  if (!isTracking()) {
-    return
-  }
-  let depsMap = targetMap.get(target)
-  if (!depsMap) {
-    targetMap.set(target, (depsMap = new Map()))
-  }
-  let dep = depsMap.get(key)
-  if (!dep) {
-    depsMap.set(key, (dep = createDep()))
-  }
-
-  const eventInfo = __DEV__
-    ? { effect: activeEffect, target, type, key }
-    : undefined
-
-  trackEffects(dep, eventInfo)
+export function pauseScheduling() {
+  pauseScheduleStack++
 }
 
-export function isTracking() {
-  return shouldTrack && activeEffect !== undefined
+export function resetScheduling() {
+  pauseScheduleStack--
+  while (!pauseScheduleStack && queueEffectSchedulers.length) {
+    queueEffectSchedulers.shift()!()
+  }
 }
 
-export function trackEffects(
+export function trackEffect(
+  effect: ReactiveEffect,
   dep: Dep,
-  debuggerEventExtraInfo?: DebuggerEventExtraInfo
+  debuggerEventExtraInfo?: DebuggerEventExtraInfo,
 ) {
-  let shouldTrack = false
-  if (effectTrackDepth <= maxMarkerBits) {
-    if (!newTracked(dep)) {
-      dep.n |= trackOpBit // set newly tracked
-      shouldTrack = !wasTracked(dep)
-    }
-  } else {
-    // Full cleanup mode.
-    shouldTrack = !dep.has(activeEffect!)
-  }
-
-  if (shouldTrack) {
-    dep.add(activeEffect!)
-    activeEffect!.deps.push(dep)
-    if (__DEV__ && activeEffect!.onTrack) {
-      activeEffect!.onTrack(
-        Object.assign(
-          {
-            effect: activeEffect!
-          },
-          debuggerEventExtraInfo
-        )
-      )
-    }
-  }
-}
-
-export function trigger(
-  target: object,
-  type: TriggerOpTypes,
-  key?: unknown,
-  newValue?: unknown,
-  oldValue?: unknown,
-  oldTarget?: Map<unknown, unknown> | Set<unknown>
-) {
-  // depsMap里面的effect不是全部都会执行，下面的代码会执行筛选
-  const depsMap = targetMap.get(target)
-  if (!depsMap) {
-    // never been tracked
-    return
-  }
-
-  // NOTICE: watch进入schedule, 然后cleanup后再运行不用产生死循环了
-  // 当需要触发其他类型的effect时候使用，比如add或者delete需要触发length收集到的effect
-  let deps: (Dep | undefined)[] = []
-  if (type === TriggerOpTypes.CLEAR) {
-    // collection being cleared
-    // trigger all effects for target
-    deps = [...depsMap.values()]
-  } else if (key === 'length' && isArray(target)) {
-    // 在effect使用数组forEach, map等方法时会触发也会触发length, effect被收集，当数组的push, shift等操作的时候会修改lenght
-    // 下面的代码将前面收集的effect放在触发列表中
-    depsMap.forEach((dep, key) => {
-      if (key === 'length' || key >= (newValue as number)) {
-        deps.push(dep)
+  if (dep.get(effect) !== effect._trackId) {
+    dep.set(effect, effect._trackId)
+    const oldDep = effect.deps[effect._depsLength]
+    if (oldDep !== dep) {
+      if (oldDep) {
+        cleanupDepEffect(oldDep, effect)
       }
-    })
-  } else {
-    // schedule runs for SET | ADD | DELETE
-    if (key !== void 0) {
-      deps.push(depsMap.get(key))
-    }
-
-    // also run for iteration key on ADD | DELETE | Map.SET
-    switch (type) {
-      case TriggerOpTypes.ADD:
-        if (!isArray(target)) {
-          deps.push(depsMap.get(ITERATE_KEY))
-          if (isMap(target)) {
-            deps.push(depsMap.get(MAP_KEY_ITERATE_KEY))
-          }
-        } else if (isIntegerKey(key)) {
-          // 以下都会触发length，所以额外需要添加lenght的依赖effects
-          // new index added to array -> length changes
-          deps.push(depsMap.get('length'))
-        }
-        break
-      case TriggerOpTypes.DELETE:
-        if (!isArray(target)) {
-          deps.push(depsMap.get(ITERATE_KEY))
-          if (isMap(target)) {
-            deps.push(depsMap.get(MAP_KEY_ITERATE_KEY))
-          }
-        }
-        break
-      case TriggerOpTypes.SET:
-        if (isMap(target)) {
-          deps.push(depsMap.get(ITERATE_KEY))
-        }
-        break
-    }
-  }
-
-  const eventInfo = __DEV__
-    ? { target, type, key, newValue, oldValue, oldTarget }
-    : undefined
-
-  if (deps.length === 1) {
-    if (deps[0]) {
-      if (__DEV__) {
-        triggerEffects(deps[0], eventInfo)
-      } else {
-        triggerEffects(deps[0])
-      }
-    }
-  } else {
-    const effects: ReactiveEffect[] = []
-    for (const dep of deps) {
-      if (dep) {
-        effects.push(...dep)
-      }
+      effect.deps[effect._depsLength++] = dep
+    } else {
+      effect._depsLength++
     }
     if (__DEV__) {
-      triggerEffects(createDep(effects), eventInfo)
-    } else {
-      triggerEffects(createDep(effects))
+      // eslint-disable-next-line no-restricted-syntax
+      effect.onTrack?.(extend({ effect }, debuggerEventExtraInfo!))
     }
   }
 }
 
+const queueEffectSchedulers: EffectScheduler[] = []
+
 export function triggerEffects(
-  dep: Dep | ReactiveEffect[],
-  debuggerEventExtraInfo?: DebuggerEventExtraInfo
+  dep: Dep,
+  dirtyLevel: DirtyLevels,
+  debuggerEventExtraInfo?: DebuggerEventExtraInfo,
 ) {
-  // spread into array for stabilization
-  for (const effect of isArray(dep) ? dep : [...dep]) {
-    if (effect !== activeEffect || effect.allowRecurse) {
-      if (__DEV__ && effect.onTrigger) {
-        effect.onTrigger(extend({ effect }, debuggerEventExtraInfo))
+  pauseScheduling()
+  for (const effect of dep.keys()) {
+    // dep.get(effect) is very expensive, we need to calculate it lazily and reuse the result
+    let tracking: boolean | undefined
+    if (
+      effect._dirtyLevel < dirtyLevel &&
+      (tracking ??= dep.get(effect) === effect._trackId)
+    ) {
+      effect._shouldSchedule ||= effect._dirtyLevel === DirtyLevels.NotDirty
+      effect._dirtyLevel = dirtyLevel
+    }
+    if (
+      effect._shouldSchedule &&
+      (tracking ??= dep.get(effect) === effect._trackId)
+    ) {
+      if (__DEV__) {
+        // eslint-disable-next-line no-restricted-syntax
+        effect.onTrigger?.(extend({ effect }, debuggerEventExtraInfo))
       }
-      if (effect.scheduler) {
-        effect.scheduler()
-      } else {
-        effect.run()
+      effect.trigger()
+      if (
+        (!effect._runnings || effect.allowRecurse) &&
+        effect._dirtyLevel !== DirtyLevels.MaybeDirty_ComputedSideEffect
+      ) {
+        effect._shouldSchedule = false
+        if (effect.scheduler) {
+          queueEffectSchedulers.push(effect.scheduler)
+        }
       }
     }
   }
+  resetScheduling()
 }
