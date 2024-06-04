@@ -55,6 +55,18 @@ let numRegex = /\d(?=(\d{3})+(?!\d))/g //递归每一个字符，查找后面完
 // $' 匹配的右边
 num.replace(numRegex, '$&,')
 
+function formatNumber(num) {
+  let str = num.toString()
+  let result = ''
+
+  while(str.length > 3) {
+    result = ','+str.slice(-3)+result
+    str = str.slice(0, -3)
+  }
+
+  return str+result
+}
+
 
 // 我我....我..我.要...要...要要学学..学.编..编程.程..程
 // 我要学编程

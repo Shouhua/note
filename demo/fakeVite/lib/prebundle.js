@@ -326,7 +326,7 @@ async function optimizeDeps(config) {
   const options = config.optimizeDeps
 	const cacheDir = path.join(root, 'node_modules/.vite_opt_cache')	
 	const hashPath = path.join(cacheDir, 'hash')
-	const depHash = getDepHash(root)
+	const depHash = getDepHash(root) // package.json中dependencies的hash值，判断是否有更新
 
 	if (!force) {
     let prevhash

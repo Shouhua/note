@@ -87,14 +87,14 @@ function createServer(
   }
 
   ;[ 
-    sourceMapPlugin,
-    rewritePlugin,
-    htmlPlugin,
-    clientPlugin,
-    hmrPlugin,
-    modulePlugin,
-    vuePlugin,
-    cssPlugin,
+    sourceMapPlugin, // 最后检查返回是否是ctx.map, 如果有内容，返回sourcempa格式内容
+    rewritePlugin, // 最后检查返回的js文件，收集依赖，建立依赖关系，rewrite导入的文件的路径等
+    htmlPlugin, // redirect根目录到index.html, 返回index.html
+    clientPlugin, // 返回client.js文件，修改文件里面的socket请求端口等内容，因为这时候websocket server已经就绪
+    hmrPlugin, // websocket server; chokidar watch开启, 并且在change中寻找依赖关系，发送ws message
+    modulePlugin, // 处理node_modules模块请求 /@module/
+    vuePlugin, // 处理.vue文件请求，分两步走，首先给出包含请求3部分的js内容，然后在分别给出分开内容解析
+    cssPlugin, // 处理各种css转化等
     jsonPlugin,
     assetsPlugin,
     staticPlugin

@@ -97,7 +97,7 @@ const cssPlugin = ({ app, root }) => {
 		await next()
 		if(ctx.body && isCSSRequest(ctx.path)) {
 			const id = hash_sum(ctx.path)
-			if(ctx.query.import != null) {
+			if(ctx.query.import != null) {  // 自己写的css文件
 				const res = await processCss(root, ctx)
 				ctx.type = 'js'
 				ctx.body = codegenCss(id, res.css, res.modules)

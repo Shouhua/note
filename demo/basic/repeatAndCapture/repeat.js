@@ -29,5 +29,13 @@ let repeat = function(fn, count, interval) {
     // }
   }
 }
+// 使用Promise解决
+let repeatP = function(str, count, interval)
+{
+  let id;
+  new Promise((resolve) => {
+    id = setInterval(()=> {console.log(str); if(--count === 0) resolve()}, interval*1000)
+  }).then(()=>{if(id) clearInterval(id)})
+}
 const repeatFn = repeat(console.log, 4, 1)
 repeatFn('hello, world!')

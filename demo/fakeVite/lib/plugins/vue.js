@@ -21,7 +21,7 @@ function vuePlugin({ app, root, resolver }) {
     const query = ctx.query
     let code = `import {updateStyle} from '${HMR_PATH}'`
     let timestamp = ctx.query.t ? `&t=${ctx.query.t}` : ''
-    if(!query.type) {
+    if(!query.type) { // 原始请求, 比如/App.vue, 需要根据descriptor生成App.js文件
       let map
       if(descriptor.script) {
         code += rewrite(descriptor.script.content, true, resolver, ctx.path)

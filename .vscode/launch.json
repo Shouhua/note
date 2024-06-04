@@ -7,6 +7,15 @@
     {
       "type": "node",
       "request": "launch",
+      "name": "onion",
+      "program": "${workspaceFolder}/demo/koa/onion.js",
+      "skipFiles": [
+        "<node_internals>/**"
+      ]
+    },
+    {
+      "type": "node",
+      "request": "launch",
       "name": "findComponent", 
       "program": "${workspaceFolder}/node_modules/jest/bin/jest",
       "skipFiles": [

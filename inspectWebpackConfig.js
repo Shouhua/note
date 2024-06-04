@@ -1,3 +1,4 @@
+// 使用vue-cli-service inspect > inspectWebpackConfig.js
 {
   mode: 'development',
   context: '/Users/pengshouhua/demo/hello-world',

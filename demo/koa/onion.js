@@ -35,9 +35,12 @@ async function fun3() {
 }
 
 function compose(middleware, oldNext) {
-  return async function() {
-    await middleware(oldNext);
+  return function() {
+    return Promise.resolve(middleware(oldNext))
   }
+  // return async function() {
+  //   await middleware(oldNext);
+  // }
 }
 
 const middlewares = [fun1, fun2, fun3];

@@ -349,6 +349,7 @@ export const createHotContext = (ownerPath) => {
   ctxToListenersMap.set(ownerPath, newListeners)
 
   function acceptDeps(deps, callback) {
+    // ownerPath -> 多个依赖项目 id: calback(depModule)
     const mod = hotModulesMap.get(ownerPath) || {
       id: ownerPath,
       callbacks: []

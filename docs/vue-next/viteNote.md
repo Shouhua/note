@@ -1,3 +1,17 @@
+## 2024-06-02
+### Webpack VS Vite
+JS生态圈模块化演进趋势，web开发开始统一使用ESM, 可以放弃很多以前的包袱，比如cjs等，浏览器原生支持module。 Vite就是这种趋势的产物之一。
+
+Webpack历史悠久，需要承担以前包袱，兼容各种格式，但是生态丰富稳定
+Vite直接使用ESM, 无需做兼容性处理。代码单一，好理解
+prebundling提前分析依赖包，将他们做成映射，加快开发时请求调用: 
+1. 生成dependencies的hash, 判断是否需要重新生成映射
+2. 有哪些包(qualifiedDependencies)会被做成cache
+	- cjs， 转化成 esm
+	- esm有很多自己包内本地依赖(这些会在请求包时发送跟多请求)
+	- esm包依赖外部包等
+esm会将所有依赖打包成一个直接使用的包, 具体使用rollup的打包机制。
+
 ### pre-bundling
 1. 可以看见在以前的版本，特别是没有prebuild版本时候，引入import { debounce } from 'lodash-es'会引入很多请求数据，因为lodash-es主文件里面export很多东西, 引入prebuild之后，使用rollup打包lodash-es所有到一个文件，并且缓冲在.vite中。
 2. 另外，由于vite使用的是ESM环境，如果引用的是commonjs的包，可以在prebuild环节通过rollup转化成为esm格式
@@ -7,7 +21,7 @@
 3. publicPath, filePath, 比如hmr需要用到publicPath, cache需要用到filePath，还有2者之间的转化
 4. hmr使用的HMR boundary
 5. 加载外部包时的**跳转**，比如lodash-es, 以及她所依赖的加载，直接导致需要pre-bundling
-6. 调整代码结构，middleware->plugin
+6. 调整代码结构，middleware->plugin, plugin里面增加了注册函数和middleware函数
 7. 添加配置文件, 将相关的上下文变量如何添加到各个plugin
 8. 如何处理常规打包工具比如webpack中各种loader，比如，file-loader对assets文件的处理, 自己实现了其中的处理，包括css，assets，json等
 9. config和option命名规范，在传递配置时候叫做options，在配置server的时候叫做config, 用于prebundle时候又叫做options
@@ -49,10 +63,17 @@ build时候，使用
 https://unix.stackexchange.com/questions/458521/bash-script-commands-seperated-by-space
 https://stackoverflow.com/questions/10938483/why-cant-i-specify-an-environment-variable-and-echo-it-in-the-same-command-line/10939280#10939280
 ```shell
+# file:///home/shouhua/Downloads/bash.html#Simple-Command-Expansion
+# 当然为空，当$debug expansion的时候，debug=123还没有生效
 debug=123 echo $debug # empty
 debug=123; echo $debug # 123
-debug=123 && echo $debug # 123
-debug=123 eval echo $debug # 123
+# file:///home/shouhua/Downloads/bash.html#Simple-Commands
+# && 属于 control operate, 所以 && 前后属于两条命令，前面在全局新建了变量，后面命令调用，合理
+debug=123 && echo $debug # 123 # && 是
+# eval也是一样的流程，只不过eval后面的组成执行命令，在执行的时候再执行一遍各种expansion
+(set -x; a=debug; debug=123 eval echo \$$a) # $$表示当前pid
+debug=123 eval echo $debug # empty
+debug=123 bash -c 'echo $debug'
 
 # run.sh
 #!/usr/bin/env bash
@@ -67,6 +88,8 @@ debug=123 && ./run.sh # empty
 总结就是：
 1. ```debug=123 echo $debug``` 在echo执行的时候就已经argument expand by the shell，但是这时debug的assignment处于同一个expand时间，debug还没有形成变量，接下俩条所以可以，```;```表示语句的结束，变量已经生成；```&&```表示前一条语句必须执行结果为true，后面才接着执行
 2. 如果换成脚本，个人理解是第一条相当于本地的变量生成，第二三条**极有可能**是由于script使用的环境child shell，但是环境变量没有debug export，所以没有。(```debug=123;echo $$;./run.sh```)
+**NOTICE: file:///home/shouhua/Downloads/bash.html#Command-Execution-Environment
+文档明确说了variabl assignment是加入到执行环境的，只不过除了builtin和function外，其他都在单独的执行进程中执行**
 3. 可以使用```env -i ./run.sh```来清除继承自parent shell的env
 
 ## vite 2.x

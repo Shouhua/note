@@ -1,7 +1,8 @@
 // status: pending, fulfilled, rejected
 // value: promise value
 const promise = new Promise((resolve, reject) => {
-
+	// async opterate, eg, fs async, http rquest etc
+	// resolve(sth) or reject(sth)
 })
 
 promise

@@ -42,7 +42,7 @@ function rewrite(source, asSFCScript, resolver, importer) {
         } else { // handle alias @
           publicPath = resolver.normalizePublicPath(node.source.value)
         }
-        publicPath += publicPath.includes('?') ? '&import' : '?import'
+        publicPath += publicPath.includes('?') ? '&import' : '?import' // import表示是自己写的文件，不是node_modules依赖
         debug(publicPath)
         s.overwrite(node.source.start, node.source.end, `"${publicPath}"`)
       }
@@ -70,6 +70,8 @@ import.meta.hot = createHotContext(${JSON.stringify(importer)})
 
 function collectDeps(node, importer, s) {
   const registerDep = (e) => {
+    // hmrAcceptanceMap:  importer->deps // importer依赖哪些deps
+    // importerMap: dep -> importers 这个dep被那些importers依赖
     const deps = ensureMapEntry(hmrAcceptanceMap, importer)
     // TODO rewrite importee public path name
     const depPublicPath = path.resolve(path.dirname(importer), e.value)

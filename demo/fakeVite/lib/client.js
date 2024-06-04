@@ -201,6 +201,7 @@ export function createHotContext(id) {
     mod.callbacks = []
   }
 
+  // typeof(target) === 'function'
   const isFunc = (target) => Object.prototype.toString.call(target) === '[object Function]'
 
   const hot = {
@@ -212,6 +213,7 @@ export function createHotContext(id) {
       }
     },
     acceptDeps(deps, callback) {
+      // file id -> callbcak { deps, callback }
       const mod = hotModulesMap.get(id) || {
         id,
         callbacks: []

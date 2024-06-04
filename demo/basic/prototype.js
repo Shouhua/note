@@ -20,8 +20,9 @@ function Son() {
 }
 
 // Son.prototype = new Father()
+原型继承
 Son.prototype = Object.create(Father.prototype)
-Son.prototype.constructor = Son
+Son.prototype.constructor = Son // 修改原型的constructor为Son
 Son.prototype.getSonValue = function() {
   return this.sonProperty
 }
