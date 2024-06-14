@@ -1,3 +1,20 @@
+/*
+// 都完成promiseObj1才resolved，有一个reject就返回地一个reason
+const promiseObj1 = Promise.all() 
+// 只要有一个resolved就返回，全部reject才返回reject
+const promiseObj2 = Promise.any() 
+
+// 当所有的promise完成或者reject后才返回，可以在then里面查看所有promise的状态和值
+const promiseObj3 = Promise.allSettled([]) 
+promiseObj3.then((results: [{type, value, reason}]) => {})
+// 多个Promise竞争，第一个不管resolve还是reject都返回，可以用于请求超时场景
+const promiseObj = Promise.race([
+	fetch('https://abc.com'),
+	new Promise((_, reject) => {
+		setTimeout(() => { reject(new Error('5s超时了'))}, 5000)
+	})
+])
+*/
 // version 1
 /*
 export class FakePromise {

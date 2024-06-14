@@ -1,12 +1,25 @@
+<!-- 
+BFC(Block Formatting Context)
+就是用使用一些css会形成一个block空间，有如下作用
+1. float元素会占用空间，但是之后的空间会流出来，比如div，自己的宽高会占用，但是其他空间就不是display：block行为了;另外float会将父的高度为0
+所以可以使用BFC，在父结构上面添加比如：overflow：hidden，重新得到高度
+2. div(父元素)内部的子元素margin跟父元素的margin值重叠，取最大值，这个时候可以使用类似overflow: hidden，margin就会是相加的结果
+3. ...
+-->
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
 	<meta charset="UTF-8">
 	<meta http-equiv="X-UA-Compatible" content="IE=edge">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<title>Document</title>
 	<style>
-		.left {
+		/* html, body {
+			margin: 0;
+			padding: 0;
+		} */
+		/* .left {
 			float: left;
 			width: 300px;
 			background-color: lightblue;
@@ -18,15 +31,31 @@
 		}
 		.middle {
 			background-color: lightcoral;
-		}
+		} */
+		 /* .float-box {
+  float: left;
+  width: 100px;
+  height: 100px;
+  background-color: red;
+} */
+ .box1, .box2 {
+  margin: 20px;
+}
 	</style>
 </head>
+
 <body>
-<div class="container">
-	<!-- float布局的时候需要调整dom元素right和middle -->
-	<div class="left">left</div>
+	<div class="container">
+		<!-- float布局的时候需要调整dom元素right和middle -->
+		<!-- <div class="left">left</div>
 	<div class="right">right</div>
-	<div class="middle">middle</div>
-</div>	
+	<div class="middle">middle</div> -->
+		<!-- <div class="container">
+			<div class="float-box">Float</div>
+		</div> -->
+		<div class="box1">Box 1</div>
+<div class="box2">Box 2</div>
+	</div>
 </body>
+
 </html>

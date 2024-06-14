@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Document</title>
+	<style>
+		html, body {
+			height: 100%;
+			margin: 0;
+			padding: 0;
+		}
+		.container {
+			display: flex;
+			height: 100%;
+		}
+		.nav {
+			transition: width .2s easy;
+			background-color: lightblue;
+		}
+		.content {
+			flex: 1;
+		}
+			@media (min-width: 765px) {
+				.nav{
+				width: 260px;
+				}
+			}
+			@media (max-width: 765px) {
+				.nav{
+				width: 0;	
+				}
+			}
+	</style>
+</head>
+<body>
+	<div class="container">
+		<div class="nav"></div>
+		<div class="content"></div>
+	</div>
+</body>
+</html>

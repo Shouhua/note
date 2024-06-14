@@ -7,6 +7,13 @@ class Node {
   }
 }
 
+/**
+ * LRU(Least Recent Used)
+ * 1. 模拟使用链表方式，不断在头部添加key-value元素，当达到limit后，最后面的pop
+ * 2. 使用cache，快速read
+ * 3. NOTICE：读的时候需要注意，首先删除这个node，然后添加到头部，因为他现在是最新的了
+ * limit，size，head，tail，cache
+ */
 class LRU {
   //set default limit of 10 if limit is not passed.
   constructor(limit = 10) {

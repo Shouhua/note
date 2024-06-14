@@ -1,0 +1,16 @@
+https://developer.mozilla.org/zh-CN/docs/Web/CSS/position
+https://developer.mozilla.org/zh-CN/docs/Web/CSS/float
+
+postion: [static | absolute | relative | fixed | sticky]
+static: 正常文档流，使用top，bottom，left，right无效
+relative：元素先放置在未添加定位时的位置，再在不改变文档流的前提下调整位置(会留下空白)
+absolute: 元素会被移出正常文档流，并不为元素预留空间，元素位置想对于最近的非static定位祖先元素
+fixed：元素移出文档流，并且不留空间，想对于viewport定位元素
+sticky：元素根据正常文档流定位，然后相对于最近滚动祖先(overflow:hidden|scroll|auto|overflow)和containing block定位;
+	元素在跨越特定阈值(top,bottom,left,right)前是相对定位，之后是固定定位，比如用于电话本首字母固定
+	position: sticky;
+  top: -1px;
+
+float: [left | right | inline-start | inline-end]
+元素应沿其容器的左侧或右侧放置，允许文本和内联元素环绕它
+1. 它会占用空间，感觉有点类似inline-block的感觉

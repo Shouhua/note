@@ -5,6 +5,26 @@
   "version": "0.2.0",
   "configurations": [
     {
+      "runtimeExecutable": "/home/michael/.nvm/versions/node/v20.14.0/bin/node",
+      "type": "node",
+      "request": "launch",
+      "name": "LRU",
+      "program": "${workspaceFolder}/demo/basic/fakeLRUCache1.js",
+      "skipFiles": [
+        "<node_internals>/**"
+      ]
+    },
+    {
+      "runtimeExecutable": "/home/michael/.nvm/versions/node/v20.14.0/bin/node",
+      "type": "node",
+      "request": "launch",
+      "name": "types",
+      "program": "${workspaceFolder}/demo/basic/types.js",
+      "skipFiles": [
+        "<node_internals>/**"
+      ]
+    },
+    {
       "type": "node",
       "request": "launch",
       "name": "onion",

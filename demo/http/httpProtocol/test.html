@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Document</title>
+	<style>
+		img {
+			width: 300px;
+			height: 500px;
+			display: inline-block;
+			border: 2px solid lightcoral;
+		}
+	</style>
+</head>
+
+<body>
+	<div>
+	<img src="" alt="img1" data-src="/img"><img src="" alt="img2" data-src="/img"><img src="" alt="img3"
+		data-src="/img"><img src="" alt="img4" data-src="/img"><img src="" alt="img5" data-src="/img"><img src=""
+		alt="img6" data-src="/img"><img src="" alt="img7" data-src="/img"><img src="" alt="img8" data-src="/img"><img
+		src="" alt="img9" data-src="/img"><img src="" alt="img10" data-src="/img"><img src="" alt="img11"
+		data-src="/img"><img src="" alt="img12" data-src="/img"><img src="" alt="img13" data-src="/img"><img src=""
+		alt="img14" data-src="/img"><img src="" alt="img15" data-src="/img"><img src="" alt="img16" data-src="/img"><img
+		src="" alt="img17" data-src="/img"><img src="" alt="img18" data-src="/img"><img src="" alt="img19"
+		data-src="/img"><img src="" alt="img20" data-src="/img"><img src="" alt="img21" data-src="/img"><img src=""
+		alt="img22" data-src="/img"><img src="" alt="img23" data-src="/img"><img src="" alt="img24" data-src="/img"><img
+		src="" alt="img25" data-src="/img"><img src="" alt="img26" data-src="/img"><img src="" alt="img27"
+		data-src="/img"><img src="" alt="img28" data-src="/img"><img src="" alt="img29" data-src="/img"><img src=""
+		alt="img30" data-src="/img">
+	</div>
+<script>
+	const imgs = document.querySelectorAll('img')
+	const io = new IntersectionObserver((entries) => {
+		entries.forEach(entry => {
+			if(entry.isIntersecting) {
+				const img = entry.target
+				img['src'] = img.getAttribute('data-src')
+				img.setAttribute('data-loaded', true)
+			}
+		})
+	})
+	imgs.forEach(img => io.observe(img))
+	// function calc() {
+	// 	const imgs = document.querySelectorAll('img')
+	// 	imgs.forEach(img => {
+	// 		if(img.offsetTop <= window.innerHeight + window.scrollY) {
+	// 			const isLoaded = img.getAttribute('data-loaded')
+	// 			if(!isLoaded) {
+	// 				img['src'] = img.getAttribute('data-src')
+	// 				img.setAttribute('data-loaded', true)
+	// 			}
+	// 		}
+	// 	})
+	// }
+	// window.onload = () => {
+	// 	calc()
+	// }
+	// // window.innerHeight + window.scrollY
+	// window.addEventListener('scroll', () => {
+	// 	calc()
+	// })		
+</script>
+</body>
+</html>

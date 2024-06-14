@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Document</title>
+	<style>
+		.green {
+			color: green
+		}
+
+		.red {
+			color: red
+		}
+	</style>
+</head>
+
+<body>
+	<div id="app"></div>
+	<script type="module">
+		const root = document.getElementById('app')
+		const targetMap = new WeakMap()
+		let currentEffect = null
+		function reactive(obj) {
+			// target -> key -> effect
+			return new Proxy(obj, {
+				get(target, k, receiver) {
+					if (!currentEffect) return target[k]
+					let tMap = targetMap.get(target)
+					if (!tMap)
+						targetMap.set(target, (tMap = new Map()))
+					let depsMap = tMap.get(k)
+					if (!depsMap) {
+						tMap.set(k, (depsMap = new Set()))
+					}
+
+					depsMap.add(currentEffect)
+					console.log(`proxy get: ${k}`)
+					return Reflect.get(target, k, receiver)
+				},
+				set(target, k, val, receiver) {
+					console.log(`proxy set: ${k}: ${val}, old: ${obj[k]}`)
+					const res = Reflect.set(target, k, val, receiver)
+					const tMap = targetMap.get(target)
+					if (!tMap) return res
+					const effects = tMap.get(k)
+					effects.forEach(effect => {
+						effect()
+					})
+					return res
+				}
+			})
+		}
+
+		function effect(fn) {
+			currentEffect = fn
+			fn()
+			currentEffect = null
+		}
+
+		// const p = reactive({
+		// 	'foo': 1
+		// })
+
+		// effect(() => {
+		// 	console.log(p.foo)
+		// })
+		// console.log(p.foo)
+		// setTimeout(() => {
+		// 	p.foo = 123
+		// }, 1000)
+
+		function getObjectType(obj) {
+			const t = Object.prototype.toString.call(obj).slice(8, -1)
+			return t.toLowerCase()
+		}
+		// vnode Object
+		// tag String, props Object, Children Array
+		function h(tag, props, children) {
+			return {
+				tag,
+				props,
+				children
+			}
+		}
+		function mount(vnode, root) {
+			const tag = vnode.tag
+			if (getObjectType(tag) === 'string') {
+				const ele = document.createElement(tag)
+				// props
+				const props = vnode.props
+				for (let k in props) {
+					if (k === 'style') {
+						let style = ''
+						for (let j in props[k]) {
+							style += `${j}:${props[k][j]};`
+						}
+						style += ''
+						ele.setAttribute('style', style)
+					} else {
+						ele.setAttribute(k, props[k])
+					}
+				}
+				// children
+				const children = vnode.children
+				if (children && Array.isArray(children)) {
+					children.forEach(child => mount(child, ele))
+				} else { // 假设是string
+					ele.textContent = children
+				}
+				root.appendChild(ele)
+				vnode.element = ele
+			} else {
+				// TODO
+			}
+		}
+
+		function patch(oldV, newV) {
+			if (!newV) {
+				mount(oldV, root)
+				return
+			}
+			// same vnode check
+			if (oldV.tag === newV.tag) {
+				const el = newV.element = oldV.element
+				// props
+				const newProps = newV.props
+				const oldProps = oldV.props
+				for (let k in newProps) {
+					const newVal = newProps[k]
+					const oldVal = oldProps[k]
+					if (newVal !== oldVal) {
+						el.setAttribute(k, newVal)
+					}
+				}
+				for (let k in oldProps) {
+					if (!(k in newProps)) {
+						el.removeAttribute(k)
+					}
+				}
+				// children
+				const oldChild = oldV.children
+				const newChild = newV.children
+				if (oldChild !== newChild) {
+					el.textContent = newChild
+				}
+			} else {
+				// unmount old
+				// mount new
+			}
+		}
+
+		let ctx = reactive({ greet: 'hello, world' })
+		// const ctx = {greet: 'hello, world'}
+
+		let vnode, vnode1
+
+		let count = 0
+		effect(() => {
+			if (count === 0) {
+				vnode = h('div', {
+					class: 'green'
+				}, ctx.greet)
+			} else {
+				vnode1 = h('div', {
+					class: 'red'
+				}, ctx.greet)
+			}
+			count++
+			patch(vnode, vnode1)
+		})
+		setTimeout(() => ctx.greet = 'hello, world again!', 1000)
+	</script>
+</body>
+
+</html>
