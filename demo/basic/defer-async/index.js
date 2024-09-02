@@ -15,7 +15,7 @@
  * 不同的是，async异步下载完成后立即执行，所以不能控制脚本的执行顺序，
  * 
  * 1. 使用js动态添加的script，默认使用async的方式加载
- * 2. defer是在渲染完成后，DOMContentLoaded之前去执行
+ * 2. defer是在渲染完成后，DOMContentLoaded之前去执行, 按照出现的先后顺序执行
  * 3. script标签添加type=“module”默认使用类似defer的方式去加载脚本，但是也可以设置为async
  */
 console.log("download script");

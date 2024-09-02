@@ -17,3 +17,24 @@ Function.prototype.bind = function() {
 }
 
 console.log(Array.prototype.slice.bind([1, 3, 2])(0))
+
+Function.prototype.call = function(context, ...args) {
+  const fn = this
+  context = context || window
+  context._tempFn = fn
+  const result = context[_tempFn](...args)
+  delete context._temp
+  return result 
+}
+
+function getUrlParams(url,key) { // https://www.example.org?name=james&age=39
+  let queryMap = new Map()
+  const queryStr = url.split('?')[1]
+  if(queryStr === undefined) return ''
+  const queryArr = queryStr.split('&')
+  for(let i = 0; i < queryArr.length; i++) {
+    const [key, value] = queryArr[i].split('=')
+    queryMap.set(key, value)
+  }
+  return queryMap.get(key)
+}

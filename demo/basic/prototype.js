@@ -11,6 +11,7 @@ function Father() {
 }
 
 Father.prototype.getFatherValue = function() {
+  console.log('Father getFatherValue: ', this.property)
   return this.property
 }
 
@@ -20,7 +21,7 @@ function Son() {
 }
 
 // Son.prototype = new Father()
-原型继承
+// 原型继承
 Son.prototype = Object.create(Father.prototype)
 Son.prototype.constructor = Son // 修改原型的constructor为Son
 Son.prototype.getSonValue = function() {
@@ -28,7 +29,7 @@ Son.prototype.getSonValue = function() {
 }
 
 var instance = new Son()
-console.log(instance.getFatherValue())
+console.log('son getFatherValue: ', instance.getFatherValue())
 
 // 2中测试实例与原型链之间关系的方式，instanceof, isPrototypeOf
 // instanceof

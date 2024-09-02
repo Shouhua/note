@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Document</title>
+</head>
+<body>
+	<div id="app"></div>	
+	<script>
+		let targetDeps = new WeakMap() // target->key->effects
+		function reactive(obj) {
+			return new Proxy(obj, {
+				get: function(target, key, receiver) {
+					const result = Reflect.get(target, key, receiver)
+					if(!activeEffect) return result
+					let deps = targetDeps.get(obj)
+					if(!deps) {
+						targetDeps.set(obj, (deps = new Map()))
+					}
+					let effects = deps.get(key)
+					if(!effects)
+						deps.set(key, (effects = new Set()))
+					effects.add(activeEffect)
+					return result
+				},
+				set: function(target, key, newVal, receiver) {
+					const result = 	Reflect.set(target, key, newVal, receiver)
+					let depsMap = targetDeps.get(target)
+					if(!depsMap) return
+					let effects = depsMap.get(key)
+					let runningEffects = new Set(effects)
+					runningEffects && runningEffects.forEach(effect => {
+						effect()	
+					});
+					return result
+				}
+			})
+		}
+
+		let activeEffect
+		function effect(fn) {
+			const effectWrap = () => {
+				activeEffect = fn
+				fn()
+				activeEffect = null
+			}
+			effectWrap.deps = []
+			effectWrap()
+		}
+
+		let p = reactive({
+			name: 'James'
+		})
+
+		effect(() => {
+			console.log(`name: ${p.name}`)
+		})
+
+		setTimeout(() => {
+			p.name = 'Kobe'	
+		}, 1000);
+
+		const clickHanlder = () => console.log('clicked')
+
+		const vnode = {
+			tag: 'div',
+			props: {
+				onClick: clickHanlder
+			},
+			children: 'hello'
+		}
+
+		function render(vnode, container) {
+			let el
+			if(typeof vnode.tag === 'string') {
+				el = document.createElement(vnode.tag)
+				// props
+				for(const key in vnode.props) {
+					if(/^on/.test(key)) { // click
+						el.addEventListener(key.slice(2).toLowerCase(), vnode.props[key])
+					}
+				}
+				// children
+				if(typeof vnode.children === 'string') {
+					el.appendChild(document.createTextNode(vnode.children))
+				} else if(Array.isArray(vnode.children)) {
+					vnode.children.forEach(child => {
+						render(child, el)
+					})
+				}
+			}
+			container.appendChild(el)
+		}
+
+		render(vnode, document.getElementById('app'))
+		const Comp = { // SFC single file component (.vue file)
+			name: 'CompName',
+			data() {
+				return {
+					firstName: 'Lily',
+					lastName: 'James'
+				}
+			},
+			components: {},
+			methods: {},
+			computed:{
+				fullName() {
+					return `${this.firstName} ${this.lastName}`
+				}
+			},
+			props:{},
+			inject: [],
+			provide() { return {}},
+			template: ``,
+			render() {
+				return {
+					tag: 'div',
+				}
+			},
+			watch: {
+				firstName: function(newVal, oldVal) {
+					this.fullName = `${newVal} ${this.lastName}`
+				}
+			},
+			directives: {
+				focus: {
+					bind(el, binding, vnode) {}
+				}
+			},
+			mixins: {},
+			// 实例初始化后，事件绑定前
+			beforeCreated(){},
+			// 在绑定元素的attribute或者事件之后，此时$el不可用
+			created(){},
+			// 在元素插入container之前
+			beforeMount(){},
+			activated() {},
+			deactivated() {},
+			// 所有自组件渲染完，然后插入后
+			mounted() {},
+			// 更新前调用
+			beforeUpdate(){},
+			updated(){},
+			beforeDestroy(){},
+			destroyed(){}
+		}
+		const Comp1 = {
+			setup(props, {emit, attrs, slots, expose}) { // $emit, $attrs, $slots
+				// expose({count: publicCount, incrementHandle}) // 父组件通过模版引用时可以用到的
+				// beforeUnmount, unmounted
+				// 可以返回对象，也可以返回函数，返回函数就是渲染函数
+				return 
+			},
+		}
+	</script>
+</body>
+</html>

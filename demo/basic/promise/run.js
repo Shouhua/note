@@ -1,4 +1,7 @@
-setTimeout(() => console.log('set timeout1'), 0);
+setTimeout(() => {
+    console.log('set timeout1')
+    process.nextTick(() => console.log('next tick inside timmer handler'));
+}, 0);
 Promise.resolve().then(() => console.log('promise1 resolved'));
 Promise.resolve().then(() => {
     console.log('promise2 resolved');
@@ -12,5 +15,4 @@ process.nextTick(() => console.log('next tick2'));
 Promise.resolve().then(() => console.log('promise4 resolved'));
 setTimeout(() => {
     console.log('set timeout2');
-    process.nextTick(() => console.log('next tick inside timmer handler'));
 }, 0);

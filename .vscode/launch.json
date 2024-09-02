@@ -5,6 +5,39 @@
   "version": "0.2.0",
   "configurations": [
     {
+      // "runtimeExecutable": "/home/michael/.nvm/versions/node/v20.14.0/bin/node",
+      "type": "node",
+      "request": "launch",
+      "name": "zigzag",
+      "program": "${workspaceFolder}/demo/binary-tree/zigzag.js",
+      "skipFiles": [
+        "<node_internals>/**"
+      ]
+    },
+    {
+      // "runtimeExecutable": "/home/michael/.nvm/versions/node/v20.14.0/bin/node",
+      "type": "node",
+      "request": "launch",
+      "name": "fetch",
+      "program": "${workspaceFolder}/demo/basic/fetch/test.js",
+      "skipFiles": [
+        "<node_internals>/**"
+      ]
+    },
+    {
+      "name": "calc",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/demo/calc",
+      "args": ["1+2*3"],
+      "stopAtEntry": true,
+      "cwd": "${fileDirname}",
+      "environment": [],
+      "externalConsole": false,
+      "MIMode": "gdb",
+      "miDebuggerPath": "/usr/local/bin/gdb"
+    },
+    {
       "runtimeExecutable": "/home/michael/.nvm/versions/node/v20.14.0/bin/node",
       "type": "node",
       "request": "launch",

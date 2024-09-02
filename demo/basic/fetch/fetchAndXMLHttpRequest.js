@@ -1,6 +1,6 @@
 /*
-1. XMLHttpRequest不支持在service worker环境中使用, fetch可以在service workder环境中使用
-2. fetch基于promise，返回值是promise，当然可以使用promise包装XMLHttpRequest
+1. XMLHttpRequest不支持在service/Web worker环境中使用, fetch可以在service/Web workder环境中使用
+2. fetch基于promise，返回值是promise，当然可以使用promise包装XMLHttpRequest(callback)
 3. fetch对http接口的抽象，包括Request，Response，Headers，Body
 4. fetch有允许是否跨域的设置，Header.mode="cors(默认)|no-cors|same-origin|navigate"
 5. 在chrome devtools的network中显示type不一样，前者是xhr，后者是fetch

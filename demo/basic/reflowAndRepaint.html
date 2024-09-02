@@ -6,6 +6,7 @@
    * 當需要時（每一 frame）才批次執行，並清空隊列。
 
     這裡的 frame 也就是 window.requestAnimationFrame() 的那個 幀數
+    window.requstIdleCallback(fn, {timeout})
 
     考慮到 Reflow 批次執行的特性，當開發者要取得元素的物理屬性例如 scrollTop 時，可能程式執行的當下有樣式修改仍在等待隊列，
     尚未 Reflow 到畫面上；為了避免這樣的狀況，每當開發者要獲取元素大小數值時，
@@ -13,5 +14,10 @@
     而這也是許多網站的滑鼠滾輪事件監聽沒寫好，就讓整個網站超卡的原因！
     經過了 Reflow 的計算，Repaint 的任務是要把計算結果轉換成螢幕上的實際像素顯示。
     相比於 Reflow ，Repaint 就單純多了，任何可見元素的樣式變更，最後都必然需要重新繪製到畫面上，這是難以避免的效能開銷
+
+    每次浏览器根据刷新频率计算时间片，60HZ(1s 60次), 1/60即33ms一次，里面会执行用户事件，动画等优先级高的系统操作，然后执行requestAnimationFrame
+    最后如果有空余执行requestIdleCallback，没有就下次
+
+    requestAnimationFrame在每次重绘前执行，requestIdleCallback在每次重绘后执行，如果时间不够，就放在下次执行，优先级低
    */
 </script>

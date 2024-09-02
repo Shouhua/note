@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>History</title>
+</head>
+<body>
+	<h1>History</h1>
+	<a onclick="push('/')">Home</a>	
+	<a  onclick="push('/about')">about</a>	
+	<div id="app"></div>
+	<script>
+		function push(path) {
+			window.history.pushState(null, null, path)
+			document.getElementById('app').innerHTML = window.location.pathname
+		}
+		window.onload = () => {
+			push('/')
+		}
+
+		// 使用监听popstate事件，浏览器前进和后退
+		window.addEventListener('popstate', () => {
+			document.getElementById('app').innerHTML = window.location.pathname
+		})
+	</script>
+</body>
+</html>

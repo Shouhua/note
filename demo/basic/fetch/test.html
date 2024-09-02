@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Fetch</title>
+</head>
+<body>
+	<button id="fetch">Fetch</button>
+	<button id="cancel">Cancel</button>
+	<script>
+		const controller = new AbortController()
+		const fetchButton = document.querySelector('#fetch')
+		fetchButton.addEventListener('click', async () => {
+			try {
+				console.log('start fetch...')
+				const response = await fetch('/get', {
+					signal: controller.signal,
+					// mode:"no-cors"
+				})
+				response.headers.forEach((value, key) => console.log(`${key}: ${value}`))
+				const body = await response.json()
+				console.log(`Response: ${response.status}`)
+				console.log('Response body: ', body)
+			} catch(e) {
+				console.error(`Error: ${e}`);
+			}
+		})
+
+		const cancelButton = document.querySelector('#cancel')
+		cancelButton.addEventListener('click', () => {
+			controller.abort()
+			console.log('Cancel fetch...');
+		})
+	</script>
+</body>
+</html>

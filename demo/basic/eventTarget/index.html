@@ -18,6 +18,15 @@
   </ul>
   <script type="text/javascript">
     const parent = document.getElementById('ul');
+    const btn = document.querySelector('#btn')
+
+    btn.addEventListener('click', () => {
+      console.log('button clicked, pop event')
+    }, false)
+    btn.addEventListener('click', () => {
+      console.log('button clicked, capture event')
+    }, true)
+
     const hanldeEvent = function(ev, index) {
       console.log('use capture triggered ', ev, index)
     }
@@ -27,6 +36,9 @@
       console.log(ev.currentTarget) // who handle the event
       console.log('use bubble triggered');
     }
+    parent.addEventListener('click', handleEventCaptureFalse, {
+      capture: false
+    })
     parent.addEventListener('click', handleEventCaptureFalse, {
       capture: false
     })

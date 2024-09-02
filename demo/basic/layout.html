@@ -1,7 +1,17 @@
 <!-- 
 BFC(Block Formatting Context)
+BFC怎么设置, 常用的有：
+1. float不为none的元素
+2. overflow不为visible或者clip的块级元素
+3. position值为absolute或者fixed的元素
+...
+
+BFC本质上是一个block，block格式化上下文, 有自己的绘制区域
+1. BFC是不会让其中的内容超出边界的，因此设置父div的比如overflow:auto可以将其中的float div匡进来，实质上是增加了父div的高度，见https://developer.mozilla.org/zh-CN/docs/Web/CSS/CSS_display/Block_formatting_context
+2. BFC不允许边界重叠
+
 就是用使用一些css会形成一个block空间，有如下作用
-1. float元素会占用空间，但是之后的空间会流出来，比如div，自己的宽高会占用，但是其他空间就不是display：block行为了;另外float会将父的高度为0
+1. float元素会占用空间，但是之后的空间会放出来(想象文字环绕图片)，比如div，自己的宽高会占用，但是其他空间就不是display：block行为了;另外float会将父的高度为0
 所以可以使用BFC，在父结构上面添加比如：overflow：hidden，重新得到高度
 2. div(父元素)内部的子元素margin跟父元素的margin值重叠，取最大值，这个时候可以使用类似overflow: hidden，margin就会是相加的结果
 3. ...

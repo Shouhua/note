@@ -1,24 +1,33 @@
 function debounce(fn, delay) {
+	let timer
+	return function (...args) {
+		if (timer)
+			clearTimeout(timer)
 
+		timer = setTimeout(() => {
+			fn(...args)
+			clearTimeout(timer)
+		}, delay)
+	}
 }
 
-let source = `<div className="container">
-	<h2>The Title</h2>
-	<div>content</div>
-</div>`
+function throttle(fn, delay, interval) {
+	let timer
+	let now = Date.now()
+	return (..args) => {
+		if(Date.now() - now >= interval) {
+			timer && clearTimeout(timer)
+			fn(...args)
+			now = Date.now()
+		}
+		if(timer)
+			clearTimeout(timer)
+		timer = setTimeout(() => {
+			fn(...args)
+			clearTimeout(timer)
+		}, delay)
+	}
+}
 
-/*
-element {
-	tag: string,
-	attrs: {key: val},
-	children: [element]
-}
-[element]
-*/
-function parse(source) {
-	parseChildren(source, [])
-}
-
-function parseChildren(source) {
-	while(source)
-}
+debounce(clickHandler, 3000)
+throttle(clickHandler, 3000, 5000)

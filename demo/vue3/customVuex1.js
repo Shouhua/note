@@ -26,7 +26,7 @@ class Store() {
 	dispatch(handlerName, payload) { // return Promise
 		const handler = this.actions[handlerName]
 		if(!handler) throw new Error(`${handlerName}'s handler is not exist`)
-		const result = handler(this.state, payload)
+		const result = handler(this, payload)
 		if(!isPromise(result))	return Promise.resolve(result)
 		return result
 	}
